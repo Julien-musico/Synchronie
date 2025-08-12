@@ -3,11 +3,57 @@ services:
     name: synchronie-app
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      python -c "
+      from app import create_app
+      from app.models import db
+      from sqlalchemy import text
+
+      print('🔧 Configuration de la base de données...')
+      app = create_app('production')
+
+      with app.app_context():
+          try:
+              # Créer toutes les tables si elles n'existent pas
+              db.create_all()
+              print('✅ Tables créées')
+              
+              # Vérifier et corriger la colonne activites_realisees
+              result = db.session.execute(text(\"\"\"
+                  SELECT column_name 
+                  FROM information_schema.columns 
+                  WHERE table_name = 'seances'
+                  AND column_name IN ('activites_musicales', 'activites_realisees')
+              \"\"\"))
+              
+              columns = [row[0] for row in result]
+              print(f'Colonnes trouvées: {columns}')
+              
+              if 'activites_musicales' in columns and 'activites_realisees' not in columns:
+                  print('Renommage activites_musicales → activites_realisees...')
+                  db.session.execute(text('ALTER TABLE seances RENAME COLUMN activites_musicales TO activites_realisees'))
+                  db.session.commit()
+                  print('✅ Migration réussie')
+              elif 'activites_realisees' not in columns:
+                  print('Ajout de la colonne activites_realisees...')
+                  db.session.execute(text('ALTER TABLE seances ADD COLUMN activites_realisees TEXT'))
+                  db.session.commit()
+                  print('✅ Colonne ajoutée')
+              else:
+                  print('✅ La colonne activites_realisees existe déjà')
+                  
+          except Exception as e:
+              print(f'❌ Erreur: {e}')
+              import traceback
+              traceback.print_exc()
+      "
     startCommand: gunicorn run:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: FLASK_CONFIG
+        value: production
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
