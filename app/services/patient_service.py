@@ -50,30 +50,56 @@ class PatientService:
             Tuple (succès, message, patient)
         """
         try:
+            print(f"DEBUG: Données reçues pour création patient: {data}")
+            
             # Validation des données requises
-            if not data.get('nom') or not data.get('prenom'):
+            nom = data.get('nom', '').strip()
+            prenom = data.get('prenom', '').strip()
+            
+            if not nom or not prenom:
                 return False, "Le nom et le prénom sont obligatoires", None
             
+            print(f"DEBUG: Création patient {prenom} {nom}")
+            
+            # Gestion de la date de naissance
+            date_naissance = None
+            if data.get('date_naissance'):
+                try:
+                    from datetime import datetime
+                    date_naissance = datetime.strptime(data['date_naissance'], '%Y-%m-%d').date()
+                except ValueError:
+                    print(f"DEBUG: Erreur format date: {data.get('date_naissance')}")
+                    # Continuer sans date plutôt que d'échouer
+                    pass
+            
             patient = Patient(
-                nom=data['nom'].strip(),
-                prenom=data['prenom'].strip(),
-                date_naissance=data.get('date_naissance'),
-                telephone=data.get('telephone', '').strip(),
-                email=data.get('email', '').strip(),
-                adresse=data.get('adresse', '').strip(),
-                pathologie=data.get('pathologie', '').strip(),
-                objectifs_therapeutiques=data.get('objectifs_therapeutiques', '').strip(),
-                commentaires=data.get('commentaires', '').strip()
+                nom=nom,
+                prenom=prenom,
+                date_naissance=date_naissance,
+                telephone=data.get('telephone', '').strip() or None,
+                email=data.get('email', '').strip() or None,
+                adresse=data.get('adresse', '').strip() or None,
+                pathologie=data.get('pathologie', '').strip() or None,
+                objectifs_therapeutiques=data.get('objectifs_therapeutiques', '').strip() or None,
+                commentaires=data.get('commentaires', '').strip() or None,
+                actif=True  # Par défaut actif
             )
             
+            print(f"DEBUG: Tentative d'ajout en base...")
             db.session.add(patient)
             db.session.commit()
+            print(f"DEBUG: Patient créé avec ID: {patient.id}")
             
-            return True, "Patient créé avec succès", patient
+            return True, f"Patient {prenom} {nom} créé avec succès", patient
             
         except SQLAlchemyError as e:
+            print(f"DEBUG: Erreur SQLAlchemy: {str(e)}")
             db.session.rollback()
             return False, f"Erreur lors de la création du patient: {str(e)}", None
+        except Exception as e:
+            print(f"DEBUG: Erreur générale: {str(e)}")
+            db.session.rollback()
+            return False, f"Erreur inattendue: {str(e)}", None
     
     @staticmethod
     def update_patient(patient_id: int, data: dict) -> tuple[bool, str, Optional[Patient]]:

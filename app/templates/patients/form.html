@@ -34,7 +34,19 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
-                <form method="POST" action="{{ url_for('patients.create_patient') if not patient else url_for('patients.update_patient', patient_id=patient.id) }}" class="form-validate">
+                <form method="POST" action="{{ url_for('patients.create_patient') if not patient else url_for('patients.update_patient', patient_id=patient.id) }}" class="needs-validation" novalidate>
+                    
+                    <!-- Messages d'erreur globaux -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
                     
                     <!-- Informations principales -->
                     <div class="row mb-4">
@@ -53,9 +65,12 @@
                                    class="form-control" 
                                    id="prenom" 
                                    name="prenom" 
-                                   value="{{ (data.prenom if data else patient.prenom if patient else '') }}"
+                                   value="{% if data and data.prenom %}{{ data.prenom }}{% elif patient %}{{ patient.prenom }}{% endif %}"
                                    required
                                    placeholder="Prénom du patient">
+                            <div class="invalid-feedback">
+                                Le prénom est obligatoire.
+                            </div>
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -66,9 +81,12 @@
                                    class="form-control" 
                                    id="nom" 
                                    name="nom" 
-                                   value="{{ (data.nom if data else patient.nom if patient else '') }}"
+                                   value="{% if data and data.nom %}{{ data.nom }}{% elif patient %}{{ patient.nom }}{% endif %}"
                                    required
                                    placeholder="Nom de famille">
+                            <div class="invalid-feedback">
+                                Le nom est obligatoire.
+                            </div>
                         </div>
                         
                         <div class="col-md-6 mb-3">
@@ -78,6 +96,9 @@
                             <input type="date" 
                                    class="form-control" 
                                    id="date_naissance" 
+                                   name="date_naissance" 
+                                   value="{% if data and data.date_naissance %}{{ data.date_naissance }}{% elif patient and patient.date_naissance %}{{ patient.date_naissance.strftime('%Y-%m-%d') }}{% endif %}">
+                        </div> 
                                    name="date_naissance" 
                                    value="{{ (data.date_naissance if data else patient.date_naissance.strftime('%Y-%m-%d') if patient and patient.date_naissance else '') }}">
                         </div>
@@ -276,6 +297,25 @@ function clearFieldError(field) {
         feedback.remove();
     }
 }
+
+// Validation Bootstrap 5
+(function() {
+    'use strict';
+    
+    // Récupérer tous les formulaires avec la classe needs-validation
+    var forms = document.querySelectorAll('.needs-validation');
+    
+    // Appliquer la validation à chaque formulaire
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
 
 {% if patient %}
 async function archivePatient(patientId) {
