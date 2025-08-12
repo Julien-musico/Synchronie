@@ -25,21 +25,40 @@ class AudioTranscriptionService:
         if not api_key:
             raise ValueError("OPENAI_API_KEY n'est pas configurée")
         
-        # Initialisation simple du client OpenAI pour éviter les conflits de version
+        # Initialisation robuste du client OpenAI
         try:
             # Vérification de la version d'OpenAI
             import openai
             logger.info(f"Version OpenAI: {getattr(openai, '__version__', 'unknown')}")
             
-            # Initialisation standard
+            # Initialisation avec seulement les arguments supportés
             self.client = OpenAI(api_key=api_key)
             logger.info("Client OpenAI initialisé avec succès")
             
+        except TypeError as e:
+            logger.warning(f"Erreur de type lors de l'initialisation OpenAI: {e}")
+            if 'proxies' in str(e) or 'unexpected keyword argument' in str(e):
+                # Version ou environnement avec des arguments différents
+                logger.info("Tentative d'initialisation avec variable d'environnement")
+                os.environ['OPENAI_API_KEY'] = api_key
+                try:
+                    self.client = OpenAI()
+                    logger.info("Client OpenAI initialisé via variable d'environnement")
+                except Exception as e2:
+                    logger.error(f"Échec de l'initialisation alternative: {e2}")
+                    raise ValueError(f"Impossible d'initialiser le client OpenAI: {e2}")
+            else:
+                raise e
         except Exception as e:
             logger.error(f"Erreur d'initialisation du client OpenAI: {e}")
             # Dernière tentative avec la clé API en variable d'environnement
             os.environ['OPENAI_API_KEY'] = api_key
-            self.client = OpenAI()
+            try:
+                self.client = OpenAI()
+                logger.info("Client OpenAI initialisé via fallback")
+            except Exception as e2:
+                logger.error(f"Échec de toutes les tentatives d'initialisation: {e2}")
+                raise ValueError(f"Impossible d'initialiser le client OpenAI: {e2}")
     
     @staticmethod
     def is_allowed_file(filename: str) -> bool:
