@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if patient %}
+        Modifier {{ patient.prenom }} {{ patient.nom }} - Synchronie
+    {% else %}
+        Nouveau patient - Synchronie
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-person-plus text-primary me-2"></i>
+                    {% if patient %}
+                        Modifier le patient
+                    {% else %}
+                        Nouveau patient
+                    {% endif %}
+                </h1>
+                <p class="text-muted mb-0">
+                    {% if patient %}
+                        Modifier les informations de {{ patient.prenom }} {{ patient.nom }}
+                    {% else %}
+                        Ajouter un nouveau patient au système
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Retour à la liste
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <!-- Messages d'erreur -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" 
+                      action="{% if patient %}{{ url_for('patients.update_patient', patient_id=patient.id) }}{% else %}{{ url_for('patients.create_patient') }}{% endif %}" 
+                      class="needs-validation" novalidate>
+                    
+                    <!-- Informations principales -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-person-badge text-primary me-2"></i>
+                                Informations principales
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="prenom" class="form-label">
+                                Prénom <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="prenom" 
+                                   name="prenom" 
+                                   value="{% if patient %}{{ patient.prenom }}{% endif %}"
+                                   required
+                                   placeholder="Prénom du patient">
+                            <div class="invalid-feedback">
+                                Le prénom est obligatoire.
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="nom" class="form-label">
+                                Nom <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nom" 
+                                   name="nom" 
+                                   value="{% if patient %}{{ patient.nom }}{% endif %}"
+                                   required
+                                   placeholder="Nom de famille">
+                            <div class="invalid-feedback">
+                                Le nom est obligatoire.
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="date_naissance" class="form-label">
+                                Date de naissance
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="date_naissance" 
+                                   name="date_naissance" 
+                                   value="{% if patient and patient.date_naissance %}{{ patient.date_naissance.strftime('%Y-%m-%d') }}{% endif %}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="pathologie" class="form-label">
+                                Pathologie principale
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="pathologie" 
+                                   name="pathologie" 
+                                   value="{% if patient %}{{ patient.pathologie or '' }}{% endif %}"
+                                   placeholder="Diagnostic principal">
+                        </div>
+                    </div>
+
+                    <!-- Informations de contact -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-telephone text-primary me-2"></i>
+                                Contact
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="telephone" class="form-label">
+                                Téléphone
+                            </label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="telephone" 
+                                   name="telephone" 
+                                   value="{% if patient %}{{ patient.telephone or '' }}{% endif %}"
+                                   placeholder="01 23 45 67 89">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                Email
+                            </label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   value="{% if patient %}{{ patient.email or '' }}{% endif %}"
+                                   placeholder="email@exemple.com">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="adresse" class="form-label">
+                                Adresse
+                            </label>
+                            <textarea class="form-control" 
+                                      id="adresse" 
+                                      name="adresse" 
+                                      rows="3"
+                                      placeholder="Adresse complète">{% if patient %}{{ patient.adresse or '' }}{% endif %}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Informations thérapeutiques -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-heart-pulse text-primary me-2"></i>
+                                Informations thérapeutiques
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="objectifs_therapeutiques" class="form-label">
+                                Objectifs thérapeutiques
+                            </label>
+                            <textarea class="form-control" 
+                                      id="objectifs_therapeutiques" 
+                                      name="objectifs_therapeutiques" 
+                                      rows="4"
+                                      placeholder="Décrire les objectifs thérapeutiques pour ce patient...">{% if patient %}{{ patient.objectifs_therapeutiques or '' }}{% endif %}</textarea>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="commentaires" class="form-label">
+                                Commentaires et notes
+                            </label>
+                            <textarea class="form-control" 
+                                      id="commentaires" 
+                                      name="commentaires" 
+                                      rows="3"
+                                      placeholder="Notes additionnelles sur le patient...">{% if patient %}{{ patient.commentaires or '' }}{% endif %}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Boutons d'action -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>
+                            {% if patient %}
+                                Mettre à jour
+                            {% else %}
+                                Créer le patient
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Validation Bootstrap 5
+(function() {
+    'use strict';
+    
+    var forms = document.querySelectorAll('.needs-validation');
+    
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+{% endblock %}
