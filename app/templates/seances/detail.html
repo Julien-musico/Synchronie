@@ -36,10 +36,6 @@
                         Détails de la séance
                     </h5>
                     <div class="btn-group">
-                        <a href="{{ url_for('audio.upload_form', seance_id=seance.id) }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-mic me-1"></i>
-                            Audio
-                        </a>
                         <a href="{{ url_for('seances.edit_seance', seance_id=seance.id) }}" class="btn btn-outline-light btn-sm">
                             <i class="bi bi-pencil me-1"></i>
                             Modifier
@@ -168,70 +164,87 @@
             </div>
         </div>
         
-        <!-- Transcription et Analyse IA -->
-        {% if seance.transcription_audio or seance.synthese_ia %}
-        <div class="card border-0 shadow-sm mt-4">
+        <!-- Upload audio intégré -->
+        <div class="card border-0 shadow-sm mt-4" id="audio-upload-section">
             <div class="card-header bg-transparent border-0">
-                <ul class="nav nav-tabs card-header-tabs" id="audioTab" role="tablist">
-                    {% if seance.transcription_audio %}
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="transcription-tab" data-bs-toggle="tab" data-bs-target="#transcription-pane" type="button" role="tab">
-                            <i class="bi bi-file-text me-1"></i>
-                            Transcription
-                        </button>
-                    </li>
-                    {% endif %}
-                    {% if seance.synthese_ia %}
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link {% if not seance.transcription_audio %}active{% endif %}" id="analyse-tab" data-bs-toggle="tab" data-bs-target="#analyse-pane" type="button" role="tab">
-                            <i class="bi bi-robot me-1"></i>
-                            Analyse IA
-                        </button>
-                    </li>
-                    {% endif %}
-                </ul>
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-mic text-success me-2"></i>
+                    Enregistrement audio
+                </h5>
             </div>
             <div class="card-body">
-                <div class="tab-content" id="audioTabContent">
-                    {% if seance.transcription_audio %}
-                    <div class="tab-pane fade show active" id="transcription-pane" role="tabpanel">
-                        <div class="border-start border-primary border-3 ps-3">
-                            <h6 class="text-primary mb-3">
-                                <i class="bi bi-mic me-2"></i>
-                                Transcription automatique
-                            </h6>
-                            <div class="text-muted" style="line-height: 1.6; max-height: 400px; overflow-y: auto;">
-                                {{ seance.transcription_audio | nl2br | safe }}
+                {% if not seance.transcription_audio %}
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Uploadez un enregistrement de la séance pour générer automatiquement une transcription et une analyse thérapeutique.
+                </div>
+                
+                <form id="inline-audio-form" enctype="multipart/form-data">
+                    <div class="row align-items-end">
+                        <div class="col-md-8">
+                            <label for="inline-audio-file" class="form-label">Fichier audio</label>
+                            <input type="file" class="form-control" id="inline-audio-file" 
+                                   accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg" required>
+                            <div class="form-text">
+                                Formats supportés : MP3, WAV, M4A, FLAC, OGG (max 25 MB)
                             </div>
                         </div>
-                        <div class="mt-3">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('transcription')">
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-success w-100" id="inline-upload-btn" disabled>
+                                <i class="bi bi-upload me-2"></i>
+                                Transcrire
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <div id="upload-progress" class="mt-3" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm text-success me-2" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <span id="progress-text">Transcription en cours...</span>
+                    </div>
+                    <div class="progress mt-2">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Zone d'affichage de la transcription -->
+                <div id="transcription-result" {% if not seance.transcription_audio %}style="display: none;"{% endif %}>
+                    {% if seance.transcription_audio %}
+                    <div class="alert alert-success">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Transcription automatique
+                        </h6>
+                        <div class="mt-3 p-3 bg-light rounded" style="max-height: 300px; overflow-y: auto;">
+                            <div id="transcription-content">{{ seance.transcription_audio | nl2br | safe }}</div>
+                        </div>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('transcription-content')">
                                 <i class="bi bi-clipboard me-1"></i>
                                 Copier
                             </button>
-                            {% if not seance.synthese_ia %}
-                            <button class="btn btn-sm btn-outline-primary" onclick="generateAnalysis({{ seance.id }})">
-                                <i class="bi bi-robot me-1"></i>
-                                Générer l'analyse IA
-                            </button>
-                            {% endif %}
                         </div>
                     </div>
                     {% endif %}
-                    
+                </div>
+                
+                <!-- Zone d'affichage de l'analyse IA -->
+                <div id="analysis-result" {% if not seance.synthese_ia %}style="display: none;"{% endif %}>
                     {% if seance.synthese_ia %}
-                    <div class="tab-pane fade {% if not seance.transcription_audio %}show active{% endif %}" id="analyse-pane" role="tabpanel">
-                        <div class="border-start border-success border-3 ps-3">
-                            <h6 class="text-success mb-3">
-                                <i class="bi bi-robot me-2"></i>
-                                Analyse thérapeutique automatique
-                            </h6>
-                            <div style="line-height: 1.6; max-height: 400px; overflow-y: auto;">
-                                {{ seance.synthese_ia | nl2br | safe }}
-                            </div>
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-robot me-2"></i>
+                            Analyse thérapeutique automatique
+                        </h6>
+                        <div class="mt-3 p-3 bg-light rounded" style="max-height: 300px; overflow-y: auto;">
+                            <div id="analysis-content">{{ seance.synthese_ia | nl2br | safe }}</div>
                         </div>
-                        <div class="mt-3">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('analyse')">
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('analysis-content')">
                                 <i class="bi bi-clipboard me-1"></i>
                                 Copier
                             </button>
@@ -346,14 +359,104 @@
 
 <script>
 // Fonctions pour les transcriptions et analyses IA
-function copyToClipboard(type) {
-    let textElement;
-    if (type === 'transcription') {
-        textElement = document.querySelector('#transcription-pane .text-muted');
-    } else {
-        textElement = document.querySelector('#analyse-pane > div > div');
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion du formulaire d'upload inline
+    const inlineForm = document.getElementById('inline-audio-form');
+    const inlineFileInput = document.getElementById('inline-audio-file');
+    const inlineUploadBtn = document.getElementById('inline-upload-btn');
+    const uploadProgress = document.getElementById('upload-progress');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.querySelector('#upload-progress .progress-bar');
+    
+    // Activer le bouton quand un fichier est sélectionné
+    if (inlineFileInput) {
+        inlineFileInput.addEventListener('change', function() {
+            inlineUploadBtn.disabled = !this.files.length;
+        });
     }
     
+    // Gérer la soumission du formulaire
+    if (inlineForm) {
+        inlineForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('inline-audio-file');
+            if (!fileInput.files.length) {
+                alert('Veuillez sélectionner un fichier audio');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            
+            // Validation de la taille
+            const maxSize = 25 * 1024 * 1024; // 25 MB
+            if (file.size > maxSize) {
+                alert('Le fichier est trop volumineux (max 25 MB)');
+                return;
+            }
+            
+            // Préparation de l'upload
+            const formData = new FormData();
+            formData.append('audio_file', file);
+            
+            // Désactiver le formulaire et afficher le progrès
+            inlineForm.style.display = 'none';
+            uploadProgress.style.display = 'block';
+            
+            // Simulation du progrès
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressBar.style.width = progress + '%';
+                
+                if (progress < 30) {
+                    progressText.textContent = 'Upload du fichier...';
+                } else if (progress < 70) {
+                    progressText.textContent = 'Transcription audio...';
+                } else {
+                    progressText.textContent = 'Génération de l\'analyse...';
+                }
+            }, 500);
+            
+            // Envoi vers l'API
+            fetch(`/audio/upload/{{ seance.id }}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.redirected) {
+                    // Si c'est une redirection, suivre la redirection
+                    window.location.href = response.url;
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressText.textContent = 'Traitement terminé !';
+                
+                // Recharger la page pour afficher les résultats
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                console.error('Erreur:', error);
+                
+                uploadProgress.style.display = 'none';
+                inlineForm.style.display = 'block';
+                
+                alert('Erreur lors du traitement du fichier audio');
+            });
+        });
+    }
+});
+
+function copyToClipboard(elementId) {
+    const textElement = document.getElementById(elementId);
     if (textElement) {
         const text = textElement.innerText;
         navigator.clipboard.writeText(text).then(() => {

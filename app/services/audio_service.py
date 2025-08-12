@@ -6,7 +6,6 @@ import os
 import tempfile
 from typing import Optional, Tuple, Dict, Any
 from werkzeug.datastructures import FileStorage
-from werkzeug.utils import secure_filename
 from openai import OpenAI
 from app.models import db, Seance
 import logging
@@ -26,7 +25,21 @@ class AudioTranscriptionService:
         if not api_key:
             raise ValueError("OPENAI_API_KEY n'est pas configurée")
         
-        self.client = OpenAI(api_key=api_key)
+        # Initialisation simple du client OpenAI pour éviter les conflits de version
+        try:
+            # Vérification de la version d'OpenAI
+            import openai
+            logger.info(f"Version OpenAI: {getattr(openai, '__version__', 'unknown')}")
+            
+            # Initialisation standard
+            self.client = OpenAI(api_key=api_key)
+            logger.info("Client OpenAI initialisé avec succès")
+            
+        except Exception as e:
+            logger.error(f"Erreur d'initialisation du client OpenAI: {e}")
+            # Dernière tentative avec la clé API en variable d'environnement
+            os.environ['OPENAI_API_KEY'] = api_key
+            self.client = OpenAI()
     
     @staticmethod
     def is_allowed_file(filename: str) -> bool:
@@ -74,8 +87,9 @@ class AudioTranscriptionService:
             logger.info(f"Début de la transcription pour: {audio_file.filename}")
             
             # Créer un fichier temporaire pour l'upload vers OpenAI
+            filename = audio_file.filename or 'audio.mp3'
             with tempfile.NamedTemporaryFile(
-                suffix=f".{audio_file.filename.rsplit('.', 1)[1].lower()}", 
+                suffix=f".{filename.rsplit('.', 1)[1].lower()}", 
                 delete=False
             ) as temp_file:
                 
@@ -84,17 +98,16 @@ class AudioTranscriptionService:
                 temp_file_path = temp_file.name
             
             try:
-                # Transcription avec Whisper
+                # Transcription avec Whisper - version simplifiée
                 with open(temp_file_path, 'rb') as audio_data:
                     transcript = self.client.audio.transcriptions.create(
                         model="whisper-1",
                         file=audio_data,
                         language="fr",  # Français
-                        response_format="verbose_json",
-                        timestamp_granularities=["segment"]
+                        response_format="text"
                     )
                 
-                transcription_text = transcript.text
+                transcription_text = str(transcript) if transcript else ""
                 logger.info(f"Transcription réussie: {len(transcription_text)} caractères")
                 
                 return True, "Transcription réussie", transcription_text
@@ -157,7 +170,7 @@ Génère une synthèse thérapeutique détaillée de cette séance de musicothé
                 temperature=0.3
             )
             
-            analysis = response.choices[0].message.content
+            analysis = response.choices[0].message.content or ""
             logger.info(f"Analyse IA générée: {len(analysis)} caractères")
             
             return True, "Analyse générée avec succès", analysis
@@ -204,7 +217,7 @@ Génère une synthèse thérapeutique détaillée de cette séance de musicothé
             # Mettre à jour la séance avec les résultats
             seance.transcription_audio = transcription
             seance.synthese_ia = analysis
-            seance.fichier_audio = secure_filename(audio_file.filename)
+            # Ne pas sauvegarder le fichier audio, juste la transcription
             
             db.session.commit()
             

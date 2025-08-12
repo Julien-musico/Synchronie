@@ -3,7 +3,6 @@ Routes pour la gestion des enregistrements audio et transcriptions
 """
 import os
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
-from werkzeug.utils import secure_filename
 from app.services.audio_service import AudioTranscriptionService
 from app.services.seance_service import SeanceService
 
@@ -82,8 +81,7 @@ def transcribe_only(seance_id: int):
         if success:
             # Mettre à jour seulement la transcription
             seance.transcription_audio = transcription
-            if file.filename:
-                seance.fichier_audio = secure_filename(file.filename)
+            # Ne pas sauvegarder le fichier audio physiquement
             
             from app.models import db
             db.session.commit()
