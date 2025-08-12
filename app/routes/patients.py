@@ -18,6 +18,39 @@ def new_patient():
     """Formulaire de création d'un nouveau patient"""
     return render_template('patients/form.html', patient=None, action='Créer')
 
+@patients.route('/debug-form')
+def debug_form():
+    """Formulaire de test simple pour diagnostiquer"""
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Test Création Patient</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-5">
+            <h2>Test Création Patient</h2>
+            <form method="POST" action="/patients/create">
+                <div class="mb-3">
+                    <label for="nom" class="form-label">Nom *</label>
+                    <input type="text" class="form-control" id="nom" name="nom" required>
+                </div>
+                <div class="mb-3">
+                    <label for="prenom" class="form-label">Prénom *</label>
+                    <input type="text" class="form-control" id="prenom" name="prenom" required>
+                </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email">
+                </div>
+                <button type="submit" class="btn btn-primary">Créer Patient</button>
+            </form>
+        </div>
+    </body>
+    </html>
+    '''
+
 @patients.route('/test-create')
 def test_create():
     """Route de test pour diagnostiquer la création"""
