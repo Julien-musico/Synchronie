@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}Enregistrement Audio - {{ seance.patient_prenom }}{% endblock %}
+
+{% block styles %}
+<style>
+    .audio-upload-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .upload-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+    
+    .seance-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    
+    .drop-zone {
+        border: 3px dashed #ddd;
+        border-radius: 8px;
+        padding: 40px 20px;
+        text-align: center;
+        background: #fafafa;
+        transition: all 0.3s ease;
+        margin: 20px 0;
+        cursor: pointer;
+    }
+    
+    .drop-zone:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    
+    .drop-zone.drag-over {
+        border-color: #667eea;
+        background: #e8f2ff;
+        transform: scale(1.02);
+    }
+    
+    .file-input {
+        display: none;
+    }
+    
+    .upload-icon {
+        font-size: 48px;
+        color: #667eea;
+        margin-bottom: 15px;
+    }
+    
+    .upload-text {
+        font-size: 18px;
+        color: #555;
+        margin-bottom: 10px;
+    }
+    
+    .upload-hint {
+        font-size: 14px;
+        color: #888;
+    }
+    
+    .file-info {
+        background: #e8f5e8;
+        border: 1px solid #4caf50;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 15px 0;
+        display: none;
+    }
+    
+    .format-info {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    
+    .processing-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    
+    .processing-content {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        max-width: 400px;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .btn-upload {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .btn-upload:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-upload:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .options-section {
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+        margin-top: 20px;
+    }
+    
+    .option-card {
+        background: #f8f9ff;
+        border: 1px solid #e0e6ff;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 10px 0;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .option-card:hover {
+        background: #f0f4ff;
+        border-color: #667eea;
+    }
+    
+    .option-card.selected {
+        background: #e8f2ff;
+        border-color: #667eea;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="audio-upload-container">
+    <div class="upload-card">
+        <div class="seance-info">
+            <h2>🎵 Enregistrement de séance</h2>
+            <p><strong>Patient:</strong> {{ seance.patient_prenom }}</p>
+            <p><strong>Date:</strong> {{ seance.date_seance.strftime('%d/%m/%Y') if seance.date_seance else 'Non définie' }}</p>
+            <p><strong>Type:</strong> {{ seance.type_seance or 'Non spécifié' }}</p>
+        </div>
+        
+        <form id="upload-form" method="POST" enctype="multipart/form-data">
+            <div class="drop-zone" onclick="document.getElementById('audio-file').click()">
+                <div class="upload-icon">🎤</div>
+                <div class="upload-text">Cliquez pour sélectionner ou glissez-déposez votre enregistrement</div>
+                <div class="upload-hint">Formats supportés : MP3, WAV, M4A, FLAC, OGG</div>
+                <input type="file" id="audio-file" name="audio_file" class="file-input" 
+                       accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg" required>
+            </div>
+            
+            <div id="file-info" class="file-info">
+                <h4>📄 Fichier sélectionné</h4>
+                <div id="file-details"></div>
+            </div>
+            
+            <div class="format-info">
+                <h4>ℹ️ Informations importantes</h4>
+                <ul>
+                    <li><strong>Taille maximale :</strong> 25 MB</li>
+                    <li><strong>Qualité recommandée :</strong> 16 kHz ou plus</li>
+                    <li><strong>Durée :</strong> Jusqu'à 3 heures</li>
+                    <li><strong>Traitement :</strong> Transcription + Analyse IA automatiques</li>
+                </ul>
+            </div>
+            
+            <div class="options-section">
+                <h4>🔧 Options de traitement</h4>
+                
+                <div class="option-card selected" data-mode="full">
+                    <h5>🤖 Transcription + Analyse complète (Recommandé)</h5>
+                    <p>Génère automatiquement la transcription et l'analyse thérapeutique avec l'IA</p>
+                    <small>⏱️ Durée : 2-5 minutes selon la taille du fichier</small>
+                </div>
+                
+                <div class="option-card" data-mode="transcribe">
+                    <h5>📝 Transcription uniquement</h5>
+                    <p>Convertit l'audio en texte, vous pourrez ajouter l'analyse plus tard</p>
+                    <small>⏱️ Durée : 1-3 minutes selon la taille du fichier</small>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-upload" id="upload-btn" disabled>
+                🚀 Lancer le traitement
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Overlay de traitement -->
+<div id="processing-overlay" class="processing-overlay">
+    <div class="processing-content">
+        <div class="spinner"></div>
+        <h3 id="processing-title">Traitement en cours...</h3>
+        <p id="processing-text">Veuillez patienter pendant que nous analysons votre enregistrement.</p>
+        <div id="processing-steps">
+            <div class="step" id="step-upload">✅ Fichier uploadé</div>
+            <div class="step" id="step-transcription">⏳ Transcription audio...</div>
+            <div class="step" id="step-analysis">⏳ Analyse thérapeutique...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.querySelector('.drop-zone');
+    const fileInput = document.getElementById('audio-file');
+    const fileInfo = document.getElementById('file-info');
+    const fileDetails = document.getElementById('file-details');
+    const uploadBtn = document.getElementById('upload-btn');
+    const form = document.getElementById('upload-form');
+    const overlay = document.getElementById('processing-overlay');
+    const optionCards = document.querySelectorAll('.option-card');
+    
+    let selectedMode = 'full';
+    let selectedFile = null;
+    
+    // Gestion des options
+    optionCards.forEach(card => {
+        card.addEventListener('click', function() {
+            optionCards.forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedMode = this.dataset.mode;
+        });
+    });
+    
+    // Drag & Drop
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('drag-over');
+    });
+    
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+    });
+    
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+    
+    // Sélection de fichier
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            handleFile(this.files[0]);
+        }
+    });
+    
+    function handleFile(file) {
+        selectedFile = file;
+        
+        // Validation
+        const maxSize = 25 * 1024 * 1024; // 25 MB
+        const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/mp4', 'audio/m4a', 'audio/flac', 'audio/ogg'];
+        
+        if (file.size > maxSize) {
+            alert('Le fichier est trop volumineux (max 25 MB)');
+            return;
+        }
+        
+        // Afficher les infos du fichier
+        const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+        fileDetails.innerHTML = `
+            <p><strong>Nom :</strong> ${file.name}</p>
+            <p><strong>Taille :</strong> ${sizeInMB} MB</p>
+            <p><strong>Type :</strong> ${file.type || 'Détection automatique'}</p>
+        `;
+        
+        fileInfo.style.display = 'block';
+        uploadBtn.disabled = false;
+    }
+    
+    // Soumission du formulaire
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!selectedFile) {
+            alert('Veuillez sélectionner un fichier audio');
+            return;
+        }
+        
+        // Afficher l'overlay
+        overlay.style.display = 'flex';
+        
+        // Préparer les données
+        const formData = new FormData();
+        formData.append('audio_file', selectedFile);
+        
+        // Choisir l'endpoint selon le mode
+        const endpoint = selectedMode === 'transcribe' ? 
+            `/audio/transcribe-only/{{ seance.id }}` : 
+            `/audio/upload/{{ seance.id }}`;
+        
+        const method = selectedMode === 'transcribe' ? 'POST' : 'POST';
+        
+        if (selectedMode === 'transcribe') {
+            // Mode transcription seule (AJAX)
+            fetch(endpoint, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                overlay.style.display = 'none';
+                if (data.success) {
+                    alert('Transcription terminée ! Redirection vers la séance...');
+                    window.location.href = '{{ url_for("seances.view_seance", seance_id=seance.id) }}';
+                } else {
+                    alert('Erreur : ' + data.message);
+                }
+            })
+            .catch(error => {
+                overlay.style.display = 'none';
+                alert('Erreur réseau : ' + error.message);
+            });
+        } else {
+            // Mode complet (soumission standard)
+            document.getElementById('step-transcription').innerHTML = '⏳ Transcription audio...';
+            document.getElementById('step-analysis').innerHTML = '⏳ Analyse thérapeutique...';
+            
+            // Soumettre le formulaire original
+            const originalForm = document.createElement('form');
+            originalForm.method = 'POST';
+            originalForm.action = endpoint;
+            originalForm.enctype = 'multipart/form-data';
+            originalForm.style.display = 'none';
+            
+            const fileInputClone = fileInput.cloneNode(true);
+            fileInputClone.files = fileInput.files;
+            originalForm.appendChild(fileInputClone);
+            
+            document.body.appendChild(originalForm);
+            originalForm.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

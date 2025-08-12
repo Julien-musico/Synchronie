@@ -4,6 +4,7 @@ Script de correction de la base de données pour la production
 Corrige le problème de la colonne activites_realisees manquante
 """
 import os
+import sys
 from app import create_app
 from app.models import db
 from sqlalchemy import text
@@ -11,6 +12,7 @@ from sqlalchemy import text
 def fix_database():
     """Corrige la structure de la base de données"""
     print("🔧 Correction de la base de données Synchronie...")
+    print(f"🌍 Environnement: {os.environ.get('FLASK_CONFIG', 'default')}")
     
     # Utiliser la configuration de production
     config_name = os.environ.get('FLASK_CONFIG', 'production')
@@ -20,21 +22,47 @@ def fix_database():
         try:
             print("📊 Vérification de la structure de la base...")
             
-            # Créer toutes les tables si elles n'existent pas
-            db.create_all()
-            print("✅ Tables vérifiées/créées")
+            # Vérifier d'abord si la table seances existe
+            tables_result = db.session.execute(text("""
+                SELECT tablename FROM pg_tables 
+                WHERE schemaname = 'public' AND tablename = 'seances'
+            """))
+            
+            tables = [row[0] for row in tables_result]
+            print(f"📋 Tables trouvées: {tables}")
+            
+            if 'seances' not in tables:
+                print("⚠️ Table 'seances' n'existe pas, création de toutes les tables...")
+                db.create_all()
+                print("✅ Tables créées avec succès")
+                return True
             
             # Vérifier la colonne activites_realisees
+            print("🔍 Vérification des colonnes de la table 'seances'...")
             result = db.session.execute(text("""
                 SELECT column_name 
                 FROM information_schema.columns 
-                WHERE table_name = 'seances'
+                WHERE table_schema = 'public' 
+                AND table_name = 'seances'
                 AND column_name IN ('activites_musicales', 'activites_realisees')
             """))
             
             columns = [row[0] for row in result]
-            print(f"📋 Colonnes trouvées dans 'seances': {columns}")
+            print(f"📋 Colonnes activites trouvées: {columns}")
             
+            # Obtenir toutes les colonnes pour diagnostic
+            all_columns_result = db.session.execute(text("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                AND table_name = 'seances'
+                ORDER BY ordinal_position
+            """))
+            
+            all_columns = [(row[0], row[1]) for row in all_columns_result]
+            print(f"📋 Toutes les colonnes de 'seances': {[col[0] for col in all_columns]}")
+            
+            # Corriger selon le cas
             if 'activites_musicales' in columns and 'activites_realisees' not in columns:
                 print("🔄 Renommage activites_musicales → activites_realisees...")
                 db.session.execute(text(
@@ -54,19 +82,19 @@ def fix_database():
             else:
                 print("✅ La colonne activites_realisees existe déjà")
             
-            # Vérifier le résultat final
-            result_final = db.session.execute(text("""
+            # Vérification finale
+            final_result = db.session.execute(text("""
                 SELECT column_name 
                 FROM information_schema.columns 
-                WHERE table_name = 'seances'
-                ORDER BY ordinal_position
+                WHERE table_schema = 'public' 
+                AND table_name = 'seances'
+                AND column_name = 'activites_realisees'
             """))
             
-            all_columns = [row[0] for row in result_final]
-            print(f"📋 Structure finale de la table 'seances': {all_columns}")
-            
-            if 'activites_realisees' in all_columns:
+            final_check = final_result.fetchone()
+            if final_check:
                 print("🎉 Base de données corrigée avec succès!")
+                print("✅ Colonne 'activites_realisees' confirmée dans la table 'seances'")
                 return True
             else:
                 print("❌ La colonne activites_realisees est toujours manquante")
@@ -74,11 +102,29 @@ def fix_database():
                 
         except Exception as e:
             print(f"❌ Erreur lors de la correction: {e}")
+            print(f"🔍 Type d'erreur: {type(e).__name__}")
             import traceback
             traceback.print_exc()
-            db.session.rollback()
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
             return False
 
 if __name__ == "__main__":
+    print("=" * 60)
+    print("🚀 SYNCHRONIE - SCRIPT DE CORRECTION DE BASE DE DONNÉES")
+    print("=" * 60)
+    
     success = fix_database()
-    exit(0 if success else 1)
+    
+    if success:
+        print("\n" + "=" * 60)
+        print("✅ CORRECTION TERMINÉE AVEC SUCCÈS")
+        print("=" * 60)
+        sys.exit(0)
+    else:
+        print("\n" + "=" * 60)
+        print("❌ ÉCHEC DE LA CORRECTION")
+        print("=" * 60)
+        sys.exit(1)

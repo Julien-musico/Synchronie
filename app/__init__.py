@@ -42,6 +42,9 @@ def create_app(config_name='default'):
         
         from app.routes.seances import seances as seances_blueprint
         app.register_blueprint(seances_blueprint, url_prefix='/seances')
+        
+        from app.routes.audio import audio as audio_blueprint
+        app.register_blueprint(audio_blueprint, url_prefix='/audio')
     except ImportError as e:
         # En cas d'erreur d'import, créer des routes de base
         print(f"Warning: Could not import blueprints: {e}")

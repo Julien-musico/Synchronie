@@ -6,3 +6,5 @@ python-dotenv==1.0.1
 openai==1.35.15
 gunicorn==21.2.0
 python-dateutil==2.8.2
+Werkzeug==3.0.3
+mutagen==1.47.0

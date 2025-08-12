@@ -36,6 +36,10 @@
                         Détails de la séance
                     </h5>
                     <div class="btn-group">
+                        <a href="{{ url_for('audio.upload_form', seance_id=seance.id) }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-mic me-1"></i>
+                            Audio
+                        </a>
                         <a href="{{ url_for('seances.edit_seance', seance_id=seance.id) }}" class="btn btn-outline-light btn-sm">
                             <i class="bi bi-pencil me-1"></i>
                             Modifier
@@ -163,6 +167,85 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Transcription et Analyse IA -->
+        {% if seance.transcription_audio or seance.synthese_ia %}
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-transparent border-0">
+                <ul class="nav nav-tabs card-header-tabs" id="audioTab" role="tablist">
+                    {% if seance.transcription_audio %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="transcription-tab" data-bs-toggle="tab" data-bs-target="#transcription-pane" type="button" role="tab">
+                            <i class="bi bi-file-text me-1"></i>
+                            Transcription
+                        </button>
+                    </li>
+                    {% endif %}
+                    {% if seance.synthese_ia %}
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {% if not seance.transcription_audio %}active{% endif %}" id="analyse-tab" data-bs-toggle="tab" data-bs-target="#analyse-pane" type="button" role="tab">
+                            <i class="bi bi-robot me-1"></i>
+                            Analyse IA
+                        </button>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="audioTabContent">
+                    {% if seance.transcription_audio %}
+                    <div class="tab-pane fade show active" id="transcription-pane" role="tabpanel">
+                        <div class="border-start border-primary border-3 ps-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-mic me-2"></i>
+                                Transcription automatique
+                            </h6>
+                            <div class="text-muted" style="line-height: 1.6; max-height: 400px; overflow-y: auto;">
+                                {{ seance.transcription_audio | nl2br | safe }}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('transcription')">
+                                <i class="bi bi-clipboard me-1"></i>
+                                Copier
+                            </button>
+                            {% if not seance.synthese_ia %}
+                            <button class="btn btn-sm btn-outline-primary" onclick="generateAnalysis({{ seance.id }})">
+                                <i class="bi bi-robot me-1"></i>
+                                Générer l'analyse IA
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if seance.synthese_ia %}
+                    <div class="tab-pane fade {% if not seance.transcription_audio %}show active{% endif %}" id="analyse-pane" role="tabpanel">
+                        <div class="border-start border-success border-3 ps-3">
+                            <h6 class="text-success mb-3">
+                                <i class="bi bi-robot me-2"></i>
+                                Analyse thérapeutique automatique
+                            </h6>
+                            <div style="line-height: 1.6; max-height: 400px; overflow-y: auto;">
+                                {{ seance.synthese_ia | nl2br | safe }}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('analyse')">
+                                <i class="bi bi-clipboard me-1"></i>
+                                Copier
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="regenerateAnalysis({{ seance.id }})">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                Régénérer
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Informations du patient -->
@@ -260,4 +343,76 @@
         </div>
     </div>
 </div>
+
+<script>
+// Fonctions pour les transcriptions et analyses IA
+function copyToClipboard(type) {
+    let textElement;
+    if (type === 'transcription') {
+        textElement = document.querySelector('#transcription-pane .text-muted');
+    } else {
+        textElement = document.querySelector('#analyse-pane > div > div');
+    }
+    
+    if (textElement) {
+        const text = textElement.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            // Feedback visuel
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check me-1"></i>Copié !';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+            }, 2000);
+        });
+    }
+}
+
+function generateAnalysis(seanceId) {
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    
+    // Désactiver le bouton et afficher le chargement
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Génération...';
+    
+    fetch(`/audio/analyze/${seanceId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Recharger la page pour afficher l'analyse
+            window.location.reload();
+        } else {
+            alert('Erreur lors de la génération de l\'analyse : ' + data.message);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur réseau lors de la génération de l\'analyse');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+
+function regenerateAnalysis(seanceId) {
+    if (!confirm('Êtes-vous sûr de vouloir régénérer l\'analyse ? L\'analyse actuelle sera remplacée.')) {
+        return;
+    }
+    
+    generateAnalysis(seanceId);
+}
+</script>
+
 {% endblock %}
