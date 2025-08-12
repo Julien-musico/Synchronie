@@ -70,9 +70,9 @@ class SeanceService:
     
     @staticmethod
     def get_seance_by_id(seance_id: int) -> Optional[Seance]:
-        """Récupérer une séance par son ID"""
+        """Récupérer une séance par son ID avec la relation patient"""
         try:
-            return Seance.query.get(seance_id)
+            return Seance.query.join(Patient).filter(Seance.id == seance_id).first()
         except Exception:
             return None
     

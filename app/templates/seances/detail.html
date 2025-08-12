@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Séance du {{ seance.date_seance.strftime('%d/%m/%Y') }} - {{ seance.patient.prenom }} {{ seance.patient.nom }} - Synchronie{% endblock %}
+{% block title %}Séance du {{ seance.date_seance.strftime('%d/%m/%Y') }} - {{ seance.patient.prenom if seance.patient else 'Patient' }} {{ seance.patient.nom if seance.patient else '' }} - Synchronie{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -12,7 +12,7 @@
                     Séance du {{ seance.date_seance.strftime('%d/%m/%Y à %H:%M') }}
                 </h1>
                 <p class="text-muted mb-0">
-                    Patient : {{ seance.patient.prenom }} {{ seance.patient.nom }}
+                    Patient : {{ seance.patient.prenom if seance.patient else 'Patient' }} {{ seance.patient.nom if seance.patient else '' }}
                 </p>
             </div>
             <div>
