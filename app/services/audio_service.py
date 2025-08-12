@@ -25,40 +25,46 @@ class AudioTranscriptionService:
         if not api_key:
             raise ValueError("OPENAI_API_KEY n'est pas configurée")
         
-        # Initialisation robuste du client OpenAI
+        # Initialisation robuste du client OpenAI avec gestion des problèmes de proxy
         try:
-            # Vérification de la version d'OpenAI
             import openai
             logger.info(f"Version OpenAI: {getattr(openai, '__version__', 'unknown')}")
             
-            # Initialisation avec seulement les arguments supportés
+            # Première tentative : initialisation standard
             self.client = OpenAI(api_key=api_key)
             logger.info("Client OpenAI initialisé avec succès")
             
         except TypeError as e:
             logger.warning(f"Erreur de type lors de l'initialisation OpenAI: {e}")
+            
+            # Si c'est un problème de proxy, essayer avec un client HTTP personnalisé
             if 'proxies' in str(e) or 'unexpected keyword argument' in str(e):
-                # Version ou environnement avec des arguments différents
-                logger.info("Tentative d'initialisation avec variable d'environnement")
-                os.environ['OPENAI_API_KEY'] = api_key
                 try:
-                    self.client = OpenAI()
-                    logger.info("Client OpenAI initialisé via variable d'environnement")
+                    import httpx
+                    logger.info("Tentative avec client HTTP personnalisé sans proxy")
+                    
+                    # Créer un client HTTP sans configuration de proxy
+                    http_client = httpx.Client()
+                    self.client = OpenAI(api_key=api_key, http_client=http_client)
+                    logger.info("Client OpenAI initialisé avec client HTTP personnalisé")
+                    
                 except Exception as e2:
-                    logger.error(f"Échec de l'initialisation alternative: {e2}")
-                    raise ValueError(f"Impossible d'initialiser le client OpenAI: {e2}")
+                    logger.warning(f"Échec avec client HTTP personnalisé: {e2}")
+                    
+                    # Dernière tentative : utiliser la variable d'environnement
+                    try:
+                        os.environ['OPENAI_API_KEY'] = api_key
+                        self.client = OpenAI()
+                        logger.info("Client OpenAI initialisé via variable d'environnement")
+                    except Exception as e3:
+                        logger.error(f"Toutes les tentatives ont échoué: {e3}")
+                        raise ValueError(f"Impossible d'initialiser le client OpenAI. Erreur de proxy/httpx: {e}")
             else:
                 raise e
+                
         except Exception as e:
-            logger.error(f"Erreur d'initialisation du client OpenAI: {e}")
-            # Dernière tentative avec la clé API en variable d'environnement
-            os.environ['OPENAI_API_KEY'] = api_key
-            try:
-                self.client = OpenAI()
-                logger.info("Client OpenAI initialisé via fallback")
-            except Exception as e2:
-                logger.error(f"Échec de toutes les tentatives d'initialisation: {e2}")
-                raise ValueError(f"Impossible d'initialiser le client OpenAI: {e2}")
+            logger.error(f"Erreur inattendue lors de l'initialisation: {e}")
+            raise ValueError(f"Impossible d'initialiser le client OpenAI: {e}")
     
     @staticmethod
     def is_allowed_file(filename: str) -> bool:
