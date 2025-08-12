@@ -7,6 +7,23 @@ from app.services.seance_service import SeanceService
 
 seances = Blueprint('seances', __name__)
 
+@seances.route('/')
+def list_seances():
+    """Liste de toutes les séances"""
+    seances_list = SeanceService.get_all_seances()
+    return render_template('seances/list.html', seances=seances_list)
+
+@seances.route('/patient/<int:patient_id>')
+def list_seances_patient(patient_id):
+    """Liste des séances d'un patient spécifique"""
+    patient = PatientService.get_patient_by_id(patient_id)
+    if not patient:
+        flash('Patient non trouvé', 'error')
+        return redirect(url_for('patients.list_patients'))
+    
+    seances_list = SeanceService.get_seances_by_patient(patient_id)
+    return render_template('seances/list.html', seances=seances_list, patient=patient)
+
 @seances.route('/patient/<int:patient_id>/nouvelle')
 def new_seance(patient_id):
     """Formulaire de création d'une nouvelle séance"""

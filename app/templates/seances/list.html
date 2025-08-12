@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if patient %}
+        Séances de {{ patient.prenom }} {{ patient.nom }} - Synchronie
+    {% else %}
+        Toutes les séances - Synchronie
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-calendar-week text-primary me-2"></i>
+                    {% if patient %}
+                        Séances de {{ patient.prenom }} {{ patient.nom }}
+                    {% else %}
+                        Toutes les séances
+                    {% endif %}
+                </h1>
+                <p class="text-muted mb-0">
+                    {% if patient %}
+                        Historique des séances de musicothérapie pour ce patient
+                    {% else %}
+                        Historique complet des séances de musicothérapie
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                {% if patient %}
+                    <a href="{{ url_for('seances.new_seance', patient_id=patient.id) }}" class="btn btn-primary me-2">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Nouvelle séance
+                    </a>
+                    <a href="{{ url_for('patients.view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Retour au patient
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-people me-2"></i>
+                        Voir les patients
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques rapides -->
+{% if seances %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-0">Total séances</h6>
+                        <h4 class="mb-0">{{ seances|length }}</h4>
+                    </div>
+                    <div class="ms-3">
+                        <i class="bi bi-calendar-check fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if patient %}
+    <div class="col-md-3">
+        <div class="card bg-success text-white border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-0">Dernière séance</h6>
+                        <h6 class="mb-0">{{ seances[0].date_seance.strftime('%d/%m/%Y') if seances else 'Aucune' }}</h6>
+                    </div>
+                    <div class="ms-3">
+                        <i class="bi bi-clock-history fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-0">Durée moyenne</h6>
+                        {% set durees = seances | selectattr('duree_minutes') | list %}
+                        {% if durees %}
+                            {% set moyenne = (durees | sum(attribute='duree_minutes')) / (durees | length) %}
+                            <h6 class="mb-0">{{ moyenne|round|int }} min</h6>
+                        {% else %}
+                            <h6 class="mb-0">-</h6>
+                        {% endif %}
+                    </div>
+                    <div class="ms-3">
+                        <i class="bi bi-stopwatch fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark border-0">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title mb-0">Score moyen</h6>
+                        {% set scores = seances | selectattr('score_engagement') | list %}
+                        {% if scores %}
+                            {% set moyenne_score = (scores | sum(attribute='score_engagement')) / (scores | length) %}
+                            <h6 class="mb-0">{{ moyenne_score|round(1) }}/10</h6>
+                        {% else %}
+                            <h6 class="mb-0">-</h6>
+                        {% endif %}
+                    </div>
+                    <div class="ms-3">
+                        <i class="bi bi-star-fill fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Liste des séances -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-list-ul text-primary me-2"></i>
+                    Liste des séances
+                </h5>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-funnel me-1"></i>
+                        Filtrer
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="filterSeances('all')">Toutes les séances</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterSeances('musicothérapie')">Musicothérapie</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterSeances('improvisation')">Improvisation</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterSeances('écoute')">Écoute musicale</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterSeances('chant')">Chant</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterSeances('instrument')">Pratique instrumentale</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card-body p-0">
+                {% if seances %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Date et heure</th>
+                                    {% if not patient %}
+                                        <th scope="col">Patient</th>
+                                    {% endif %}
+                                    <th scope="col">Type</th>
+                                    <th scope="col">Durée</th>
+                                    <th scope="col">Engagement</th>
+                                    <th scope="col">Objectifs</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for seance in seances %}
+                                <tr class="seance-row" data-type="{{ seance.type_seance or 'autre' }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-calendar-event text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ seance.date_seance.strftime('%d/%m/%Y') }}</div>
+                                                <small class="text-muted">{{ seance.date_seance.strftime('%H:%M') }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    {% if not patient %}
+                                    <td>
+                                        <div>
+                                            <div class="fw-semibold">{{ seance.patient.prenom }} {{ seance.patient.nom }}</div>
+                                            {% if seance.patient.pathologie %}
+                                                <small class="text-muted">{{ seance.patient.pathologie }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    {% endif %}
+                                    <td>
+                                        {% if seance.type_seance %}
+                                            {% if seance.type_seance == 'musicothérapie' %}
+                                                <span class="badge bg-primary">{{ seance.type_seance.title() }}</span>
+                                            {% elif seance.type_seance == 'improvisation' %}
+                                                <span class="badge bg-success">{{ seance.type_seance.title() }}</span>
+                                            {% elif seance.type_seance == 'écoute' %}
+                                                <span class="badge bg-info">Écoute musicale</span>
+                                            {% elif seance.type_seance == 'chant' %}
+                                                <span class="badge bg-warning text-dark">{{ seance.type_seance.title() }}</span>
+                                            {% elif seance.type_seance == 'instrument' %}
+                                                <span class="badge bg-secondary">Pratique instrumentale</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ seance.type_seance.title() }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">Non spécifié</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if seance.duree_minutes %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-clock me-1"></i>
+                                                {{ seance.duree_minutes }} min
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if seance.score_engagement %}
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                    <div class="progress-bar 
+                                                        {% if seance.score_engagement >= 8 %}bg-success
+                                                        {% elif seance.score_engagement >= 6 %}bg-warning
+                                                        {% else %}bg-danger{% endif %}" 
+                                                        style="width: {{ (seance.score_engagement / 10) * 100 }}%"></div>
+                                                </div>
+                                                <small class="fw-bold">{{ seance.score_engagement }}/10</small>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if seance.objectifs_seance %}
+                                            <span class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ seance.objectifs_seance }}">
+                                                {{ seance.objectifs_seance }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">Aucun objectif défini</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('seances.view_seance', seance_id=seance.id) }}" 
+                                               class="btn btn-outline-primary" title="Voir la séance">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('seances.edit_seance', seance_id=seance.id) }}" 
+                                               class="btn btn-outline-secondary" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">Aucune séance trouvée</h5>
+                        <p class="text-muted mb-4">
+                            {% if patient %}
+                                Aucune séance n'a encore été enregistrée pour {{ patient.prenom }} {{ patient.nom }}.
+                            {% else %}
+                                Aucune séance n'a encore été enregistrée dans le système.
+                            {% endif %}
+                        </p>
+                        {% if patient %}
+                            <a href="{{ url_for('seances.new_seance', patient_id=patient.id) }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Créer la première séance
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Fonction de filtrage des séances
+function filterSeances(type) {
+    const rows = document.querySelectorAll('.seance-row');
+    
+    rows.forEach(row => {
+        if (type === 'all' || row.dataset.type === type) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Mettre à jour le bouton de filtre
+    const filterButton = document.querySelector('.dropdown-toggle');
+    if (type === 'all') {
+        filterButton.innerHTML = '<i class="bi bi-funnel me-1"></i> Filtrer';
+    } else {
+        filterButton.innerHTML = `<i class="bi bi-funnel-fill me-1"></i> ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    }
+}
+
+// Initialiser les tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}
