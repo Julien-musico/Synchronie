@@ -39,6 +39,9 @@ def create_app(config_name='default'):
         
         from app.routes.patients import patients as patients_blueprint
         app.register_blueprint(patients_blueprint, url_prefix='/patients')
+        
+        from app.routes.seances import seances as seances_blueprint
+        app.register_blueprint(seances_blueprint, url_prefix='/seances')
     except ImportError as e:
         # En cas d'erreur d'import, créer des routes de base
         print(f"Warning: Could not import blueprints: {e}")

@@ -1,6 +1,7 @@
 """
 Routes pour la gestion des patients (interface web)
 """
+from datetime import datetime
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from app.services.patient_service import PatientService
 
@@ -38,7 +39,8 @@ def view_patient(patient_id):
         flash('Patient non trouvé', 'error')
         return redirect(url_for('patients.list_patients'))
     
-    return render_template('patients/detail.html', patient=patient)
+    # Rendre la fonction datetime disponible dans le template
+    return render_template('patients/detail.html', patient=patient, now=datetime.now)
 
 @patients.route('/<int:patient_id>/modifier')
 def edit_patient(patient_id):

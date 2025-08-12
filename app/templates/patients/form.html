@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} un patient - Synchronie{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Header -->
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-person-{{ 'plus' if not patient else 'pencil' }} text-primary me-2"></i>
+                    {{ action }} un patient
+                </h1>
+                <p class="text-muted mb-0">
+                    {% if patient %}
+                        Modifier les informations de {{ patient.prenom }} {{ patient.nom }}
+                    {% else %}
+                        Ajouter un nouveau patient à votre suivi
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Retour à la liste
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('patients.create_patient') if not patient else url_for('patients.update_patient', patient_id=patient.id) }}" class="form-validate">
+                    
+                    <!-- Informations principales -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-person-badge text-primary me-2"></i>
+                                Informations principales
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="prenom" class="form-label">
+                                Prénom <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="prenom" 
+                                   name="prenom" 
+                                   value="{{ (data.prenom if data else patient.prenom if patient else '') }}"
+                                   required
+                                   placeholder="Prénom du patient">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="nom" class="form-label">
+                                Nom <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nom" 
+                                   name="nom" 
+                                   value="{{ (data.nom if data else patient.nom if patient else '') }}"
+                                   required
+                                   placeholder="Nom de famille">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="date_naissance" class="form-label">
+                                Date de naissance
+                            </label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="date_naissance" 
+                                   name="date_naissance" 
+                                   value="{{ (data.date_naissance if data else patient.date_naissance.strftime('%Y-%m-%d') if patient and patient.date_naissance else '') }}">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="pathologie" class="form-label">
+                                Pathologie principale
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="pathologie" 
+                                   name="pathologie" 
+                                   value="{{ (data.pathologie if data else patient.pathologie if patient else '') }}"
+                                   placeholder="Ex: Trouble autistique, Démence, Depression...">
+                        </div>
+                    </div>
+
+                    <!-- Informations de contact -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-telephone text-primary me-2"></i>
+                                Contact
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="telephone" class="form-label">
+                                Téléphone
+                            </label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="telephone" 
+                                   name="telephone" 
+                                   value="{{ (data.telephone if data else patient.telephone if patient else '') }}"
+                                   placeholder="01 23 45 67 89">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                Email
+                            </label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   value="{{ (data.email if data else patient.email if patient else '') }}"
+                                   placeholder="patient@example.com">
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="adresse" class="form-label">
+                                Adresse
+                            </label>
+                            <textarea class="form-control" 
+                                      id="adresse" 
+                                      name="adresse" 
+                                      rows="2" 
+                                      placeholder="Adresse complète">{{ (data.adresse if data else patient.adresse if patient else '') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Informations thérapeutiques -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-heart-pulse text-primary me-2"></i>
+                                Informations thérapeutiques
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="objectifs_therapeutiques" class="form-label">
+                                Objectifs thérapeutiques
+                            </label>
+                            <textarea class="form-control" 
+                                      id="objectifs_therapeutiques" 
+                                      name="objectifs_therapeutiques" 
+                                      rows="3" 
+                                      placeholder="Décrivez les objectifs principaux pour ce patient...">{{ (data.objectifs_therapeutiques if data else patient.objectifs_therapeutiques if patient else '') }}</textarea>
+                        </div>
+                        
+                        <div class="col-12 mb-3">
+                            <label for="commentaires" class="form-label">
+                                Commentaires et observations
+                            </label>
+                            <textarea class="form-control" 
+                                      id="commentaires" 
+                                      name="commentaires" 
+                                      rows="3" 
+                                      placeholder="Notes importantes, comportements observés, etc.">{{ (data.commentaires if data else patient.commentaires if patient else '') }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    {% if patient %}
+                                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#archiveModal">
+                                            <i class="bi bi-archive me-2"></i>
+                                            Archiver le patient
+                                        </button>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-secondary me-3">
+                                        Annuler
+                                    </a>
+                                    <button type="submit" class="btn btn-primary btn-loading" data-loading="Sauvegarde...">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        {{ action }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'archivage -->
+{% if patient %}
+<div class="modal fade" id="archiveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-archive text-warning me-2"></i>
+                    Archiver le patient
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir archiver <strong>{{ patient.prenom }} {{ patient.nom }}</strong> ?</p>
+                <p class="text-muted small">
+                    Le patient sera marqué comme inactif mais ses données seront conservées. 
+                    Vous pourrez le réactiver à tout moment.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Annuler
+                </button>
+                <button type="button" class="btn btn-warning" onclick="archivePatient({{ patient.id }})">
+                    <i class="bi bi-archive me-2"></i>
+                    Archiver
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validation en temps réel
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.form-validate');
+    const inputs = form.querySelectorAll('input[required]');
+    
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+    });
+});
+
+function validateField(field) {
+    if (field.hasAttribute('required') && !field.value.trim()) {
+        field.classList.add('is-invalid');
+        showFieldError(field, 'Ce champ est obligatoire');
+    } else {
+        field.classList.remove('is-invalid');
+        clearFieldError(field);
+    }
+}
+
+function showFieldError(field, message) {
+    let feedback = field.parentNode.querySelector('.invalid-feedback');
+    if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback';
+        field.parentNode.appendChild(feedback);
+    }
+    feedback.textContent = message;
+}
+
+function clearFieldError(field) {
+    const feedback = field.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.remove();
+    }
+}
+
+{% if patient %}
+async function archivePatient(patientId) {
+    try {
+        const response = await SynchronieUtils.apiCall(`/api/patients/${patientId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ actif: false })
+        });
+        
+        if (response.success) {
+            SynchronieUtils.showAlert('Patient archivé avec succès', 'success');
+            setTimeout(() => {
+                window.location.href = "{{ url_for('patients.list_patients') }}";
+            }, 1500);
+        }
+    } catch (error) {
+        SynchronieUtils.showAlert('Erreur lors de l\'archivage', 'danger');
+    }
+}
+{% endif %}
+</script>
+{% endblock %}

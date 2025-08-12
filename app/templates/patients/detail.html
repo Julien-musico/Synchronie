@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}{{ patient.prenom }} {{ patient.nom }} - Synchronie{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Header avec informations patient -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow-sm bg-gradient-primary text-white">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="bi bi-person fs-2"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h1 class="h2 mb-1">{{ patient.prenom }} {{ patient.nom }}</h1>
+                            <div class="d-flex flex-wrap gap-3">
+                                {% if patient.date_naissance %}
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-calendar me-1"></i>
+                                        Né(e) le {{ patient.date_naissance.strftime('%d/%m/%Y') }}
+                                    </span>
+                                {% endif %}
+                                {% if patient.pathologie %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-heart-pulse me-1"></i>
+                                        {{ patient.pathologie }}
+                                    </span>
+                                {% endif %}
+                                <span class="badge bg-{{ 'success' if patient.actif else 'secondary' }}">
+                                    <i class="bi bi-{{ 'check-circle' if patient.actif else 'archive' }} me-1"></i>
+                                    {{ 'Actif' if patient.actif else 'Archivé' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('patients.edit_patient', patient_id=patient.id) }}" class="btn btn-light">
+                                <i class="bi bi-pencil me-2"></i>
+                                Modifier
+                            </a>
+                            <a href="{{ url_for('seances.new_seance', patient_id=patient.id) }}" class="btn btn-success">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Nouvelle séance
+                            </a>
+                        </div>
+                        <div class="mt-2">
+                            <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-light btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i>
+                                Retour à la liste
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Statistiques rapides -->
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="bi bi-file-music text-primary fs-4"></i>
+                </div>
+                <h3 class="mb-1">{{ patient.seances|length }}</h3>
+                <p class="text-muted mb-0">Séances réalisées</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="bi bi-calendar-week text-success fs-4"></i>
+                </div>
+                <h3 class="mb-1">
+                    {% if patient.seances %}
+                        {% set derniere_seance = patient.seances|sort(attribute='date_seance', reverse=true)|first %}
+                        {{ (((now() - derniere_seance.date_seance).days / 7) | round(0)) | int }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </h3>
+                <p class="text-muted mb-0">Semaines depuis dernière séance</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="bi bi-graph-up text-info fs-4"></i>
+                </div>
+                <h3 class="mb-1">
+                    {% if patient.seances %}
+                        {% set scores = patient.seances|selectattr('score_engagement')|list %}
+                        {% if scores %}
+                            {{ (scores|sum(attribute='score_engagement') / scores|length) | round(1) }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </h3>
+                <p class="text-muted mb-0">Score engagement moyen</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                    <i class="bi bi-clock text-warning fs-4"></i>
+                </div>
+                <h3 class="mb-1">
+                    {% if patient.seances %}
+                        {% set durees = patient.seances|selectattr('duree_minutes')|list %}
+                        {% if durees %}
+                            {{ (durees|sum(attribute='duree_minutes') / durees|length) | round(0) | int }}min
+                        {% else %}
+                            -
+                        {% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </h3>
+                <p class="text-muted mb-0">Durée moyenne séance</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-4">
+    <!-- Informations détaillées -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-clipboard-data text-primary me-2"></i>
+                    Informations détaillées
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2">Contact</h6>
+                        {% if patient.telephone %}
+                            <p class="mb-2">
+                                <i class="bi bi-telephone text-muted me-2"></i>
+                                <a href="tel:{{ patient.telephone }}" class="text-decoration-none">{{ patient.telephone }}</a>
+                            </p>
+                        {% endif %}
+                        {% if patient.email %}
+                            <p class="mb-2">
+                                <i class="bi bi-envelope text-muted me-2"></i>
+                                <a href="mailto:{{ patient.email }}" class="text-decoration-none">{{ patient.email }}</a>
+                            </p>
+                        {% endif %}
+                        {% if patient.adresse %}
+                            <p class="mb-0">
+                                <i class="bi bi-geo-alt text-muted me-2"></i>
+                                {{ patient.adresse|replace('\n', '<br>')|safe }}
+                            </p>
+                        {% endif %}
+                        {% if not patient.telephone and not patient.email and not patient.adresse %}
+                            <p class="text-muted fst-italic">Aucune information de contact renseignée</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2">Suivi</h6>
+                        <p class="mb-2">
+                            <strong>Créé le :</strong> {{ patient.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                        </p>
+                        <p class="mb-0">
+                            <strong>Modifié le :</strong> {{ patient.date_modification.strftime('%d/%m/%Y à %H:%M') }}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if patient.objectifs_therapeutiques %}
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-2">Objectifs thérapeutiques</h6>
+                    <p class="mb-0">{{ patient.objectifs_therapeutiques|replace('\n', '<br>')|safe }}</p>
+                {% endif %}
+                
+                {% if patient.commentaires %}
+                    <hr class="my-4">
+                    <h6 class="text-muted mb-2">Commentaires</h6>
+                    <p class="mb-0">{{ patient.commentaires|replace('\n', '<br>')|safe }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning text-primary me-2"></i>
+                    Actions rapides
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('seances.new_seance', patient_id=patient.id) }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Nouvelle séance
+                    </a>
+                    <button class="btn btn-outline-success">
+                        <i class="bi bi-upload me-2"></i>
+                        Traiter enregistrement
+                    </button>
+                    <button class="btn btn-outline-info">
+                        <i class="bi bi-file-text me-2"></i>
+                        Générer rapport
+                    </button>
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-clipboard-data me-2"></i>
+                        Grille de cotation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historique des séances -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history text-primary me-2"></i>
+                        Historique des séances
+                    </h5>
+                    <a href="{{ url_for('seances.new_seance', patient_id=patient.id) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus me-2"></i>
+                        Nouvelle séance
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if patient.seances %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Durée</th>
+                                    <th>Engagement</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for seance in patient.seances|sort(attribute='date_seance', reverse=true) %}
+                                <tr>
+                                    <td>{{ seance.date_seance.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">
+                                            {{ seance.type_seance or 'Non spécifié' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if seance.duree_minutes %}
+                                            {{ seance.duree_minutes }}min
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if seance.score_engagement %}
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                    <div class="progress-bar bg-primary" style="width: {{ (seance.score_engagement * 10) }}%"></div>
+                                                </div>
+                                                <small>{{ seance.score_engagement }}/10</small>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary" title="Voir la séance">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-secondary" title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <div class="mb-3">
+                            <i class="bi bi-file-music display-4 text-muted"></i>
+                        </div>
+                        <h6 class="text-muted">Aucune séance enregistrée</h6>
+                        <p class="text-muted mb-3">Commencez par créer la première séance pour ce patient.</p>
+                        <a href="{{ url_for('seances.new_seance', patient_id=patient.id) }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Première séance
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
