@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Nouvelle séance - {{ patient.prenom }} {{ patient.nom }} - Synchronie{% endblock %}
+{% block title %}
+    {% if mode == 'edit' %}
+        Modifier séance - {{ patient.prenom }} {{ patient.nom }} - Synchronie
+    {% else %}
+        Nouvelle séance - {{ patient.prenom }} {{ patient.nom }} - Synchronie
+    {% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -9,7 +15,11 @@
             <div>
                 <h1 class="h2 mb-0">
                     <i class="bi bi-file-music text-primary me-2"></i>
-                    Nouvelle séance
+                    {% if mode == 'edit' %}
+                        Modifier la séance
+                    {% else %}
+                        Nouvelle séance
+                    {% endif %}
                 </h1>
                 <p class="text-muted mb-0">
                     Patient : {{ patient.prenom }} {{ patient.nom }}
@@ -28,17 +38,23 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-primary text-white">
                 <h5 class="card-title mb-0">
-                    <i class="bi bi-plus-circle me-2"></i>
-                    Enregistrer une nouvelle séance
+                    {% if mode == 'edit' %}
+                        <i class="bi bi-pencil me-2"></i>
+                        Modifier la séance
+                    {% else %}
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Enregistrer une nouvelle séance
+                    {% endif %}
                 </h5>
             </div>
             <div class="card-body">
-                <form action="{{ url_for('seances.create_seance', patient_id=patient.id) }}" method="post">
+                <form action="{% if mode == 'edit' %}{{ url_for('seances.update_seance', seance_id=seance.id) }}{% else %}{{ url_for('seances.create_seance', patient_id=patient.id) }}{% endif %}" method="post">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="date_seance" class="form-label">Date et heure de la séance</label>
-                                <input type="datetime-local" class="form-control" id="date_seance" name="date_seance" required>
+                                <input type="datetime-local" class="form-control" id="date_seance" name="date_seance" 
+                                       value="{% if seance %}{{ seance.date_seance.strftime('%Y-%m-%dT%H:%M') }}{% elif data %}{{ data.date_seance }}{% endif %}" required>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -46,12 +62,13 @@
                                 <label for="type_seance" class="form-label">Type de séance</label>
                                 <select class="form-select" id="type_seance" name="type_seance">
                                     <option value="">Sélectionner...</option>
-                                    <option value="musicothérapie">Musicothérapie</option>
-                                    <option value="improvisation">Improvisation</option>
-                                    <option value="écoute">Écoute musicale</option>
-                                    <option value="chant">Chant</option>
-                                    <option value="instrument">Pratique instrumentale</option>
-                                    <option value="autre">Autre</option>
+                                    {% set current_type = seance.type_seance if seance else (data.type_seance if data else '') %}
+                                    <option value="musicothérapie" {{ 'selected' if current_type == 'musicothérapie' else '' }}>Musicothérapie</option>
+                                    <option value="improvisation" {{ 'selected' if current_type == 'improvisation' else '' }}>Improvisation</option>
+                                    <option value="écoute" {{ 'selected' if current_type == 'écoute' else '' }}>Écoute musicale</option>
+                                    <option value="chant" {{ 'selected' if current_type == 'chant' else '' }}>Chant</option>
+                                    <option value="instrument" {{ 'selected' if current_type == 'instrument' else '' }}>Pratique instrumentale</option>
+                                    <option value="autre" {{ 'selected' if current_type == 'autre' else '' }}>Autre</option>
                                 </select>
                             </div>
                         </div>
@@ -61,16 +78,18 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="duree_minutes" class="form-label">Durée (minutes)</label>
-                                <input type="number" class="form-control" id="duree_minutes" name="duree_minutes" min="1" max="180" placeholder="45">
+                                <input type="number" class="form-control" id="duree_minutes" name="duree_minutes" min="1" max="180" 
+                                       value="{% if seance %}{{ seance.duree_minutes or '' }}{% elif data %}{{ data.duree_minutes or '' }}{% endif %}" placeholder="45">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="score_engagement" class="form-label">Score d'engagement (1-10)</label>
-                                <input type="range" class="form-range" id="score_engagement" name="score_engagement" min="1" max="10" step="1" value="5">
+                                {% set current_score = seance.score_engagement if seance else (data.score_engagement if data else 5) %}
+                                <input type="range" class="form-range" id="score_engagement" name="score_engagement" min="1" max="10" step="1" value="{{ current_score }}">
                                 <div class="d-flex justify-content-between">
                                     <small class="text-muted">1</small>
-                                    <small id="score_value" class="fw-bold">5</small>
+                                    <small id="score_value" class="fw-bold">{{ current_score }}</small>
                                     <small class="text-muted">10</small>
                                 </div>
                             </div>
@@ -79,17 +98,20 @@
 
                     <div class="mb-3">
                         <label for="objectifs_seance" class="form-label">Objectifs de la séance</label>
-                        <textarea class="form-control" id="objectifs_seance" name="objectifs_seance" rows="3" placeholder="Décrire les objectifs spécifiques de cette séance..."></textarea>
+                        <textarea class="form-control" id="objectifs_seance" name="objectifs_seance" rows="3" 
+                                  placeholder="Décrire les objectifs spécifiques de cette séance...">{% if seance %}{{ seance.objectifs_seance or '' }}{% elif data %}{{ data.objectifs_seance or '' }}{% endif %}</textarea>
                     </div>
 
                     <div class="mb-3">
                         <label for="activites_realisees" class="form-label">Activités réalisées</label>
-                        <textarea class="form-control" id="activites_realisees" name="activites_realisees" rows="4" placeholder="Décrire les activités qui ont été réalisées pendant la séance..."></textarea>
+                        <textarea class="form-control" id="activites_realisees" name="activites_realisees" rows="4" 
+                                  placeholder="Décrire les activités qui ont été réalisées pendant la séance...">{% if seance %}{{ seance.activites_realisees or '' }}{% elif data %}{{ data.activites_realisees or '' }}{% endif %}</textarea>
                     </div>
 
                     <div class="mb-3">
                         <label for="observations" class="form-label">Observations et notes</label>
-                        <textarea class="form-control" id="observations" name="observations" rows="4" placeholder="Observations comportementales, réactions du patient, points d'attention..."></textarea>
+                        <textarea class="form-control" id="observations" name="observations" rows="4" 
+                                  placeholder="Observations comportementales, réactions du patient, points d'attention...">{% if seance %}{{ seance.observations or '' }}{% elif data %}{{ data.observations or '' }}{% endif %}</textarea>
                     </div>
 
                     <div class="row">
@@ -97,14 +119,28 @@
                             <div class="mb-3">
                                 <label for="fichier_audio" class="form-label">Enregistrement audio (optionnel)</label>
                                 <input type="file" class="form-control" id="fichier_audio" name="fichier_audio" accept="audio/*">
-                                <div class="form-text">Formats acceptés : MP3, WAV, OGG</div>
+                                {% if seance and seance.fichier_audio %}
+                                    <div class="form-text">
+                                        <i class="bi bi-file-earmark-music text-success me-1"></i>
+                                        Fichier actuel : {{ seance.fichier_audio }}
+                                    </div>
+                                {% else %}
+                                    <div class="form-text">Formats acceptés : MP3, WAV, OGG</div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="fichier_video" class="form-label">Enregistrement vidéo (optionnel)</label>
                                 <input type="file" class="form-control" id="fichier_video" name="fichier_video" accept="video/*">
-                                <div class="form-text">Formats acceptés : MP4, AVI, MOV</div>
+                                {% if seance and seance.fichier_video %}
+                                    <div class="form-text">
+                                        <i class="bi bi-file-earmark-play text-info me-1"></i>
+                                        Fichier actuel : {{ seance.fichier_video }}
+                                    </div>
+                                {% else %}
+                                    <div class="form-text">Formats acceptés : MP4, AVI, MOV</div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -117,8 +153,13 @@
                             Annuler
                         </a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-save me-2"></i>
-                            Enregistrer la séance
+                            {% if mode == 'edit' %}
+                                <i class="bi bi-save me-2"></i>
+                                Mettre à jour
+                            {% else %}
+                                <i class="bi bi-save me-2"></i>
+                                Enregistrer la séance
+                            {% endif %}
                         </button>
                     </div>
                 </form>

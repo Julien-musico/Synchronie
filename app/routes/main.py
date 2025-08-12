@@ -3,6 +3,7 @@ Routes principales de l'application
 """
 from flask import Blueprint, render_template
 from app.services.patient_service import PatientService
+from app.services.seance_service import SeanceService
 
 main = Blueprint('main', __name__)
 
@@ -18,11 +19,22 @@ def dashboard():
     patients = PatientService.get_all_patients()
     patients_actifs = [p for p in patients if p.actif]
     
+    # Statistiques des séances
+    seances_stats = SeanceService.get_seances_statistics()
+    
     stats = {
         'total_patients': len(patients),
         'patients_actifs': len(patients_actifs),
-        'total_seances': sum(len(p.seances) for p in patients),
-        'seances_ce_mois': 0  # TODO: calculer les séances du mois en cours
+        'total_seances': seances_stats['total_seances'],
+        'seances_ce_mois': seances_stats['seances_ce_mois'],
+        'duree_moyenne': seances_stats['duree_moyenne'],
+        'engagement_moyen': seances_stats['engagement_moyen']
     }
     
-    return render_template('dashboard.html', stats=stats, patients_recents=patients[:5])
+    # Séances récentes
+    seances_recentes = SeanceService.get_recent_seances(5)
+    
+    return render_template('dashboard.html', 
+                         stats=stats, 
+                         patients_recents=patients[:5],
+                         seances_recentes=seances_recentes)

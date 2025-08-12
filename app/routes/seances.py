@@ -1,9 +1,9 @@
 """
 Routes pour la gestion des séances
 """
-from datetime import datetime
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from app.services.patient_service import PatientService
+from app.services.seance_service import SeanceService
 
 seances = Blueprint('seances', __name__)
 
@@ -26,20 +26,63 @@ def create_seance(patient_id):
         return redirect(url_for('patients.list_patients'))
     
     data = request.form.to_dict()
-    # TODO: Implémenter la création de séance via SeanceService
-    flash('Fonctionnalité en cours de développement', 'info')
-    return redirect(url_for('patients.view_patient', patient_id=patient_id))
+    success, message, seance = SeanceService.create_seance(patient_id, data)
+    
+    if success:
+        flash(message, 'success')
+        return redirect(url_for('patients.view_patient', patient_id=patient_id))
+    else:
+        flash(message, 'error')
+        return render_template('seances/form.html', patient=patient, seance=None, mode='create', data=data)
 
 @seances.route('/<int:seance_id>')
 def view_seance(seance_id):
     """Affichage d'une séance"""
-    # TODO: Implémenter la récupération de séance via SeanceService
-    flash('Fonctionnalité en cours de développement', 'info')
-    return redirect(url_for('main.dashboard'))
+    seance = SeanceService.get_seance_by_id(seance_id)
+    if not seance:
+        flash('Séance non trouvée', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    return render_template('seances/detail.html', seance=seance)
 
 @seances.route('/<int:seance_id>/modifier')
 def edit_seance(seance_id):
     """Formulaire de modification d'une séance"""
-    # TODO: Implémenter la récupération de séance via SeanceService
-    flash('Fonctionnalité en cours de développement', 'info')
-    return redirect(url_for('main.dashboard'))
+    seance = SeanceService.get_seance_by_id(seance_id)
+    if not seance:
+        flash('Séance non trouvée', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit')
+
+@seances.route('/<int:seance_id>/update', methods=['POST'])
+def update_seance(seance_id):
+    """Traitement de la modification d'une séance"""
+    seance = SeanceService.get_seance_by_id(seance_id)
+    if not seance:
+        flash('Séance non trouvée', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    data = request.form.to_dict()
+    success, message, updated_seance = SeanceService.update_seance(seance_id, data)
+    
+    if success:
+        flash(message, 'success')
+        return redirect(url_for('seances.view_seance', seance_id=seance_id))
+    else:
+        flash(message, 'error')
+        return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit', data=data)
+
+@seances.route('/<int:seance_id>/delete', methods=['POST'])
+def delete_seance(seance_id):
+    """Suppression d'une séance"""
+    seance = SeanceService.get_seance_by_id(seance_id)
+    if not seance:
+        flash('Séance non trouvée', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    patient_id = seance.patient_id
+    success, message = SeanceService.delete_seance(seance_id)
+    
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('patients.view_patient', patient_id=patient_id))

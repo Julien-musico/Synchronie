@@ -55,7 +55,7 @@
                     </div>
                     <div class="flex-grow-1 ms-3">
                         <h6 class="card-subtitle text-muted mb-1">Séances ce mois</h6>
-                        <h3 class="card-title mb-0">24</h3>
+                        <h3 class="card-title mb-0">{{ stats.seances_ce_mois if stats else 0 }}</h3>
                     </div>
                 </div>
             </div>
@@ -72,8 +72,8 @@
                         </div>
                     </div>
                     <div class="flex-grow-1 ms-3">
-                        <h6 class="card-subtitle text-muted mb-1">Analyses IA</h6>
-                        <h3 class="card-title mb-0">18</h3>
+                        <h6 class="card-subtitle text-muted mb-1">Total séances</h6>
+                        <h3 class="card-title mb-0">{{ stats.total_seances if stats else 0 }}</h3>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Séance du {{ seance.date_seance.strftime('%d/%m/%Y') }} - {{ seance.patient.prenom }} {{ seance.patient.nom }} - Synchronie{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-file-music text-primary me-2"></i>
+                    Séance du {{ seance.date_seance.strftime('%d/%m/%Y à %H:%M') }}
+                </h1>
+                <p class="text-muted mb-0">
+                    Patient : {{ seance.patient.prenom }} {{ seance.patient.nom }}
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('patients.view_patient', patient_id=seance.patient_id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Retour au patient
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Informations principales -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Détails de la séance
+                    </h5>
+                    <div class="btn-group">
+                        <a href="{{ url_for('seances.edit_seance', seance_id=seance.id) }}" class="btn btn-outline-light btn-sm">
+                            <i class="bi bi-pencil me-1"></i>
+                            Modifier
+                        </a>
+                        <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            <i class="bi bi-trash me-1"></i>
+                            Supprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Date et heure</label>
+                            <p class="mb-0">{{ seance.date_seance.strftime('%d/%m/%Y à %H:%M') }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Type de séance</label>
+                            <p class="mb-0">
+                                {% if seance.type_seance %}
+                                    <span class="badge bg-light text-dark">{{ seance.type_seance }}</span>
+                                {% else %}
+                                    <span class="text-muted fst-italic">Non spécifié</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Durée</label>
+                            <p class="mb-0">
+                                {% if seance.duree_minutes %}
+                                    {{ seance.duree_minutes }} minutes
+                                {% else %}
+                                    <span class="text-muted fst-italic">Non spécifiée</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Score d'engagement</label>
+                            <p class="mb-0">
+                                {% if seance.score_engagement %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 100px; height: 10px;">
+                                            <div class="progress-bar bg-primary" style="width: {{ (seance.score_engagement * 10) }}%"></div>
+                                        </div>
+                                        <strong>{{ seance.score_engagement }}/10</strong>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted fst-italic">Non évalué</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if seance.objectifs_seance %}
+                <hr class="my-4">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Objectifs de la séance</label>
+                    <p class="mb-0">{{ seance.objectifs_seance|replace('\n', '<br>')|safe }}</p>
+                </div>
+                {% endif %}
+
+                {% if seance.activites_realisees %}
+                <hr class="my-4">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Activités réalisées</label>
+                    <p class="mb-0">{{ seance.activites_realisees|replace('\n', '<br>')|safe }}</p>
+                </div>
+                {% endif %}
+
+                {% if seance.observations %}
+                <hr class="my-4">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Observations et notes</label>
+                    <p class="mb-0">{{ seance.observations|replace('\n', '<br>')|safe }}</p>
+                </div>
+                {% endif %}
+
+                {% if seance.fichier_audio or seance.fichier_video %}
+                <hr class="my-4">
+                <div class="mb-3">
+                    <label class="form-label text-muted">Fichiers associés</label>
+                    <div class="d-flex gap-2">
+                        {% if seance.fichier_audio %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-file-earmark-music me-1"></i>
+                                Audio
+                            </span>
+                        {% endif %}
+                        {% if seance.fichier_video %}
+                            <span class="badge bg-info">
+                                <i class="bi bi-file-earmark-play me-1"></i>
+                                Vidéo
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <hr class="my-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="bi bi-calendar-plus me-1"></i>
+                            Créé le {{ seance.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="bi bi-pencil-square me-1"></i>
+                            Modifié le {{ seance.date_modification.strftime('%d/%m/%Y à %H:%M') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations du patient -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-person text-primary me-2"></i>
+                    Patient
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                        <i class="bi bi-person fs-2 text-primary"></i>
+                    </div>
+                    <h6 class="mb-1">{{ seance.patient.prenom }} {{ seance.patient.nom }}</h6>
+                    {% if seance.patient.pathologie %}
+                        <span class="badge bg-warning text-dark">{{ seance.patient.pathologie }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('patients.view_patient', patient_id=seance.patient_id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye me-2"></i>
+                        Voir le dossier
+                    </a>
+                    <a href="{{ url_for('seances.new_seance', patient_id=seance.patient_id) }}" class="btn btn-outline-success">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Nouvelle séance
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning text-primary me-2"></i>
+                    Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-info">
+                        <i class="bi bi-robot me-2"></i>
+                        Analyser avec IA
+                    </button>
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-file-text me-2"></i>
+                        Générer rapport
+                    </button>
+                    <button class="btn btn-outline-warning">
+                        <i class="bi bi-clipboard-data me-2"></i>
+                        Grille de cotation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                    Confirmer la suppression
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer cette séance ?</p>
+                <p class="text-muted mb-0">
+                    <strong>Séance du {{ seance.date_seance.strftime('%d/%m/%Y à %H:%M') }}</strong><br>
+                    Patient : {{ seance.patient.prenom }} {{ seance.patient.nom }}
+                </p>
+                <div class="alert alert-danger mt-3">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Cette action est irréversible !
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="post" action="{{ url_for('seances.delete_seance', seance_id=seance.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>
+                        Supprimer définitivement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

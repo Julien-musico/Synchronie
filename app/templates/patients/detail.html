@@ -297,12 +297,12 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" title="Voir la séance">
+                                            <a href="{{ url_for('seances.view_seance', seance_id=seance.id) }}" class="btn btn-outline-primary" title="Voir la séance">
                                                 <i class="bi bi-eye"></i>
-                                            </button>
-                                            <button class="btn btn-outline-secondary" title="Modifier">
+                                            </a>
+                                            <a href="{{ url_for('seances.edit_seance', seance_id=seance.id) }}" class="btn btn-outline-secondary" title="Modifier">
                                                 <i class="bi bi-pencil"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
