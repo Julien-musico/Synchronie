@@ -209,10 +209,13 @@ Génère une synthèse thérapeutique détaillée de cette séance de musicothé
             }
             
             # Génération de l'analyse IA
-            success, message, analysis = self.generate_session_analysis(transcription, patient_info)
-            if not success:
-                logger.warning(f"Analyse IA échouée: {message}")
-                analysis = "Analyse automatique non disponible"
+            if transcription:  # Vérifier que transcription n'est pas None
+                success, message, analysis = self.generate_session_analysis(transcription, patient_info)
+                if not success:
+                    logger.warning(f"Analyse IA échouée: {message}")
+                    analysis = "Analyse automatique non disponible"
+            else:
+                analysis = "Transcription non disponible pour l'analyse"
             
             # Mettre à jour la séance avec les résultats
             seance.transcription_audio = transcription
@@ -240,15 +243,23 @@ Génère une synthèse thérapeutique détaillée de cette séance de musicothé
         Returns:
             Dict contenant les informations du fichier
         """
-        info = {
+        info: Dict[str, Any] = {
             'filename': file.filename,
             'content_type': file.content_type,
             'size': getattr(file, 'content_length', 0)
         }
         
         try:
+            # Vérifier que le nom de fichier existe
+            if not file.filename:
+                return info
+                
             # Utiliser mutagen pour obtenir plus d'infos si possible
-            from mutagen import File as MutagenFile
+            try:
+                from mutagen import File as MutagenFile  # type: ignore
+            except ImportError:
+                logger.warning("Mutagen non installé - informations audio limitées")
+                return info
             
             with tempfile.NamedTemporaryFile(
                 suffix=f".{file.filename.rsplit('.', 1)[1].lower()}"
@@ -256,12 +267,12 @@ Génère une synthèse thérapeutique détaillée de cette séance de musicothé
                 file.save(temp_file.name)
                 file.seek(0)  # Reset pour une utilisation ultérieure
                 
-                audio_file = MutagenFile(temp_file.name)
-                if audio_file:
+                audio_file = MutagenFile(temp_file.name)  # type: ignore
+                if audio_file and hasattr(audio_file, 'info'):  # type: ignore
                     info.update({
-                        'duration': getattr(audio_file.info, 'length', 0),
-                        'bitrate': getattr(audio_file.info, 'bitrate', 0),
-                        'channels': getattr(audio_file.info, 'channels', 0)
+                        'duration': getattr(audio_file.info, 'length', 0),  # type: ignore
+                        'bitrate': getattr(audio_file.info, 'bitrate', 0),  # type: ignore
+                        'channels': getattr(audio_file.info, 'channels', 0)  # type: ignore
                     })
         
         except Exception as e:

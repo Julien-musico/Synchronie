@@ -44,13 +44,13 @@ class SeanceService:
                 return False, "Format de date invalide", None
             
             # Créer la nouvelle séance avec seulement les champs existants
-            seance = Seance(
-                patient_id=patient_id,
-                date_seance=date_seance,
-                type_seance=data.get('type_seance', '').strip() or None,
-                duree_minutes=int(data['duree_minutes']) if data.get('duree_minutes') else None,
-                objectifs_seance=data.get('objectifs_seance', '').strip() or None,
-                activites_realisees=data.get('activites_realisees', '').strip() or None
+            seance = Seance(  # type: ignore
+                patient_id=patient_id,  # type: ignore
+                date_seance=date_seance,  # type: ignore
+                type_seance=data.get('type_seance', '').strip() or None,  # type: ignore
+                duree_minutes=int(data['duree_minutes']) if data.get('duree_minutes') else None,  # type: ignore
+                objectifs_seance=data.get('objectifs_seance', '').strip() or None,  # type: ignore
+                activites_realisees=data.get('activites_realisees', '').strip() or None  # type: ignore
             )
             
             db.session.add(seance)
@@ -72,7 +72,7 @@ class SeanceService:
     def get_seance_by_id(seance_id: int) -> Optional[Seance]:
         """Récupérer une séance par son ID avec la relation patient"""
         try:
-            return Seance.query.join(Patient).filter(Seance.id == seance_id).first()
+            return Seance.query.join(Patient).filter(Seance.id == seance_id).first()  # type: ignore
         except Exception:
             return None
     
@@ -80,7 +80,7 @@ class SeanceService:
     def get_seances_by_patient(patient_id: int) -> List[Seance]:
         """Récupérer toutes les séances d'un patient"""
         try:
-            return Seance.query.filter_by(patient_id=patient_id).order_by(Seance.date_seance.desc()).all()
+            return Seance.query.filter_by(patient_id=patient_id).order_by(Seance.date_seance.desc()).all()  # type: ignore
         except Exception:
             return []
     
@@ -178,7 +178,7 @@ class SeanceService:
     def get_all_seances() -> List[Seance]:
         """Récupérer toutes les séances"""
         try:
-            return Seance.query.order_by(Seance.date_seance.desc()).all()
+            return Seance.query.order_by(Seance.date_seance.desc()).all()  # type: ignore
         except Exception:
             return []
     
@@ -186,7 +186,7 @@ class SeanceService:
     def get_recent_seances(limit: int = 10) -> List[Seance]:
         """Récupérer les séances les plus récentes"""
         try:
-            return Seance.query.order_by(Seance.date_seance.desc()).limit(limit).all()
+            return Seance.query.order_by(Seance.date_seance.desc()).limit(limit).all()  # type: ignore
         except Exception:
             return []
     
@@ -224,7 +224,7 @@ class SeanceService:
             ])
             
             # Types de séances
-            types_seances = {}
+            types_seances: Dict[str, int] = {}
             for seance in all_seances:
                 if seance.type_seance:
                     types_seances[seance.type_seance] = types_seances.get(seance.type_seance, 0) + 1
@@ -276,7 +276,7 @@ class SeanceService:
                     )
                 )
             
-            return base_query.order_by(Seance.date_seance.desc()).all()
+            return base_query.order_by(Seance.date_seance.desc()).all()  # type: ignore
             
         except Exception:
             return []

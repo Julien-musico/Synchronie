@@ -3,14 +3,14 @@ Factory pattern pour créer l'application Flask
 """
 from flask import Flask
 from flask_migrate import Migrate
-from config import config
+from config import config  # type: ignore
 
 # Import de la base de données depuis les modèles pour éviter les imports circulaires
 from app.models import db
 
 migrate = Migrate()
 
-def create_app(config_name='default'):
+def create_app(config_name: str = 'default') -> Flask:
     """
     Factory function pour créer l'application Flask
     
@@ -23,7 +23,7 @@ def create_app(config_name='default'):
     app = Flask(__name__)
     
     # Chargement de la configuration
-    app.config.from_object(config[config_name])
+    app.config.from_object(config[config_name])  # type: ignore
     
     # Initialisation des extensions avec l'app
     db.init_app(app)
@@ -50,11 +50,11 @@ def create_app(config_name='default'):
         print(f"Warning: Could not import blueprints: {e}")
         
         @app.route('/')
-        def index():
+        def index():  # type: ignore
             return '<h1>Synchronie - Application en cours de démarrage...</h1>'
         
         @app.route('/api/health')
-        def health():
+        def health():  # type: ignore
             return {'status': 'ok', 'message': 'Application running'}
     
     # Création des tables si elles n'existent pas
