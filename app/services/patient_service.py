@@ -3,8 +3,7 @@ Services pour la gestion des patients
 """
 from typing import List, Optional
 from sqlalchemy.exc import SQLAlchemyError
-from app import db
-from app.models import Patient
+from app.models import db, Patient
 
 class PatientService:
     """Service pour la gestion des patients"""

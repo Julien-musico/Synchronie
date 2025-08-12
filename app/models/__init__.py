@@ -1,13 +1,16 @@
 """
 Modèles de base pour l'application Synchronie
 """
-from datetime import datetime
-from app import db
+from datetime import datetime, timezone
+from flask_sqlalchemy import SQLAlchemy
+
+# Créer une instance de db que nous importerons dans __init__.py
+db = SQLAlchemy()
 
 class TimestampMixin:
     """Mixin pour ajouter des timestamps automatiques"""
-    date_creation = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    date_modification = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    date_creation = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    date_modification = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
 class Patient(TimestampMixin, db.Model):
     """Modèle pour les patients"""
