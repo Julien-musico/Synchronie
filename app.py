@@ -1,7 +1,19 @@
+"""
+Point d'entrée principal pour Synchronie
+Utilisé pour le développement local et les commandes CLI
+"""
+
+import os
+import sys
+
+# Configuration pour détection d'environnement
+if 'render.com' in os.environ.get('RENDER_EXTERNAL_URL', ''):
+    os.environ.setdefault('FLASK_ENV', 'production')
+
 from app import create_app, db
 from app.models import *
-import os
 
+# Créer l'application avec détection automatique d'environnement
 app = create_app()
 
 @app.shell_context_processor
