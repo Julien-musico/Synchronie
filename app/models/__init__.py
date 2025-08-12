@@ -67,7 +67,7 @@ class Seance(TimestampMixin, db.Model):
     
     # Contenu de la séance
     objectifs_seance = db.Column(db.Text)
-    activites_musicales = db.Column(db.Text)
+    activites_realisees = db.Column(db.Text)
     instruments_utilises = db.Column(db.Text)
     
     # Observations et évaluation

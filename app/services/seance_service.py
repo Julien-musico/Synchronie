@@ -43,18 +43,14 @@ class SeanceService:
             except ValueError:
                 return False, "Format de date invalide", None
             
-            # Créer la nouvelle séance
+            # Créer la nouvelle séance avec seulement les champs existants
             seance = Seance(
                 patient_id=patient_id,
                 date_seance=date_seance,
                 type_seance=data.get('type_seance', '').strip() or None,
                 duree_minutes=int(data['duree_minutes']) if data.get('duree_minutes') else None,
                 objectifs_seance=data.get('objectifs_seance', '').strip() or None,
-                activites_realisees=data.get('activites_realisees', '').strip() or None,
-                observations=data.get('observations', '').strip() or None,
-                score_engagement=float(data['score_engagement']) if data.get('score_engagement') else None,
-                fichier_audio=data.get('fichier_audio', '').strip() or None,
-                fichier_video=data.get('fichier_video', '').strip() or None
+                activites_realisees=data.get('activites_realisees', '').strip() or None
             )
             
             db.session.add(seance)

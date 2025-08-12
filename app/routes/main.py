@@ -1,11 +1,16 @@
 """
 Routes principales de l'application
 """
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, jsonify
 from app.services.patient_service import PatientService
 from app.services.seance_service import SeanceService
 
 main = Blueprint('main', __name__)
+
+@main.route('/api/health')
+def health_check():
+    """Endpoint de santé pour Render"""
+    return jsonify({'status': 'healthy', 'service': 'synchronie'}), 200
 
 @main.route('/')
 def index():

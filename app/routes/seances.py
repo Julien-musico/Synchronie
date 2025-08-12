@@ -37,6 +37,7 @@ def new_seance(patient_id):
 @seances.route('/patient/<int:patient_id>/create', methods=['POST'])
 def create_seance(patient_id):
     """Traitement de la création d'une séance"""
+    
     patient = PatientService.get_patient_by_id(patient_id)
     if not patient:
         flash('Patient non trouvé', 'error')
