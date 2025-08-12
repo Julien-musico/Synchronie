@@ -137,9 +137,9 @@
                                                class="btn btn-outline-secondary" title="Modifier">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <button class="btn btn-outline-success" title="Nouvelle séance">
+                                            <a href="{{ url_for('seances.new_seance', patient_id=patient.id) }}" class="btn btn-outline-success" title="Nouvelle séance">
                                                 <i class="bi bi-plus"></i>
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

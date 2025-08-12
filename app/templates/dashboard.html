@@ -15,10 +15,10 @@
                 <p class="text-muted mb-0">Vue d'ensemble de votre activité musicothérapeutique</p>
             </div>
             <div>
-                <button class="btn btn-primary">
+                <a href="{{ url_for('patients.new_patient') }}" class="btn btn-primary">
                     <i class="bi bi-plus-circle me-2"></i>
-                    Nouvelle séance
-                </button>
+                    Nouveau patient
+                </a>
             </div>
         </div>
     </div>
@@ -37,7 +37,7 @@
                     </div>
                     <div class="flex-grow-1 ms-3">
                         <h6 class="card-subtitle text-muted mb-1">Patients actifs</h6>
-                        <h3 class="card-title mb-0" id="patients-count">-</h3>
+                        <h3 class="card-title mb-0">{{ stats.patients_actifs if stats else 0 }}</h3>
                     </div>
                 </div>
             </div>
