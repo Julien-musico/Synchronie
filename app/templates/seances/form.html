@@ -48,7 +48,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form action="{% if mode == 'edit' %}{{ url_for('seances.update_seance', seance_id=seance.id) }}{% else %}{{ url_for('seances.create_seance', patient_id=patient.id) }}{% endif %}" method="post">
+                <form action="{% if mode == 'edit' %}{{ url_for('seances.update_seance', seance_id=seance.id) }}{% else %}{{ url_for('seances.create_seance', patient_id=patient.id) }}{% endif %}" method="post" enctype="multipart/form-data">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -121,17 +121,24 @@
                                     <i class="bi bi-mic me-1"></i>
                                     Enregistrement audio
                                 </label>
-                                <input type="file" class="form-control" id="fichier_audio" name="fichier_audio" 
-                                       accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg">
+                                <div class="d-flex gap-2">
+                                    <input type="file" class="form-control" id="fichier_audio" name="fichier_audio" 
+                                           accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg">
+                                    {% if mode == 'edit' and seance %}
+                                    <button type="button" class="btn btn-success" id="inline-upload-btn" disabled>
+                                        <i class="bi bi-upload me-1"></i> Transcrire
+                                    </button>
+                                    {% endif %}
+                                </div>
                                 {% if seance and seance.transcription_audio %}
-                                    <div class="form-text text-success">
+                                    <div class="form-text text-success mt-1">
                                         <i class="bi bi-check-circle me-1"></i>
                                         Séance déjà transcrite
                                     </div>
                                 {% else %}
-                                    <div class="form-text">
+                                    <div class="form-text mt-1">
                                         Formats supportés : MP3, WAV, M4A, FLAC, OGG (max 25 MB)
-                                        <br><small class="text-muted">La transcription se fera automatiquement en arrière-plan</small>
+                                        <br><small class="text-muted">{% if mode == 'edit' %}Sélectionnez un fichier puis cliquez sur Transcrire{% else %}La transcription pourra être lancée après la création{% endif %}</small>
                                     </div>
                                 {% endif %}
                             </div>
@@ -487,34 +494,86 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Gestion de l'upload audio avec transcription en arrière-plan
+    // Gestion de l'upload audio et inline transcription (mode édition)
     const audioInput = document.getElementById('fichier_audio');
     const transcriptionStatus = document.getElementById('transcription-status');
     const transcriptionText = document.getElementById('transcription-text');
-    
+    const inlineUploadBtn = document.getElementById('inline-upload-btn');
+
+    function validateAudioFile(file, inputEl) {
+        if (!file) return false;
+        if (file.size > 25 * 1024 * 1024) {
+            alert('Fichier trop volumineux. Taille maximale : 25 MB');
+            if (inputEl) inputEl.value = '';
+            return false;
+        }
+        const isValidName = /\.(mp3|wav|m4a|flac|ogg|webm)$/i.test(file.name || '');
+        if (!isValidName) {
+            alert('Format de fichier non supporté. Utilisez : MP3, WAV, M4A, FLAC, OGG');
+            if (inputEl) inputEl.value = '';
+            return false;
+        }
+        return true;
+    }
+
     if (audioInput) {
         audioInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (file) {
-                // Vérifier la taille du fichier (25 MB max)
-                if (file.size > 25 * 1024 * 1024) {
-                    alert('Fichier trop volumineux. Taille maximale : 25 MB');
-                    e.target.value = '';
-                    return;
-                }
-                
-                // Vérifier le format
-                const allowedTypes = ['audio/mp3', 'audio/wav', 'audio/m4a', 'audio/flac', 'audio/ogg', 'audio/webm'];
-                const isValidType = allowedTypes.some(type => file.type.includes(type.split('/')[1]));
-                
-                if (!isValidType && !file.name.match(/\.(mp3|wav|m4a|flac|ogg|webm)$/i)) {
-                    alert('Format de fichier non supporté. Utilisez : MP3, WAV, M4A, FLAC, OGG');
-                    e.target.value = '';
-                    return;
-                }
-                
-                console.log('Fichier audio sélectionné:', file.name, 'Taille:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+            if (validateAudioFile(file, e.target) && inlineUploadBtn) {
+                inlineUploadBtn.disabled = false;
+            } else if (inlineUploadBtn) {
+                inlineUploadBtn.disabled = true;
             }
+        });
+    }
+
+    if (inlineUploadBtn && audioInput) {
+        inlineUploadBtn.addEventListener('click', function() {
+            const file = audioInput.files && audioInput.files[0];
+            if (!validateAudioFile(file, audioInput)) return;
+
+            // Afficher statut
+            if (transcriptionStatus && transcriptionText) {
+                transcriptionStatus.style.display = 'block';
+                transcriptionStatus.classList.remove('alert-success','alert-warning','alert-danger');
+                transcriptionStatus.classList.add('alert-info');
+                transcriptionText.textContent = 'Transcription en cours...';
+            }
+
+            // Préparer requête
+            const formData = new FormData();
+            formData.append('audio_file', file);
+
+            // Endpoint inline pour transcription seule
+            const seanceId = '{{ seance.id if seance else "" }}';
+            fetch(`/audio/transcribe-only/${seanceId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    if (transcriptionStatus && transcriptionText) {
+                        transcriptionStatus.classList.remove('alert-info');
+                        transcriptionStatus.classList.add('alert-success');
+                        transcriptionText.textContent = 'Transcription terminée ! Rechargement...';
+                    }
+                    setTimeout(() => window.location.reload(), 1200);
+                } else {
+                    throw new Error(data.message || 'Erreur inconnue');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if (transcriptionStatus && transcriptionText) {
+                    transcriptionStatus.classList.remove('alert-info');
+                    transcriptionStatus.classList.add('alert-danger');
+                    transcriptionText.textContent = `Erreur de transcription: ${err.message}`;
+                }
+            })
+            .finally(() => {
+                if (inlineUploadBtn) inlineUploadBtn.disabled = true;
+            });
         });
     }
 });
