@@ -123,7 +123,10 @@ class GrilleVersion(TimestampMixin, db.Model):
     version_num = db.Column(db.Integer, nullable=False)
     domaines_config = db.Column(db.Text, nullable=False)
     active = db.Column(db.Boolean, default=True, nullable=False)
-    cotations = db.relationship('CotationSeance', backref='grille_version', lazy=True)  # type: ignore
+    # NOTE: La relation vers CotationSeance a été retirée car il n'existe plus
+    # de clé étrangère grille_version_id dans la table cotation_seance.
+    # Ancienne ligne supprimée:
+    # cotations = db.relationship('CotationSeance', backref='grille_version', lazy=True)
 
     def __repr__(self):  # type: ignore
         return f'<GrilleVersion grille_id={self.grille_id} v={self.version_num}>'

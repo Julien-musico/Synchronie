@@ -2,7 +2,7 @@
 from __future__ import annotations
 from typing import List
 from app.models import db
-from app.models.cotation import ObjectifTherapeutique, GrilleEvaluation, GrilleVersion
+from app.models.cotation import ObjectifTherapeutique, GrilleEvaluation
 from flask_login import current_user  # type: ignore
 
 class ObjectifService:
@@ -14,11 +14,9 @@ class ObjectifService:
         if not grille:
             raise ValueError("Grille introuvable")
         # Version active au moment de la définition
-        version = GrilleVersion.query.filter_by(grille_id=grille_id, active=True).order_by(GrilleVersion.version_num.desc()).first()
         obj = ObjectifTherapeutique()  # type: ignore
         obj.patient_id = patient_id
         obj.grille_id = grille_id
-        obj.grille_version_id = version.id if version else None
         obj.domaine_cible = domaine_cible
         obj.indicateur_cible = indicateur_cible
         obj.score_cible = score_cible

@@ -190,11 +190,9 @@ class CotationService:
             raise ValueError(f"Validation scores échouée: {e}")
         
         score, max_score, pct = CotationService.calculer_score_global(scores_valides, g)
-        v = GrilleVersion.query.filter_by(grille_id=grille_id, active=True).order_by(GrilleVersion.version_num.desc()).first()
         cot = CotationSeance()
         cot.seance_id = seance_id
         cot.grille_id = grille_id
-        cot.grille_version_id = v.id if v else None
         cot.scores_detailles = json.dumps(scores_valides)
         cot.score_global = score
         cot.score_max_possible = max_score
