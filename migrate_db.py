@@ -1,29 +1,73 @@
-from app import create_app
-from app.models import db
-from sqlalchemy import text
+#!/usr/bin/env python3
+"""
+Script de migration pour corriger les problèmes de base de données
+"""
+import os
+import psycopg2
+from urllib.parse import urlparse
 
-app = create_app()
-app.app_context().push()
-
-print('Migration: Renommage de la colonne activites_musicales en activites_realisees')
-
-try:
-    # Pour SQLite, on utilise PRAGMA table_info
-    result = db.session.execute(text("PRAGMA table_info(seances)"))
-    columns = [row[1] for row in result]  # row[1] contient le nom de la colonne
-    print(f'Colonnes trouvées: {columns}')
+def execute_sql_patch():
+    """Exécute le patch SQL pour corriger la base de données"""
     
-    if 'activites_musicales' in columns and 'activites_realisees' not in columns:
-        print('Renommage de activites_musicales en activites_realisees...')
-        db.session.execute(text('ALTER TABLE seances RENAME COLUMN activites_musicales TO activites_realisees'))
-        db.session.commit()
-        print('✅ Migration réussie')
-    elif 'activites_realisees' in columns:
-        print('✅ La colonne activites_realisees existe déjà')
-    else:
-        print('❌ Structure inattendue')
-        print(f'Colonnes disponibles: {columns}')
+    # Récupérer l'URL de la base de données depuis les variables d'environnement
+    database_url = os.environ.get('DATABASE_URL')
+    if not database_url:
+        print("❌ Variable DATABASE_URL non trouvée")
+        return False
+    
+    # Parser l'URL de la base de données
+    parsed = urlparse(database_url)
+    
+    try:
+        # Connexion à la base de données
+        conn = psycopg2.connect(
+            host=parsed.hostname,
+            port=parsed.port,
+            database=parsed.path[1:],  # Retirer le '/' initial
+            user=parsed.username,
+            password=parsed.password,
+            sslmode='require'
+        )
         
-except Exception as e:
-    print(f'❌ Erreur: {e}')
-    db.session.rollback()
+        print("✅ Connexion à la base de données établie")
+        
+        # Lire le fichier de patch
+        with open('sql/schema_patch.sql', 'r', encoding='utf-8') as f:
+            sql_patch = f.read()
+        
+        # Exécuter le patch
+        with conn.cursor() as cursor:
+            cursor.execute(sql_patch)
+            conn.commit()
+            print("✅ Patch SQL exécuté avec succès")
+        
+        # Vérifier que les colonnes problématiques ont été supprimées
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'cotation_seance' 
+                AND column_name = 'grille_version_id'
+            """)
+            if cursor.fetchone():
+                print("⚠️ La colonne grille_version_id existe encore dans cotation_seance")
+            else:
+                print("✅ Colonne grille_version_id supprimée de cotation_seance")
+        
+        conn.close()
+        return True
+        
+    except psycopg2.Error as e:
+        print(f"❌ Erreur PostgreSQL: {e}")
+        return False
+    except Exception as e:
+        print(f"❌ Erreur: {e}")
+        return False
+
+if __name__ == '__main__':
+    print("🔧 Début de la migration de base de données...")
+    if execute_sql_patch():
+        print("🎉 Migration terminée avec succès!")
+    else:
+        print("💥 Échec de la migration")
+        exit(1)

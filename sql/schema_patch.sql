@@ -247,7 +247,31 @@ SELECT
 FROM cotation_seance cs
 JOIN seances s ON s.id = cs.seance_id;
 
--- 7. Vérifications rapides
+-- 7. Correction: supprimer grille_version_id de cotation_seance si elle existe
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='cotation_seance' AND column_name='grille_version_id'
+    ) THEN
+        ALTER TABLE cotation_seance DROP COLUMN IF EXISTS grille_version_id;
+        RAISE NOTICE 'Colonne grille_version_id supprimée de cotation_seance';
+    END IF;
+END $$;
+
+-- 8. Correction: supprimer grille_version_id de objectif_therapeutique si elle existe
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name='objectif_therapeutique' AND column_name='grille_version_id'
+    ) THEN
+        ALTER TABLE objectif_therapeutique DROP COLUMN IF EXISTS grille_version_id;
+        RAISE NOTICE 'Colonne grille_version_id supprimée de objectif_therapeutique';
+    END IF;
+END $$;
+
+-- 9. Vérifications rapides
 -- SELECT * FROM grille_evaluation LIMIT 1;
 -- SELECT * FROM cotation_seance LIMIT 1;
 -- SELECT * FROM objectif_therapeutique LIMIT 1;

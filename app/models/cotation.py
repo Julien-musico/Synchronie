@@ -54,8 +54,6 @@ class CotationSeance(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     seance_id = db.Column(db.Integer, db.ForeignKey('seances.id'), nullable=False)
     grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
-    grille_version_id = db.Column(db.Integer, db.ForeignKey('grille_version.id'), nullable=True, index=True)  # version utilisée
-
     
     # Scores par domaine (JSON)
     scores_detailles = db.Column(db.Text, nullable=False)  # JSON des scores par indicateur
@@ -94,7 +92,6 @@ class ObjectifTherapeutique(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
     grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
-    grille_version_id = db.Column(db.Integer, db.ForeignKey('grille_version.id'), nullable=True, index=True)  # version de la grille lors de la définition
     
     # Configuration des objectifs
     domaine_cible = db.Column(db.String(100), nullable=False)

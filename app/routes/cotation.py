@@ -77,8 +77,10 @@ def creer_grille_predefinee():
 @login_required
 def seances_a_coter():
     """Page listant les séances disponibles pour cotation"""
-    # Récupérer toutes les séances de l'utilisateur
-    seances = Seance.query.filter_by(user_id=current_user.id).order_by(Seance.date.desc()).all()
+    # Récupérer toutes les séances de l'utilisateur via la relation patient
+    seances = db.session.query(Seance).join(Patient).filter(
+        Patient.musicotherapeute_id == current_user.id
+    ).order_by(Seance.date_seance.desc()).all()
     
     # Enrichir avec info cotation
     seances_info = []

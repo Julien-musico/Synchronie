@@ -115,45 +115,37 @@ class AnalyticsService:
     @staticmethod
     def patients_a_risque(musicotherapeute_id: int, seuil_score: float = 40.0) -> List[Dict[str, Any]]:
         """Identifie les patients avec scores en baisse ou faibles."""
-        # Patients avec score moyen < seuil sur les 3 dernières cotations
+        # Approche simplifiée pour éviter les problèmes de jointure
         il_y_a_30j = datetime.now() - timedelta(days=30)
         
-        subquery = db.session.query(
-            CotationSeance.seance_id,
-            func.row_number().over(
-                partition_by=func.coalesce(Seance.patient_id, 0),
-                order_by=desc(Seance.date_seance)
-            ).label('rn')
-        ).join(Seance).join(Patient).filter(
-            Patient.musicotherapeute_id == musicotherapeute_id,
-            Seance.date_seance >= il_y_a_30j
-        ).subquery()
-
-        # Récupérer patients avec moyenne < seuil sur 3 dernières cotations
-        resultats = db.session.query(
-            Patient.id,
-            Patient.prenom,
-            Patient.nom,
-            func.avg(CotationSeance.pourcentage_reussite).label('score_moyen'),
-            func.count(CotationSeance.id).label('nb_cotations')
-        ).join(Seance).join(CotationSeance).join(
-            subquery, CotationSeance.seance_id == subquery.c.seance_id
-        ).filter(
-            Patient.musicotherapeute_id == musicotherapeute_id,
-            subquery.c.rn <= 3
-        ).group_by(Patient.id, Patient.prenom, Patient.nom).having(
-            func.avg(CotationSeance.pourcentage_reussite) < seuil_score
-        ).all()
-
+        # Récupérer tous les patients du thérapeute
+        patients = Patient.query.filter_by(musicotherapeute_id=musicotherapeute_id).all()
         patients_risque = []
-        for patient_id, prenom, nom, score_moyen, nb_cotations in resultats:
-            patients_risque.append({
-                'patient_id': patient_id,
-                'nom_complet': f"{prenom} {nom}",
-                'score_moyen': round(score_moyen, 1),
-                'nb_cotations': nb_cotations,
-                'niveau_risque': 'élevé' if score_moyen < 30 else 'modéré'
-            })
+        
+        for patient in patients:
+            # Récupérer les dernières cotations du patient
+            cotations_recentes = db.session.query(CotationSeance).join(Seance).filter(
+                Seance.patient_id == patient.id,
+                CotationSeance.date_creation >= il_y_a_30j
+            ).order_by(CotationSeance.date_creation.desc()).limit(3).all()
+            
+            if cotations_recentes:
+                scores = [c.pourcentage_reussite for c in cotations_recentes if c.pourcentage_reussite is not None]
+                if scores:
+                    score_moyen = sum(scores) / len(scores)
+                    if score_moyen < seuil_score:
+                        patients_risque.append({
+                            'patient_id': patient.id,
+                            'nom': patient.nom,
+                            'prenom': patient.prenom,
+                            'score_moyen': round(score_moyen, 1),
+                            'nb_cotations': len(scores),
+                            'niveau_risque': 'élevé' if score_moyen < 30 else 'modéré',
+                            'derniere_cotation': {
+                                'score_total': cotations_recentes[0].pourcentage_reussite,
+                                'date': cotations_recentes[0].date_creation.strftime('%d/%m/%Y')
+                            }
+                        })
 
         return patients_risque
 
