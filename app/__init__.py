@@ -51,6 +51,9 @@ def create_app(config_name: str = 'default') -> Flask:
         
         from app.routes.audio import audio as audio_blueprint
         app.register_blueprint(audio_blueprint, url_prefix='/audio')
+        
+        from app.routes.cotation import cotation_bp as cotation_blueprint
+        app.register_blueprint(cotation_blueprint)
     except ImportError as e:
         # En cas d'erreur d'import, créer des routes de base
         print(f"Warning: Could not import blueprints: {e}")

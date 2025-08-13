@@ -36,6 +36,10 @@
                         Détails de la séance
                     </h5>
                     <div class="btn-group">
+                        <a href="{{ url_for('cotation.interface_cotation', seance_id=seance.id) }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-clipboard-check me-1"></i>
+                            🎯 Coter la séance
+                        </a>
                         <a href="{{ url_for('seances.edit_seance', seance_id=seance.id) }}" class="btn btn-outline-light btn-sm">
                             <i class="bi bi-pencil me-1"></i>
                             Modifier

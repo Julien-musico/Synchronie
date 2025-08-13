@@ -1,0 +1,670 @@
+{% extends "base.html" %}
+
+{% block title %}Cotation - {{ seance.patient.prenom }} {{ seance.patient.nom }}{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css" rel="stylesheet">
+<style>
+/* Styles pour l'interface de cotation visuelle */
+.cotation-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.cotation-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.patient-header {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    padding: 25px;
+    text-align: center;
+}
+
+.patient-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.seance-info {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 15px;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.grille-selector {
+    padding: 25px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.grille-selector h4 {
+    color: #495057;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.grille-option {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.grille-option:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+}
+
+.grille-option.selected {
+    border-color: #667eea;
+    background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+}
+
+.grille-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.grille-badge {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.grille-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
+.cotation-interface {
+    padding: 30px;
+    display: none;
+}
+
+.cotation-interface.active {
+    display: block;
+}
+
+.domaine-section {
+    background: white;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    overflow: hidden;
+    border: 2px solid #f1f3f4;
+    transition: all 0.3s ease;
+}
+
+.domaine-header {
+    padding: 20px 25px;
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.domaine-header h5 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.domaine-score {
+    background: rgba(255,255,255,0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+.indicateurs-grid {
+    padding: 25px;
+    background: #fafbfc;
+}
+
+.indicateur-item {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.indicateur-item:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.indicateur-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.indicateur-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.slider-container {
+    margin: 15px 0;
+    position: relative;
+}
+
+/* Personnalisation des sliders NoUiSlider */
+.noUi-target {
+    background: #e9ecef;
+    border-radius: 8px;
+    border: none;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    height: 12px;
+}
+
+.noUi-handle {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    cursor: grab;
+    width: 28px;
+    height: 28px;
+}
+
+.noUi-handle:before,
+.noUi-handle:after {
+    display: none;
+}
+
+.noUi-connect {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 8px;
+}
+
+.observations-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-top: 30px;
+    border: 2px solid #f1f3f4;
+}
+
+.observations-section h5 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.observations-textarea {
+    width: 100%;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 15px;
+    font-size: 0.95rem;
+    min-height: 120px;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.observations-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 30px;
+    padding: 25px;
+    background: #f8f9fa;
+}
+
+.btn-cotation {
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-save {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+}
+
+.score-summary {
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.score-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    display: none;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cotation-container {
+        padding: 10px;
+    }
+    
+    .seance-info {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .indicateurs-grid {
+        padding: 15px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cotation-container">
+    <div class="container">
+        <!-- En-tête patient et séance -->
+        <div class="cotation-card">
+            <div class="patient-header">
+                <h2>{{ seance.patient.prenom }} {{ seance.patient.nom }}</h2>
+                <div class="seance-info">
+                    <div>📅 {{ seance.date_seance.strftime('%d/%m/%Y') }}</div>
+                    <div>⏱️ {{ seance.duree }} min</div>
+                    <div>🎵 {{ seance.type_seance|title }}</div>
+                </div>
+            </div>
+            
+            <!-- Sélecteur de grille -->
+            <div class="grille-selector">
+                <h4>Choisir une grille d'évaluation</h4>
+                {% for grille in grilles %}
+                <div class="grille-option" data-grille-id="{{ grille.id }}">
+                    <input type="radio" name="grille_selection" value="{{ grille.id }}" id="grille_{{ grille.id }}">
+                    <label for="grille_{{ grille.id }}">
+                        <div class="grille-badge">{{ grille.reference_scientifique or 'CUSTOM' }}</div>
+                        <div style="font-weight: 600; color: #495057;">{{ grille.nom }}</div>
+                        <div class="grille-description">{{ grille.description }}</div>
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Interface de cotation -->
+            <div class="cotation-interface" id="cotation-interface">
+                <div id="domaines-container">
+                    <!-- Les domaines seront chargés ici via JavaScript -->
+                </div>
+                
+                <!-- Section observations -->
+                <div class="observations-section">
+                    <h5>🗒️ Observations et remarques</h5>
+                    <textarea class="observations-textarea" id="observations" 
+                              placeholder="Notez ici vos observations spécifiques sur cette séance, les moments marquants, les réactions du patient, etc."></textarea>
+                </div>
+                
+                <!-- Résumé des scores -->
+                <div class="score-summary" id="score-summary" style="display: none;">
+                    <div class="score-circle" id="score-circle">0%</div>
+                    <div style="font-weight: 600; color: #495057;">Score global</div>
+                    <div style="color: #6c757d; font-size: 0.9rem;" id="score-details">0/0 points</div>
+                </div>
+            </div>
+            
+            <!-- Boutons d'action -->
+            <div class="action-buttons" id="action-buttons" style="display: none;">
+                <button class="btn-cotation btn-save" id="save-cotation">
+                    💾 Sauvegarder la cotation
+                </button>
+                <a href="{{ url_for('seances.detail', seance_id=seance.id) }}" class="btn-cotation btn-cancel">
+                    ↩️ Retour à la séance
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay de chargement -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+<script>
+// Variables globales
+let grilleSelectionnee = null;
+let scores = {};
+let sliders = {};
+
+// Gestion de la sélection de grille
+document.querySelectorAll('.grille-option').forEach(option => {
+    option.addEventListener('click', function() {
+        // Désélectionner toutes les options
+        document.querySelectorAll('.grille-option').forEach(opt => opt.classList.remove('selected'));
+        
+        // Sélectionner l'option cliquée
+        this.classList.add('selected');
+        const radio = this.querySelector('input[type="radio"]');
+        radio.checked = true;
+        
+        const grilleId = this.dataset.grilleId;
+        chargerGrille(grilleId);
+    });
+});
+
+// Fonction pour charger une grille
+async function chargerGrille(grilleId) {
+    try {
+        showLoading();
+        
+        const response = await fetch(`/cotation/grille/${grilleId}/preview`);
+        const grille = await response.json();
+        
+        if (response.ok) {
+            grilleSelectionnee = grille;
+            scores = {};
+            sliders = {};
+            
+            afficherGrille(grille);
+            document.getElementById('cotation-interface').classList.add('active');
+            document.getElementById('action-buttons').style.display = 'flex';
+        } else {
+            alert('Erreur lors du chargement de la grille: ' + grille.error);
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors du chargement de la grille');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Fonction pour afficher la grille
+function afficherGrille(grille) {
+    const container = document.getElementById('domaines-container');
+    container.innerHTML = '';
+    
+    grille.domaines.forEach((domaine, domaineIndex) => {
+        const domaineDiv = document.createElement('div');
+        domaineDiv.className = 'domaine-section';
+        
+        const couleurDomaine = domaine.couleur || '#667eea';
+        
+        domaineDiv.innerHTML = `
+            <div class="domaine-header" style="background: ${couleurDomaine};">
+                <h5>${domaine.nom}</h5>
+                <div class="domaine-score" id="domaine-score-${domaineIndex}">0%</div>
+            </div>
+            <div class="indicateurs-grid" id="indicateurs-${domaineIndex}">
+                <!-- Les indicateurs seront ajoutés ici -->
+            </div>
+        `;
+        
+        container.appendChild(domaineDiv);
+        
+        // Ajouter les indicateurs
+        const indicateursContainer = document.getElementById(`indicateurs-${domaineIndex}`);
+        
+        domaine.indicateurs.forEach((indicateur, indicateurIndex) => {
+            const indicateurDiv = document.createElement('div');
+            indicateurDiv.className = 'indicateur-item';
+            
+            const sliderId = `slider-${domaineIndex}-${indicateurIndex}`;
+            const scoreKey = `${domaine.nom}_${indicateur.nom}`;
+            
+            indicateurDiv.innerHTML = `
+                <div class="indicateur-label">
+                    <span>${indicateur.nom}</span>
+                    <span class="indicateur-value" id="value-${sliderId}">
+                        ${indicateur.min} ${indicateur.unite}
+                    </span>
+                </div>
+                <div class="slider-container">
+                    <div id="${sliderId}"></div>
+                    <div class="slider-labels">
+                        <span>${indicateur.min}</span>
+                        <span>${indicateur.max}</span>
+                    </div>
+                </div>
+            `;
+            
+            indicateursContainer.appendChild(indicateurDiv);
+            
+            // Créer le slider
+            const sliderElement = document.getElementById(sliderId);
+            const slider = noUiSlider.create(sliderElement, {
+                start: [indicateur.min],
+                connect: [true, false],
+                range: {
+                    'min': indicateur.min,
+                    'max': indicateur.max
+                },
+                step: 1,
+                format: {
+                    to: function (value) {
+                        return Math.round(value);
+                    },
+                    from: function (value) {
+                        return Number(value);
+                    }
+                }
+            });
+            
+            // Gérer les changements de valeur
+            slider.on('update', function (values, handle) {
+                const value = values[handle];
+                scores[scoreKey] = parseInt(value);
+                
+                // Mettre à jour l'affichage de la valeur
+                document.getElementById(`value-${sliderId}`).textContent = 
+                    `${value} ${indicateur.unite}`;
+                
+                // Mettre à jour les scores
+                mettreAJourScores();
+            });
+            
+            sliders[scoreKey] = slider;
+            scores[scoreKey] = indicateur.min;
+        });
+    });
+    
+    mettreAJourScores();
+}
+
+// Fonction pour mettre à jour les scores
+function mettreAJourScores() {
+    if (!grilleSelectionnee) return;
+    
+    let scoreTotal = 0;
+    let scoreMaxTotal = 0;
+    
+    // Calculer les scores par domaine
+    grilleSelectionnee.domaines.forEach((domaine, domaineIndex) => {
+        let scoreDomaine = 0;
+        let scoreMaxDomaine = 0;
+        
+        domaine.indicateurs.forEach(indicateur => {
+            const scoreKey = `${domaine.nom}_${indicateur.nom}`;
+            scoreDomaine += scores[scoreKey] || indicateur.min;
+            scoreMaxDomaine += indicateur.max;
+        });
+        
+        scoreTotal += scoreDomaine;
+        scoreMaxTotal += scoreMaxDomaine;
+        
+        // Mettre à jour l'affichage du domaine
+        const pourcentageDomaine = scoreMaxDomaine > 0 ? Math.round((scoreDomaine / scoreMaxDomaine) * 100) : 0;
+        const domaineScoreElement = document.getElementById(`domaine-score-${domaineIndex}`);
+        if (domaineScoreElement) {
+            domaineScoreElement.textContent = `${pourcentageDomaine}%`;
+        }
+    });
+    
+    // Mettre à jour le score global
+    const pourcentageGlobal = scoreMaxTotal > 0 ? Math.round((scoreTotal / scoreMaxTotal) * 100) : 0;
+    
+    const scoreCircle = document.getElementById('score-circle');
+    const scoreDetails = document.getElementById('score-details');
+    const scoreSummary = document.getElementById('score-summary');
+    
+    if (scoreCircle && scoreDetails && scoreSummary) {
+        scoreCircle.textContent = `${pourcentageGlobal}%`;
+        scoreDetails.textContent = `${scoreTotal}/${scoreMaxTotal} points`;
+        scoreSummary.style.display = 'block';
+        
+        // Couleur du cercle selon le score
+        let couleur = '#dc3545'; // Rouge
+        if (pourcentageGlobal >= 80) couleur = '#28a745'; // Vert
+        else if (pourcentageGlobal >= 60) couleur = '#ffc107'; // Jaune
+        else if (pourcentageGlobal >= 40) couleur = '#fd7e14'; // Orange
+        
+        scoreCircle.style.background = couleur;
+    }
+}
+
+// Fonction pour sauvegarder la cotation
+document.getElementById('save-cotation').addEventListener('click', async function() {
+    if (!grilleSelectionnee) {
+        alert('Veuillez sélectionner une grille d\'évaluation');
+        return;
+    }
+    
+    try {
+        showLoading();
+        
+        const observations = document.getElementById('observations').value;
+        
+        const response = await fetch(`/cotation/seance/{{ seance.id }}/sauvegarder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                grille_id: grilleSelectionnee.id,
+                scores: scores,
+                observations: observations
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            alert('Cotation sauvegardée avec succès!');
+            window.location.href = "{{ url_for('seances.detail', seance_id=seance.id) }}";
+        } else {
+            alert('Erreur lors de la sauvegarde: ' + (result.error || 'Erreur inconnue'));
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la sauvegarde');
+    } finally {
+        hideLoading();
+    }
+});
+
+// Fonctions utilitaires
+function showLoading() {
+    document.getElementById('loading-overlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loading-overlay').style.display = 'none';
+}
+</script>
+{% endblock %}
