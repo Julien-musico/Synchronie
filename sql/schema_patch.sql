@@ -4,6 +4,19 @@
 -- Version: 2025-08-13-02 (ajout correctif patients.musicotherapeute_id manquante en prod)
 -- ================================
 
+-- 0. Table users (auth) : création si absente
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    nom VARCHAR(120),
+    mot_de_passe_hash VARCHAR(255) NOT NULL,
+    actif BOOLEAN NOT NULL DEFAULT TRUE,
+    date_creation TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    date_modification TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_users_email ON users(email);
+
+
 -- 1. Table patients: ajouter colonne musicotherapeute_id si absente
 DO $$
 BEGIN

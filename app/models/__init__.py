@@ -3,6 +3,8 @@ Modèles de base pour l'application Synchronie
 """
 from datetime import datetime, timezone
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash  # type: ignore
+from flask_login import UserMixin  # type: ignore
 
 # Créer une instance de db que nous importerons dans __init__.py
 db = SQLAlchemy()
@@ -11,6 +13,27 @@ class TimestampMixin:
     """Mixin pour ajouter des timestamps automatiques"""
     date_creation = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     date_modification = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+class User(TimestampMixin, UserMixin, db.Model):
+    """Utilisateur (musicothérapeute)."""
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    nom = db.Column(db.String(120))
+    mot_de_passe_hash = db.Column(db.String(255), nullable=False)
+    actif = db.Column(db.Boolean, default=True, nullable=False)
+
+    def set_password(self, password: str) -> None:  # type: ignore
+        self.mot_de_passe_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:  # type: ignore
+        return check_password_hash(self.mot_de_passe_hash, password)
+
+    def get_id(self):  # type: ignore
+        return str(self.id)
+
+    def __repr__(self):  # type: ignore
+        return f"<User {self.email}>"
 
 class Patient(TimestampMixin, db.Model):
     """Modèle pour les patients"""

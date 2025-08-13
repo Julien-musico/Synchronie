@@ -3,10 +3,16 @@ Factory pattern pour créer l'application Flask
 """
 from flask import Flask
 from flask_migrate import Migrate
+try:
+    from flask_login import LoginManager  # type: ignore
+    _LOGIN_AVAILABLE = True
+except Exception:  # pragma: no cover
+    LoginManager = None  # type: ignore
+    _LOGIN_AVAILABLE = False
 from config import config  # type: ignore
 
 # Import de la base de données depuis les modèles pour éviter les imports circulaires
-from app.models import db
+from app.models import db, User
 
 migrate = Migrate()
 
@@ -34,6 +40,21 @@ def create_app(config_name: str = 'default') -> Flask:
     # Initialisation des extensions avec l'app
     db.init_app(app)
     migrate.init_app(app, db)
+
+    # Auth réelle : LoginManager + User loader
+    if _LOGIN_AVAILABLE and LoginManager:  # type: ignore
+        login_manager = LoginManager()  # type: ignore[call-arg]
+        login_manager.login_view = 'login'  # type: ignore[attr-defined]
+        login_manager.init_app(app)  # type: ignore[attr-defined]
+
+        @login_manager.user_loader  # type: ignore[attr-defined]
+        def load_user(user_id: str):  # type: ignore
+            try:
+                return User.query.get(int(user_id))  # type: ignore
+            except Exception:
+                return None  # type: ignore
+    else:
+        app.logger.warning("Flask-Login indisponible: activer flask_login pour protéger les routes.")
     
     # Enregistrement des blueprints (routes) avec robustesse
     from importlib import import_module
@@ -51,6 +72,7 @@ def create_app(config_name: str = 'default') -> Flask:
             return False
 
     safe_register('app.routes.main', 'main')
+    safe_register('app.routes.auth', 'auth')
     safe_register('app.routes.api', 'api', '/api')
     safe_register('app.routes.patients', 'patients', '/patients')
     safe_register('app.routes.seances', 'seances', '/seances')
