@@ -201,6 +201,99 @@
                         </div>
                     </div>
 
+                    <!-- Grilles de cotation (seulement en création) -->
+                    {% if not patient and grilles_disponibles %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="card-title mb-3">
+                                <i class="bi bi-clipboard-check text-primary me-2"></i>
+                                Grilles de cotation
+                            </h5>
+                            <p class="text-muted small">
+                                Sélectionnez les grilles d'évaluation qui seront utilisées pour ce patient.
+                                Vous pourrez modifier cette sélection ultérieurement.
+                            </p>
+                        </div>
+                        
+                        <!-- Grilles standards -->
+                        {% if grilles_disponibles.standards %}
+                        <div class="col-12 mb-3">
+                            <h6 class="text-secondary">
+                                <i class="bi bi-award me-1"></i>
+                                Grilles standards internationales
+                            </h6>
+                            <div class="row">
+                                {% for grille in grilles_disponibles.standards %}
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="grilles_ids" 
+                                               value="{{ grille.id }}" id="grille_{{ grille.id }}">
+                                        <label class="form-check-label" for="grille_{{ grille.id }}">
+                                            <strong>{{ grille.nom }}</strong>
+                                            {% if grille.reference_scientifique %}
+                                                <span class="badge bg-info ms-1">{{ grille.reference_scientifique }}</span>
+                                            {% endif %}
+                                            <br>
+                                            <small class="text-muted">{{ grille.nb_domaines }} domaines</small>
+                                            {% if grille.description %}
+                                                <br><small class="text-muted">{{ grille.description[:80] }}{% if grille.description|length > 80 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Grilles personnalisées -->
+                        {% if grilles_disponibles.personnalisees %}
+                        <div class="col-12 mb-3">
+                            <h6 class="text-secondary">
+                                <i class="bi bi-person-gear me-1"></i>
+                                Mes grilles personnalisées
+                            </h6>
+                            <div class="row">
+                                {% for grille in grilles_disponibles.personnalisees %}
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="grilles_ids" 
+                                               value="{{ grille.id }}" id="grille_{{ grille.id }}">
+                                        <label class="form-check-label" for="grille_{{ grille.id }}">
+                                            <strong>{{ grille.nom }}</strong>
+                                            <span class="badge bg-warning ms-1">Personnalisée</span>
+                                            <br>
+                                            <small class="text-muted">{{ grille.nb_domaines }} domaines</small>
+                                            {% if grille.description %}
+                                                <br><small class="text-muted">{{ grille.description[:80] }}{% if grille.description|length > 80 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Actions rapides pour les grilles -->
+                        <div class="col-12">
+                            <div class="alert alert-info d-flex align-items-center">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <div class="flex-grow-1">
+                                    <strong>Besoin d'une grille spécifique ?</strong>
+                                    Vous pouvez créer une grille personnalisée ou en choisir parmi les standards.
+                                </div>
+                                <div class="ms-3">
+                                    <a href="{{ url_for('grilles.list_grilles') }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                        <i class="bi bi-clipboard-plus me-1"></i>
+                                        Gérer les grilles
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <!-- Boutons d'action -->
                     <div class="d-flex justify-content-end gap-2">
                         <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-secondary">

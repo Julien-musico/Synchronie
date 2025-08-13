@@ -1,6 +1,7 @@
 """Validation stricte pour les données de cotation et grilles d'évaluation."""
-from typing import Dict, Any, List, Tuple
 import re
+from typing import Any, Dict, List, Tuple
+
 
 class ValidationError(Exception):
     """Erreur de validation des données."""
@@ -39,7 +40,7 @@ class CotationValidator:
                 ind_valide = CotationValidator.valider_indicateur(ind)
                 indicateurs_valides.append(ind_valide)
             except ValidationError as e:
-                raise ValidationError(f"Domaine '{nom}', indicateur {i+1}: {e}")
+                raise ValidationError(f"Domaine '{nom}', indicateur {i+1}: {e}") from e
 
         return {
             'nom': nom,
@@ -63,8 +64,8 @@ class CotationValidator:
         try:
             min_val = float(indicateur.get('min', 0))
             max_val = float(indicateur.get('max', 5))
-        except (ValueError, TypeError):
-            raise ValidationError("Valeurs min/max doivent être numériques")
+        except (ValueError, TypeError) as err:
+            raise ValidationError("Valeurs min/max doivent être numériques") from err
 
         if min_val >= max_val:
             raise ValidationError("Valeur max doit être supérieure à min")
@@ -96,15 +97,12 @@ class CotationValidator:
         for i, domaine in enumerate(domaines):
             try:
                 dom_valide = CotationValidator.valider_domaine(domaine)
-                
-                # Vérifier unicité des noms
                 if dom_valide['nom'] in noms_vus:
                     raise ValidationError(f"Nom de domaine dupliqué: '{dom_valide['nom']}'")
                 noms_vus.add(dom_valide['nom'])
-                
                 domaines_valides.append(dom_valide)
             except ValidationError as e:
-                raise ValidationError(f"Domaine {i+1}: {e}")
+                raise ValidationError(f"Domaine {i+1}: {e}") from e
 
         return domaines_valides
 

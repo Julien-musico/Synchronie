@@ -1,9 +1,13 @@
 """Service pour la gestion des objectifs thérapeutiques liés aux versions de grilles."""
 from __future__ import annotations
-from typing import List
-from app.models import db
-from app.models.cotation import ObjectifTherapeutique, GrilleEvaluation
+
+import contextlib
+
 from flask_login import current_user  # type: ignore
+
+from app.models import db
+from app.models.cotation import GrilleEvaluation, ObjectifTherapeutique
+
 
 class ObjectifService:
     @staticmethod
@@ -24,10 +28,8 @@ class ObjectifService:
         obj.echeance = echeance
         obj.description = description
         obj.actif = True
-        try:
+        with contextlib.suppress(Exception):
             obj.musicotherapeute_id = current_user.id  # type: ignore[attr-defined]
-        except Exception:
-            pass
         db.session.add(obj)
         db.session.commit()
         return obj
@@ -42,7 +44,7 @@ class ObjectifService:
         return True
 
     @staticmethod
-    def lister_objectifs_patient(patient_id: int, actifs_seulement: bool = True) -> List[ObjectifTherapeutique]:
+    def lister_objectifs_patient(patient_id: int, actifs_seulement: bool = True) -> list[ObjectifTherapeutique]:
         q = ObjectifTherapeutique.query.filter_by(patient_id=patient_id)
         if actifs_seulement:
             q = q.filter_by(actif=True)

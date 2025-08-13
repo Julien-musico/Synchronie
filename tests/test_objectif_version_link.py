@@ -5,6 +5,7 @@ from app.models import User  # type: ignore
 from app.services.cotation_service import CotationService  # type: ignore
 from app.services.objectif_service import ObjectifService  # type: ignore
 
+
 @pytest.fixture(scope='module')
 def app():
     app = create_app('default')

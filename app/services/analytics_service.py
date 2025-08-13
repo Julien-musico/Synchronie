@@ -1,16 +1,20 @@
 """Service d'analytics et reporting pour la cotation thérapeutique."""
 from __future__ import annotations
-from typing import Dict, Any, List
+
 from datetime import datetime, timedelta
-from sqlalchemy import func, desc
-from app.models import db, Patient, Seance
-from app.models.cotation import GrilleEvaluation, CotationSeance
+from typing import Any
+
+from sqlalchemy import desc, func
+
+from app.models import Patient, Seance, db
+from app.models.cotation import CotationSeance, GrilleEvaluation
+
 
 class AnalyticsService:
     """Service pour l'analyse et le reporting des données de cotation."""
 
     @staticmethod
-    def statistiques_globales(musicotherapeute_id: int) -> Dict[str, Any]:
+    def statistiques_globales(musicotherapeute_id: int) -> dict[str, Any]:
         """Statistiques globales pour un musicothérapeute."""
         # Compter patients actifs
         nb_patients = Patient.query.filter_by(
@@ -52,7 +56,7 @@ class AnalyticsService:
         }
 
     @staticmethod
-    def evolution_patient_detaillee(patient_id: int, grille_id: int, limite: int = 20) -> Dict[str, Any]:
+    def evolution_patient_detaillee(patient_id: int, grille_id: int, limite: int = 20) -> dict[str, Any]:
         """Évolution détaillée d'un patient pour une grille donnée."""
         patient = Patient.query.get(patient_id)
         grille = GrilleEvaluation.query.get(grille_id)
@@ -113,7 +117,7 @@ class AnalyticsService:
         }
 
     @staticmethod
-    def patients_a_risque(musicotherapeute_id: int, seuil_score: float = 40.0) -> List[Dict[str, Any]]:
+    def patients_a_risque(musicotherapeute_id: int, seuil_score: float = 40.0) -> list[dict[str, Any]]:
         """Identifie les patients avec scores en baisse ou faibles."""
         # Approche simplifiée pour éviter les problèmes de jointure
         il_y_a_30j = datetime.now() - timedelta(days=30)
@@ -150,29 +154,23 @@ class AnalyticsService:
         return patients_risque
 
     @staticmethod
-    def rapport_activite_mensuel(musicotherapeute_id: int, annee: int, mois: int) -> Dict[str, Any]:
+    def rapport_activite_mensuel(musicotherapeute_id: int, annee: int, mois: int) -> dict[str, Any]:
         """Rapport d'activité détaillé pour un mois donné."""
         debut_mois = datetime(annee, mois, 1)
-        if mois == 12:
-            fin_mois = datetime(annee + 1, 1, 1)
-        else:
-            fin_mois = datetime(annee, mois + 1, 1)
+        fin_mois = datetime(annee + 1, 1, 1) if mois == 12 else datetime(annee, mois + 1, 1)
 
-        # Séances du mois
         seances = db.session.query(Seance).join(Patient).filter(
             Patient.musicotherapeute_id == musicotherapeute_id,
             Seance.date_seance >= debut_mois,
             Seance.date_seance < fin_mois
         ).all()
 
-        # Cotations du mois
         cotations = db.session.query(CotationSeance).join(Seance).join(Patient).filter(
             Patient.musicotherapeute_id == musicotherapeute_id,
             Seance.date_seance >= debut_mois,
             Seance.date_seance < fin_mois
         ).all()
 
-        # Statistiques par grille
         stats_grilles = db.session.query(
             GrilleEvaluation.nom,
             func.count(CotationSeance.id).label('nb_utilisations'),
@@ -183,7 +181,6 @@ class AnalyticsService:
             Seance.date_seance < fin_mois
         ).group_by(GrilleEvaluation.id, GrilleEvaluation.nom).all()
 
-        # Patients les plus actifs
         patients_actifs = db.session.query(
             Patient.prenom,
             Patient.nom,
@@ -200,7 +197,7 @@ class AnalyticsService:
             'periode': f"{mois:02d}/{annee}",
             'nb_seances': len(seances),
             'nb_cotations': len(cotations),
-            'nb_patients_vus': len(set(s.patient_id for s in seances)),
+            'nb_patients_vus': len({s.patient_id for s in seances}),
             'score_moyen_global': round(sum(c.pourcentage_reussite for c in cotations) / len(cotations), 1) if cotations else 0,
             'grilles_utilisees': [
                 {

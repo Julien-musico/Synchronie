@@ -2,13 +2,15 @@
 Service de transcription audio et analyse IA pour Synchronie
 Utilise OpenAI Whisper pour la transcription et GPT pour l'analyse
 """
+import logging
 import os
 import tempfile
-from typing import Optional, Tuple, Dict, Any
-from werkzeug.datastructures import FileStorage
+from typing import Any, Dict, Optional, Tuple
+
 from openai import OpenAI
-from app.models import db, Seance
-import logging
+from werkzeug.datastructures import FileStorage
+
+from app.models import Seance, db
 
 logger = logging.getLogger(__name__)
 
@@ -115,9 +117,12 @@ class AudioTranscriptionService:
             return False, f"Format non supporté. Formats autorisés: {', '.join(AudioTranscriptionService.ALLOWED_EXTENSIONS)}"
         
         # Vérifier la taille (si possible)
-        if hasattr(file, 'content_length') and file.content_length:
-            if file.content_length > AudioTranscriptionService.MAX_FILE_SIZE:
-                return False, "Fichier trop volumineux. Taille maximum: 25 MB"
+        if (
+            hasattr(file, 'content_length')
+            and file.content_length
+            and file.content_length > AudioTranscriptionService.MAX_FILE_SIZE
+        ):
+            return False, "Fichier trop volumineux. Taille maximum: 25 MB"
         
         return True, ""
     

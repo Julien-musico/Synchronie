@@ -4,8 +4,11 @@ Objectif: unifier la logique d'accès par musicotherapeute_id afin de réduire
 la duplication et préparer une future gestion fine des permissions.
 """
 from __future__ import annotations
-from typing import Optional, Any
+
+from typing import Any
+
 from flask_login import current_user  # type: ignore
+
 
 def _CURRENT_UID():  # type: ignore
     try:
@@ -14,7 +17,7 @@ def _CURRENT_UID():  # type: ignore
         return None
 
 
-def current_owner_id() -> Optional[int]:
+def current_owner_id() -> int | None:
     """Retourne l'id de l'utilisateur courant ou None hors contexte."""
     try:
         return _CURRENT_UID()
@@ -46,5 +49,5 @@ def assert_owns(instance) -> bool:
     if not uid:
         return True  # contexte système
     if hasattr(instance, 'musicotherapeute_id'):
-        return getattr(instance, 'musicotherapeute_id') == uid
+        return instance.musicotherapeute_id == uid
     return True

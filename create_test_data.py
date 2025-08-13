@@ -2,12 +2,14 @@
 Script de création de données de test pour Synchronie
 """
 
-from app import create_app, db
-from app.models import User, Patient, Seance
-from app.models.cotation import GrilleEvaluation, VersionGrille, DomaineEvaluation, IndicateurEvaluation
-from app.services.cotation_service import CotationService
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
+
+from app import create_app, db
+from app.models import Patient, Seance, User
+from app.models.cotation import GrilleEvaluation
+from app.services.cotation_service import CotationService
+
 
 def creer_donnees_test():
     """Crée des données de test pour l'application"""
@@ -62,7 +64,7 @@ def creer_donnees_test():
     print(f"✅ {len(patients)} patients disponibles")
 
     # Créer des séances de test
-    for i, patient in enumerate(patients[:3]):  # Seulement pour les 3 premiers
+    for _i, patient in enumerate(patients[:3]):  # Seulement pour les 3 premiers
         # 2-4 séances par patient
         nb_seances = random.randint(2, 4)
         for j in range(nb_seances):
@@ -159,10 +161,10 @@ def creer_donnees_test():
     # Créer une grille personnalisée pour l'utilisateur
     if not GrilleEvaluation.query.filter_by(nom='Ma Grille Personnalisée', user_id=user.id).first():
         try:
-            grille_perso = CotationService.creer_grille_personnalisee(
+            CotationService.creer_grille_personnalisee(
                 nom='Ma Grille Personnalisée',
                 description='Grille adaptée à ma pratique clinique',
-                domaines_data=[
+                domaines=[
                     {
                         'nom': 'Attention',
                         'description': 'Capacité d\'attention et concentration',

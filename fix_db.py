@@ -6,14 +6,15 @@ Contexte: remplacé progressivement par les migrations Alembic.
 Objectif initial: corriger/renommer la colonne activites_musicales → activites_realisees.
 À supprimer une fois que le déploiement s'appuie exclusivement sur `flask db upgrade`.
 """
-from contextlib import suppress
 import os
 import sys
+from contextlib import suppress
 
 from sqlalchemy import text  # type: ignore
 
 from app import create_app  # type: ignore
 from app.models import db  # type: ignore
+
 
 def fix_database():
     """Corrige la structure de la base de données"""

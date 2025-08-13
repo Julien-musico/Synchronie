@@ -1,8 +1,9 @@
 import os
-from flask import Flask, render_template, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+
 from dotenv import load_dotenv
+from flask import Flask, jsonify, render_template
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
 
 # Charger les variables d'environnement
 load_dotenv()

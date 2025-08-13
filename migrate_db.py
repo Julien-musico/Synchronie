@@ -3,8 +3,10 @@
 Script de migration pour corriger les problèmes de base de données
 """
 import os
-import psycopg2
 from urllib.parse import urlparse
+
+import psycopg2
+
 
 def execute_sql_patch():
     """Exécute le patch SQL pour corriger la base de données"""
@@ -32,7 +34,7 @@ def execute_sql_patch():
         print("✅ Connexion à la base de données établie")
         
         # Lire le fichier de patch
-        with open('sql/schema_patch.sql', 'r', encoding='utf-8') as f:
+        with open('sql/schema_patch.sql', encoding='utf-8') as f:
             sql_patch = f.read()
         
         # Exécuter le patch

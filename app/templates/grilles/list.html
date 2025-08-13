@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}Grilles de cotation - Synchronie{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-clipboard-check text-primary me-2"></i>
+                    Grilles de cotation
+                </h1>
+                <p class="text-muted mb-0">Gérez vos grilles d'évaluation thérapeutique</p>
+            </div>
+            <div>
+                <a href="{{ url_for('grilles.new_grille') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Nouvelle grille
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Grilles standards -->
+{% if grilles_standards %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-award me-2"></i>
+            Grilles standards internationales
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Référence scientifique</th>
+                        <th>Description</th>
+                        <th>Domaines</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grille in grilles_standards %}
+                    <tr>
+                        <td>
+                            <strong>{{ grille.nom }}</strong>
+                            <span class="badge bg-success ms-2">Standard</span>
+                        </td>
+                        <td>
+                            {% if grille.reference_scientifique %}
+                                <span class="badge bg-info">{{ grille.reference_scientifique }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ grille.description[:100] }}{% if grille.description|length > 100 %}...{% endif %}</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ grille.domaines|length if grille.domaines else 0 }} domaines</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('grilles.view_grille', grille_id=grille.id) }}" class="btn btn-outline-primary btn-sm" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copierGrille({{ grille.id }})" title="Copier">
+                                    <i class="bi bi-files"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Grilles personnalisées -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-person-gear me-2"></i>
+            Mes grilles personnalisées
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if grilles_personnalisees %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Description</th>
+                        <th>Domaines</th>
+                        <th>Créée le</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grille in grilles_personnalisees %}
+                    <tr>
+                        <td>
+                            <strong>{{ grille.nom }}</strong>
+                            <span class="badge bg-warning ms-2">Personnalisée</span>
+                        </td>
+                        <td class="text-muted">{{ grille.description[:100] }}{% if grille.description|length > 100 %}...{% endif %}</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ grille.domaines|length if grille.domaines else 0 }} domaines</span>
+                        </td>
+                        <td class="text-muted">{{ grille.date_creation.strftime('%d/%m/%Y') }}</td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('grilles.view_grille', grille_id=grille.id) }}" class="btn btn-outline-primary btn-sm" title="Voir">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('grilles.edit_grille', grille_id=grille.id) }}" class="btn btn-outline-warning btn-sm" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copierGrille({{ grille.id }})" title="Copier">
+                                    <i class="bi bi-files"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="supprimerGrille({{ grille.id }}, '{{ grille.nom }}')" title="Supprimer">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-clipboard text-muted" style="font-size: 3rem;"></i>
+            <h5 class="text-muted mt-3">Aucune grille personnalisée</h5>
+            <p class="text-muted">Créez votre première grille adaptée à votre pratique clinique</p>
+            <a href="{{ url_for('grilles.new_grille') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>
+                Créer une grille
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Scripts pour les actions -->
+<script>
+async function copierGrille(grilleId) {
+    if (!confirm('Voulez-vous copier cette grille ?')) return;
+    
+    try {
+        const response = await fetch(`/grilles/${grilleId}/copier`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Afficher un message de succès et rediriger vers la nouvelle grille
+            alert(result.message);
+            window.location.href = `/grilles/${result.grille_id}`;
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur lors de la copie: ' + error.message);
+    }
+}
+
+async function supprimerGrille(grilleId, nom) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la grille "${nom}" ?\n\nCette action est irréversible.`)) return;
+    
+    try {
+        const response = await fetch(`/grilles/${grilleId}/supprimer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Recharger la page pour mettre à jour la liste
+            window.location.reload();
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur lors de la suppression: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

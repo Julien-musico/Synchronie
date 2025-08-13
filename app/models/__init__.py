@@ -2,9 +2,10 @@
 Modèles de base pour l'application Synchronie
 """
 from datetime import datetime, timezone
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash  # type: ignore
+
 from flask_login import UserMixin  # type: ignore
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash, generate_password_hash  # type: ignore
 
 # Créer une instance de db que nous importerons dans __init__.py
 db = SQLAlchemy()

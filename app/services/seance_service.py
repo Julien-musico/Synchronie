@@ -2,10 +2,12 @@
 Service métier pour la gestion des séances de musicothérapie
 """
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple, Dict, Any
-from sqlalchemy.exc import SQLAlchemyError
-from app.models import db, Patient, Seance
+from typing import Any, Dict, List, Optional, Tuple
+
 from flask_login import current_user  # type: ignore
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.models import Patient, Seance, db
 
 
 class SeanceService:

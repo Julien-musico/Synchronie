@@ -1,10 +1,14 @@
 """
 Services pour la gestion des patients
 """
+import contextlib
 from typing import List, Optional
-from sqlalchemy.exc import SQLAlchemyError
-from app.models import db, Patient
+
 from flask_login import current_user  # type: ignore
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.models import Patient, db
+
 
 class PatientService:
     """Service pour la gestion des patients"""
@@ -21,11 +25,9 @@ class PatientService:
             Liste des patients
         """
         query = Patient.query
-        try:
+        with contextlib.suppress(Exception):
             user_id = current_user.id  # type: ignore[attr-defined]
             query = query.filter_by(musicotherapeute_id=user_id)
-        except Exception:
-            pass
         if actifs_seulement:
             query = query.filter_by(actif=True)
         
@@ -54,7 +56,7 @@ class PatientService:
         Crée un nouveau patient
         
         Args:
-            data: Données du patient
+            data: Données du patient (incluant grilles_ids optionnelles)
             
         Returns:
             Tuple (succès, message, patient)
@@ -84,10 +86,8 @@ class PatientService:
             
             # Associer au thérapeute courant
             owner_id = None
-            try:
+            with contextlib.suppress(Exception):
                 owner_id = current_user.id  # type: ignore[attr-defined]
-            except Exception:
-                pass
             patient = Patient(  # type: ignore[call-arg]
                 nom=nom,  # type: ignore[arg-type]
                 prenom=prenom,  # type: ignore[arg-type]
@@ -104,8 +104,19 @@ class PatientService:
             
             print("DEBUG: Tentative d'ajout en base...")
             db.session.add(patient)
-            db.session.commit()
+            db.session.flush()  # Pour obtenir l'ID du patient
             print(f"DEBUG: Patient créé avec ID: {patient.id}")
+            
+            # Assigner les grilles si spécifiées
+            grilles_ids = data.get('grilles_ids', [])
+            if grilles_ids:
+                print(f"DEBUG: Assignation des grilles: {grilles_ids}")
+                success, msg = PatientService._assigner_grilles(patient.id, grilles_ids)
+                if not success:
+                    print(f"DEBUG: Erreur assignation grilles: {msg}")
+                    # Continuer même si l'assignation échoue
+            
+            db.session.commit()
             
             return True, f"Patient {prenom} {nom} créé avec succès", patient
             
@@ -215,3 +226,110 @@ class PatientService:
                 Patient.prenom.ilike(search)
             )
         ).filter_by(actif=True).order_by(Patient.nom, Patient.prenom).all()
+
+    @staticmethod
+    def _assigner_grilles(patient_id: int, grilles_ids: List[int]) -> tuple[bool, str]:
+        """
+        Assigne des grilles de cotation à un patient
+        
+        Args:
+            patient_id: ID du patient
+            grilles_ids: Liste des IDs des grilles à assigner
+            
+        Returns:
+            Tuple (succès, message)
+        """
+        try:
+            from app.models.cotation import PatientGrille
+            
+            # Supprimer les assignations existantes
+            PatientGrille.query.filter_by(patient_id=patient_id).delete()
+            
+            # Ajouter les nouvelles assignations
+            for priority, grille_id in enumerate(grilles_ids, 1):
+                try:
+                    grille_id = int(grille_id)
+                    assignment = PatientGrille(
+                        patient_id=patient_id,
+                        grille_id=grille_id,
+                        priorite=priority,
+                        active=True
+                    )
+                    db.session.add(assignment)
+                except (ValueError, TypeError):
+                    continue
+            
+            db.session.flush()
+            return True, f"{len(grilles_ids)} grille(s) assignée(s) avec succès"
+            
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Erreur lors de l'assignation des grilles: {str(e)}"
+
+    @staticmethod
+    def get_grilles_patient(patient_id: int) -> List[dict]:
+        """
+        Récupère les grilles assignées à un patient
+        
+        Args:
+            patient_id: ID du patient
+            
+        Returns:
+            Liste des grilles assignées avec leurs détails
+        """
+        try:
+            from app.models.cotation import GrilleEvaluation, PatientGrille
+            
+            assignments = db.session.query(PatientGrille, GrilleEvaluation).join(
+                GrilleEvaluation, PatientGrille.grille_id == GrilleEvaluation.id
+            ).filter(
+                PatientGrille.patient_id == patient_id,
+                PatientGrille.active.is_(True),
+                GrilleEvaluation.active.is_(True)
+            ).order_by(PatientGrille.priorite).all()
+            
+            return [
+                {
+                    'id': assignment.grille_id,
+                    'nom': grille.nom,
+                    'description': grille.description,
+                    'type_grille': grille.type_grille,
+                    'reference_scientifique': grille.reference_scientifique,
+                    'priorite': assignment.priorite,
+                    'date_assignation': assignment.date_assignation.isoformat() if assignment.date_assignation else None,
+                    'nb_domaines': len(grille.domaines) if grille.domaines else 0
+                }
+                for assignment, grille in assignments
+            ]
+            
+        except Exception as e:
+            print(f"Erreur récupération grilles patient: {e}")
+            return []
+
+    @staticmethod
+    def modifier_grilles_patient(patient_id: int, grilles_ids: List[int]) -> tuple[bool, str]:
+        """
+        Modifie les grilles assignées à un patient
+        
+        Args:
+            patient_id: ID du patient
+            grilles_ids: Nouvelle liste des IDs des grilles
+            
+        Returns:
+            Tuple (succès, message)
+        """
+        try:
+            # Vérifier que le patient existe et appartient à l'utilisateur
+            try:
+                user_id = current_user.id  # type: ignore[attr-defined]
+                patient = Patient.query.filter_by(id=patient_id, musicotherapeute_id=user_id).first()
+            except Exception:
+                patient = Patient.query.get(patient_id)
+            
+            if not patient:
+                return False, "Patient non trouvé"
+            
+            return PatientService._assigner_grilles(patient_id, grilles_ids)
+            
+        except Exception as e:
+            return False, f"Erreur lors de la modification: {str(e)}"

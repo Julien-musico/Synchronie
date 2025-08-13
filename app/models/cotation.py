@@ -1,7 +1,10 @@
 """Modèles pour le système de cotation thérapeutique."""
 import json
+from datetime import datetime, timezone
 from typing import Any, Dict, List
-from . import db, TimestampMixin
+
+from . import TimestampMixin, db
+
 
 class GrilleEvaluation(TimestampMixin, db.Model):
     """Grilles d'évaluation thérapeutique (prédéfinies ou personnalisées).
@@ -130,3 +133,34 @@ class GrilleVersion(TimestampMixin, db.Model):
 
     def __repr__(self):  # type: ignore
         return f'<GrilleVersion grille_id={self.grille_id} v={self.version_num}>'
+
+
+class PatientGrille(TimestampMixin, db.Model):
+    """Association entre un patient et ses grilles de cotation assignées."""
+    __tablename__ = 'patient_grille'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
+    grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
+    
+    # Configuration spécifique au patient
+    priorite = db.Column(db.Integer, default=1)  # Ordre d'importance pour ce patient
+    active = db.Column(db.Boolean, default=True)
+    
+    # Métadonnées
+    assignee_par = db.Column(db.Integer)  # ID du thérapeute qui a assigné
+    date_assignation = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    date_fin = db.Column(db.DateTime)  # Date de fin d'utilisation
+    
+    # Commentaires d'assignation
+    commentaires = db.Column(db.Text)
+    
+    # Contrainte d'unicité
+    __table_args__ = (db.UniqueConstraint('patient_id', 'grille_id', name='_patient_grille_uc'),)
+    
+    # Relations
+    patient = db.relationship('Patient', backref='grilles_assignees')
+    grille = db.relationship('GrilleEvaluation', backref='patients_assignes')
+    
+    def __repr__(self):  # type: ignore
+        return f'<PatientGrille patient_id={self.patient_id} grille_id={self.grille_id}>'

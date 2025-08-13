@@ -5,6 +5,7 @@ Script pour inspecter et corriger la structure de la base de données
 from app import create_app
 from app.models import db
 
+
 def inspect_seances_table():
     app = create_app()
     with app.app_context():

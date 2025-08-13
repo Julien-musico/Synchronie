@@ -2,7 +2,8 @@
 Routes pour la gestion des enregistrements audio et transcriptions
 """
 import os
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import login_required  # type: ignore
 
 from app.services.audio_service import AudioTranscriptionService

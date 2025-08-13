@@ -1,10 +1,11 @@
 """
 Routes principales de l'application
 """
-from flask import Blueprint, render_template, jsonify, redirect, url_for
+from flask import Blueprint, jsonify, redirect, render_template, url_for
+from flask_login import current_user, login_required  # type: ignore
 from sqlalchemy import text
+
 from app.models import db
-from flask_login import login_required, current_user  # type: ignore
 from app.services.patient_service import PatientService
 from app.services.seance_service import SeanceService
 

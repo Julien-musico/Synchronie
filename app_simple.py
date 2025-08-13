@@ -2,6 +2,7 @@
 Point d'entrée simple pour Gunicorn en cas de problème avec la structure MVC
 """
 import os
+
 from flask import Flask
 
 # Créer une application Flask simple

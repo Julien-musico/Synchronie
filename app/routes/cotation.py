@@ -1,20 +1,22 @@
 """
 Routes pour le système de cotation thérapeutique
 """
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+
 try:
-    from flask_login import login_required, current_user  # type: ignore
+    from flask_login import current_user, login_required  # type: ignore
 except ImportError:  # fallback pour analyse statique si non installé
     def login_required(func):  # type: ignore
         return func
     class _User:  # type: ignore
         id: int = 0
     current_user = _User()  # type: ignore
-from app.models import db, Seance, Patient
-from app.models.cotation import GrilleEvaluation, CotationSeance
-from app.services.cotation_service import CotationService
-from app.services.analytics_service import AnalyticsService
 import json
+
+from app.models import Patient, Seance, db
+from app.models.cotation import CotationSeance, GrilleEvaluation
+from app.services.analytics_service import AnalyticsService
+from app.services.cotation_service import CotationService
 
 cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 
@@ -35,7 +37,7 @@ def grilles():  # type: ignore[no-untyped-def]
         return render_template('cotation/grilles.html',
                                grilles_user=grilles_user,
                                grilles_publiques=grilles_publiques)
-    except Exception as e:  # pragma: no cover
+    except Exception:  # pragma: no cover
         current_app.logger.exception("Erreur chargement grilles")
         flash('Erreur interne chargement des grilles', 'error')
         return render_template('cotation/grilles.html', grilles_user=[], grilles_publiques=[]), 500
@@ -55,19 +57,17 @@ def creer_grille_predefinee():
     
     try:
         grille = CotationService.creer_grille_predefinie(type_grille)
-        if grille:
-            # Assigner à l'utilisateur actuel
-            grille.musicotherapeute_id = current_user.id
-            grille.publique = False
-            db.session.commit()
-            
-            return jsonify({
-                'success': True,
-                'grille_id': grille.id,
-                'nom': grille.nom
-            })
-        else:
+        if not grille:
             return jsonify({'success': False, 'error': 'Type de grille inconnu'}), 400
+        # Assigner à l'utilisateur actuel
+        grille.musicotherapeute_id = current_user.id
+        grille.publique = False
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'grille_id': grille.id,
+            'nom': grille.nom
+        })
             
     except Exception as e:
         db.session.rollback()
@@ -223,20 +223,15 @@ def sauvegarder_cotation(seance_id):
         ).first()
         
         if cotation_existante:
-            # Mettre à jour
             cotation_existante.scores_detailles = json.dumps(scores)
             cotation_existante.observations_cotation = observations
-            
-            # Recalculer les scores
             grille = GrilleEvaluation.query.get(grille_id)
             score_global, score_max, pourcentage = CotationService.calculer_score_global(scores, grille)
             cotation_existante.score_global = score_global
             cotation_existante.score_max_possible = score_max
             cotation_existante.pourcentage_reussite = pourcentage
-            
             cotation = cotation_existante
         else:
-            # Créer nouvelle cotation
             cotation = CotationService.creer_cotation(
                 seance_id=seance_id,
                 grille_id=grille_id,

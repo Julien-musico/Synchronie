@@ -6,6 +6,7 @@ from app import create_app  # type: ignore
 from app.models import Patient  # type: ignore
 from app.services.seance_service import SeanceService  # type: ignore
 
+
 def test_seances():
     app = create_app()
     with app.app_context():

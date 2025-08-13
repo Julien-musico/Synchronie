@@ -2,6 +2,7 @@
 API REST pour l'application Synchronie
 """
 from flask import Blueprint, jsonify, request
+
 from app.services.patient_service import PatientService
 
 api = Blueprint('api', __name__)
@@ -43,18 +44,16 @@ def create_patient():
             }), 400
         
         success, message, patient = PatientService.create_patient(data)
-        
         if success:
             return jsonify({
                 'success': True,
                 'message': message,
                 'data': patient.to_dict()
             }), 201
-        else:
-            return jsonify({
-                'success': False,
-                'message': message
-            }), 400
+        return jsonify({
+            'success': False,
+            'message': message
+        }), 400
             
     except Exception as e:
         return jsonify({
@@ -96,18 +95,16 @@ def update_patient(patient_id):
             }), 400
         
         success, message, patient = PatientService.update_patient(patient_id, data)
-        
         if success:
             return jsonify({
                 'success': True,
                 'message': message,
                 'data': patient.to_dict()
             })
-        else:
-            return jsonify({
-                'success': False,
-                'message': message
-            }), 400 if 'non trouvé' not in message else 404
+        return jsonify({
+            'success': False,
+            'message': message
+        }), 400 if 'non trouvé' not in message else 404
             
     except Exception as e:
         return jsonify({

@@ -2,7 +2,9 @@
 Routes pour la gestion des patients (interface web)
 """
 from datetime import datetime
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+
 from app.services.patient_service import PatientService
 
 patients = Blueprint('patients', __name__)
@@ -35,10 +37,9 @@ def create_patient():
         flash(message, 'success')
         print(f"DEBUG: Redirection vers patient {patient.id}")
         return redirect(url_for('patients.view_patient', patient_id=patient.id))
-    else:
-        flash(message, 'error')
-        print("DEBUG: Retour au formulaire avec erreur")
-        return render_template('patients/form_simple.html', patient=None)
+    flash(message, 'error')
+    print("DEBUG: Retour au formulaire avec erreur")
+    return render_template('patients/form_simple.html', patient=None)
 
 @patients.route('/debug-form')
 def debug_form():
@@ -88,8 +89,7 @@ def test_create():
     
     if success:
         return f"✅ Patient créé avec succès ! ID: {patient.id}, Nom: {patient.prenom} {patient.nom}"
-    else:
-        return f"❌ Erreur lors de la création: {message}"
+    return f"❌ Erreur lors de la création: {message}"
 
 @patients.route('/<int:patient_id>')
 def view_patient(patient_id):
@@ -121,6 +121,5 @@ def update_patient(patient_id):
     if success:
         flash(message, 'success')
         return redirect(url_for('patients.view_patient', patient_id=patient.id))
-    else:
-        flash(message, 'error')
-        return redirect(url_for('patients.edit_patient', patient_id=patient_id))
+    flash(message, 'error')
+    return redirect(url_for('patients.edit_patient', patient_id=patient_id))

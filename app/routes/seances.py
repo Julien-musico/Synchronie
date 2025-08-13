@@ -1,8 +1,9 @@
 """
 Routes pour la gestion des séances
 """
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required  # type: ignore
+
 from app.services.patient_service import PatientService
 from app.services.seance_service import SeanceService
 
@@ -54,9 +55,8 @@ def create_seance(patient_id):
     if success:
         flash(message, 'success')
         return redirect(url_for('patients.view_patient', patient_id=patient_id))
-    else:
-        flash(message, 'error')
-        return render_template('seances/form.html', patient=patient, seance=None, mode='create', data=data)
+    flash(message, 'error')
+    return render_template('seances/form.html', patient=patient, seance=None, mode='create', data=data)
 
 @seances.route('/<int:seance_id>')
 @login_required  # type: ignore
@@ -95,8 +95,7 @@ def update_seance(seance_id):
     if success:
         flash(message, 'success')
         return redirect(url_for('seances.view_seance', seance_id=seance_id))
-    else:
-        flash(message, 'error')
+    flash(message, 'error')
     return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit', data=data)  # type: ignore[attr-defined]
 
 @seances.route('/<int:seance_id>/delete', methods=['POST'])

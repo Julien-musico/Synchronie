@@ -2,10 +2,11 @@
 """
 Script de debug pour tester la création de séances
 """
+
 from app import create_app
-from app.models import db, Patient
+from app.models import Patient
 from app.services.seance_service import SeanceService
-from datetime import datetime
+
 
 def debug_seance_creation():
     app = create_app()

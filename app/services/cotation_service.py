@@ -1,10 +1,11 @@
 """Service pour la gestion des grilles d'évaluation et cotations (versioning)."""
-from typing import List, Dict, Any, Optional, Tuple
 import json
+from typing import Any, Dict, List, Optional, Tuple
+
 from app.models import db
+from app.models.cotation import CotationSeance, GrilleEvaluation, GrilleVersion
 from app.services.calcul_cotation_service import CalculCotationService
 from app.services.validation_service import CotationValidator, ValidationError
-from app.models.cotation import GrilleEvaluation, CotationSeance, GrilleVersion
 
 try:
     from flask_login import current_user  # type: ignore
@@ -24,12 +25,205 @@ class CotationService:
                 "description": "Grille de l'Association Américaine de Musicothérapie (7 domaines, 28 indicateurs)",
                 "reference_scientifique": "AMTA",
                 "domaines": [
-                    {"nom": "Engagement Musical", "couleur": "#3498db", "description": "Participation active aux activités musicales", "indicateurs": [
-                        {"nom": "Attention soutenue", "min": 0, "max": 5, "unite": "points"},
-                        {"nom": "Initiative musicale", "min": 0, "max": 5, "unite": "points"},
-                        {"nom": "Persévérance", "min": 0, "max": 5, "unite": "points"},
-                        {"nom": "Exploration sonore", "min": 0, "max": 5, "unite": "points"}
-                    ]}
+                    {
+                        "nom": "Engagement Musical", 
+                        "couleur": "#3498db", 
+                        "description": "Participation active aux activités musicales", 
+                        "indicateurs": [
+                            {"nom": "Attention soutenue", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Initiative musicale", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Persévérance", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Exploration sonore", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Expression Émotionnelle",
+                        "couleur": "#e74c3c",
+                        "description": "Capacité d'expression des émotions par la musique",
+                        "indicateurs": [
+                            {"nom": "Expression spontanée", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Reconnaissance émotionnelle", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Régulation émotionnelle", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Empathie musicale", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Communication",
+                        "couleur": "#2ecc71",
+                        "description": "Compétences de communication verbale et non-verbale",
+                        "indicateurs": [
+                            {"nom": "Expression verbale", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Écoute active", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Communication non-verbale", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Tour de parole", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Motricité",
+                        "couleur": "#f39c12",
+                        "description": "Compétences motrices globales et fines",
+                        "indicateurs": [
+                            {"nom": "Coordination globale", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Motricité fine", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Rythme corporel", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Équilibre postural", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    }
+                ]
+            },
+            "imcap_nd": {
+                "nom": "IMCAP-ND - Autisme",
+                "description": "Individual Music-Centered Assessment Profile for Neurodevelopmental Disorders (spécialisée troubles autistiques)",
+                "reference_scientifique": "IMCAP-ND",
+                "domaines": [
+                    {
+                        "nom": "Attention et Engagement",
+                        "couleur": "#9b59b6",
+                        "description": "Capacité d'attention et d'engagement dans l'activité musicale",
+                        "indicateurs": [
+                            {"nom": "Attention visuelle", "min": 0, "max": 3, "unite": "niveau"},
+                            {"nom": "Attention auditive", "min": 0, "max": 3, "unite": "niveau"},
+                            {"nom": "Durée d'engagement", "min": 0, "max": 3, "unite": "niveau"},
+                            {"nom": "Qualité de l'engagement", "min": 0, "max": 3, "unite": "niveau"}
+                        ]
+                    },
+                    {
+                        "nom": "Interaction Sociale",
+                        "couleur": "#1abc9c",
+                        "description": "Compétences d'interaction et de communication sociale",
+                        "indicateurs": [
+                            {"nom": "Contact oculaire", "min": 0, "max": 3, "unite": "niveau"},
+                            {"nom": "Imitation", "min": 0, "max": 3, "unite": "niveau"},
+                            {"nom": "Tour de rôle", "min": 0, "max": 3, "unite": "niveau"},
+                            {"nom": "Initiation sociale", "min": 0, "max": 3, "unite": "niveau"}
+                        ]
+                    },
+                    {
+                        "nom": "Flexibilité Cognitive",
+                        "couleur": "#34495e",
+                        "description": "Adaptation aux changements et flexibilité comportementale",
+                        "indicateurs": [
+                            {"nom": "Adaptation au changement", "min": 0, "max": 3, "unite": "niveau"},
+                            {"nom": "Tolérance à l'imprévu", "min": 0, "max": 3, "unite": "niveau"},
+                            {"nom": "Créativité musicale", "min": 0, "max": 3, "unite": "niveau"}
+                        ]
+                    }
+                ]
+            },
+            "geriatrie_simple": {
+                "nom": "Gériatrie - Évaluation Simplifiée",
+                "description": "Grille adaptée pour l'évaluation en gérontologie et troubles cognitifs",
+                "reference_scientifique": "Adapté MMSE/NPI",
+                "domaines": [
+                    {
+                        "nom": "Cognition",
+                        "couleur": "#8e44ad",
+                        "description": "Fonctions cognitives et mémoire",
+                        "indicateurs": [
+                            {"nom": "Reconnaissance mélodique", "min": 0, "max": 4, "unite": "niveau"},
+                            {"nom": "Mémoire des paroles", "min": 0, "max": 4, "unite": "niveau"},
+                            {"nom": "Attention soutenue", "min": 0, "max": 4, "unite": "niveau"},
+                            {"nom": "Orientation temporelle", "min": 0, "max": 4, "unite": "niveau"}
+                        ]
+                    },
+                    {
+                        "nom": "Humeur et Bien-être",
+                        "couleur": "#e67e22",
+                        "description": "État émotionnel et bien-être psychologique",
+                        "indicateurs": [
+                            {"nom": "Plaisir musical", "min": 0, "max": 4, "unite": "niveau"},
+                            {"nom": "Apaisement", "min": 0, "max": 4, "unite": "niveau"},
+                            {"nom": "Sourires/rires", "min": 0, "max": 4, "unite": "niveau"},
+                            {"nom": "Diminution agitation", "min": 0, "max": 4, "unite": "niveau"}
+                        ]
+                    },
+                    {
+                        "nom": "Interaction Sociale",
+                        "couleur": "#27ae60",
+                        "description": "Relations sociales et communication",
+                        "indicateurs": [
+                            {"nom": "Échanges verbaux", "min": 0, "max": 4, "unite": "niveau"},
+                            {"nom": "Partage musical", "min": 0, "max": 4, "unite": "niveau"},
+                            {"nom": "Reconnexion relationnelle", "min": 0, "max": 4, "unite": "niveau"}
+                        ]
+                    }
+                ]
+            },
+            "pediatrie_globale": {
+                "nom": "Pédiatrie - Développement Global",
+                "description": "Grille complète pour l'évaluation du développement chez l'enfant",
+                "reference_scientifique": "Adapté Bayley/ADOS",
+                "domaines": [
+                    {
+                        "nom": "Développement Moteur",
+                        "couleur": "#d35400",
+                        "description": "Motricité globale et fine adaptée à l'âge",
+                        "indicateurs": [
+                            {"nom": "Coordination bi-manuelle", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Rythme et mouvement", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Précision gestuelle", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Tonus postural", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Langage et Communication",
+                        "couleur": "#c0392b",
+                        "description": "Développement du langage et des compétences communicatives",
+                        "indicateurs": [
+                            {"nom": "Vocalises musicales", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Compréhension verbale", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Expression spontanée", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Pragmatique", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Socio-affectif",
+                        "couleur": "#16a085",
+                        "description": "Compétences sociales et régulation émotionnelle",
+                        "indicateurs": [
+                            {"nom": "Attachement thérapeute", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Jeu partagé", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Autorégulation", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Empathie", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    }
+                ]
+            },
+            "evaluation_rapide": {
+                "nom": "Évaluation Rapide - 3 Domaines",
+                "description": "Grille simplifiée pour évaluation rapide en séance (3 domaines essentiels)",
+                "reference_scientifique": "Synthèse clinique",
+                "domaines": [
+                    {
+                        "nom": "Engagement",
+                        "couleur": "#3498db",
+                        "description": "Niveau de participation et d'implication",
+                        "indicateurs": [
+                            {"nom": "Participation active", "min": 0, "max": 10, "unite": "sur 10"},
+                            {"nom": "Initiative", "min": 0, "max": 10, "unite": "sur 10"},
+                            {"nom": "Concentration", "min": 0, "max": 10, "unite": "sur 10"}
+                        ]
+                    },
+                    {
+                        "nom": "Expression",
+                        "couleur": "#e74c3c",
+                        "description": "Capacité d'expression personnelle",
+                        "indicateurs": [
+                            {"nom": "Expression émotionnelle", "min": 0, "max": 10, "unite": "sur 10"},
+                            {"nom": "Créativité", "min": 0, "max": 10, "unite": "sur 10"},
+                            {"nom": "Spontanéité", "min": 0, "max": 10, "unite": "sur 10"}
+                        ]
+                    },
+                    {
+                        "nom": "Interaction",
+                        "couleur": "#2ecc71",
+                        "description": "Qualité des interactions sociales",
+                        "indicateurs": [
+                            {"nom": "Communication", "min": 0, "max": 10, "unite": "sur 10"},
+                            {"nom": "Coopération", "min": 0, "max": 10, "unite": "sur 10"},
+                            {"nom": "Écoute d'autrui", "min": 0, "max": 10, "unite": "sur 10"}
+                        ]
+                    }
                 ]
             }
         }
@@ -67,7 +261,7 @@ class CotationService:
         try:
             domaines_valides = CotationValidator.valider_grille_complete(domaines) if domaines else []
         except ValidationError as e:
-            raise ValueError(f"Domaines invalides: {e}")
+            raise ValueError(f"Domaines invalides: {e}") from e
         
         g = GrilleEvaluation()
         g.nom = nom
@@ -155,7 +349,7 @@ class CotationService:
         try:
             cleaned = CotationValidator.valider_grille_complete(domaines)
         except ValidationError as e:
-            raise ValueError(f"Validation échouée: {e}")
+            raise ValueError(f"Validation échouée: {e}") from e
         
         last_v = GrilleVersion.query.filter_by(grille_id=g.id).order_by(GrilleVersion.version_num.desc()).first()
         if last_v and last_v.active:
@@ -187,7 +381,7 @@ class CotationService:
             if erreurs:
                 raise ValueError(f"Scores invalides: {', '.join(erreurs)}")
         except ValidationError as e:
-            raise ValueError(f"Validation scores échouée: {e}")
+            raise ValueError(f"Validation scores échouée: {e}") from e
         
         score, max_score, pct = CotationService.calculer_score_global(scores_valides, g)
         cot = CotationSeance()
@@ -220,3 +414,125 @@ class CotationService:
                 'scores_detailles': cot.scores
             })
         return out[::-1]
+
+    # ------------------- Gestion des grilles ------------------- #
+    @staticmethod
+    def get_grilles_standards() -> List[GrilleEvaluation]:
+        """Récupère toutes les grilles standards (publiques)."""
+        return GrilleEvaluation.query.filter_by(type_grille='standard', active=True, publique=True).all()
+
+    @staticmethod
+    def get_grilles_utilisateur() -> List[GrilleEvaluation]:
+        """Récupère les grilles personnalisées de l'utilisateur courant."""
+        try:
+            user_id = current_user.id  # type: ignore[attr-defined]
+            return GrilleEvaluation.query.filter_by(
+                type_grille='personnalisee',
+                musicotherapeute_id=user_id,
+                active=True
+            ).all()
+        except Exception:
+            return []
+
+    @staticmethod
+    def get_grille_by_id(grille_id: int) -> Optional[GrilleEvaluation]:
+        """Récupère une grille par son ID avec vérification d'accès."""
+        grille = GrilleEvaluation.query.get(grille_id)
+        if not grille or not grille.active:
+            return None
+        
+        # Vérification d'accès : grille publique ou appartenant à l'utilisateur
+        if grille.publique:
+            return grille
+        
+        try:
+            user_id = current_user.id  # type: ignore[attr-defined]
+            if grille.musicotherapeute_id == user_id:
+                return grille
+        except Exception:
+            pass
+        
+        return None
+
+    @staticmethod
+    def update_grille_complete(grille_id: int, nom: Optional[str], description: Optional[str], 
+                             domaines: Optional[List[Dict[str, Any]]]) -> Optional[GrilleEvaluation]:
+        """Met à jour complètement une grille (nom, description, domaines)."""
+        grille = GrilleEvaluation.query.get(grille_id)
+        if not grille or not grille.active:
+            return None
+        
+        # Vérification des droits d'édition
+        try:
+            user_id = current_user.id  # type: ignore[attr-defined]
+            if grille.musicotherapeute_id != user_id:
+                return None
+        except Exception:
+            return None
+        
+        # Mise à jour des métadonnées
+        if nom:
+            nom = nom.strip()
+            if len(nom) < 3:
+                raise ValueError("Nom de grille requis (min 3 caractères)")
+            if len(nom) > 100:
+                raise ValueError("Nom trop long (max 100 caractères)")
+            grille.nom = nom
+        
+        if description is not None:
+            grille.description = description.strip()[:500]
+        
+        # Mise à jour des domaines si fournis
+        if domaines is not None:
+            try:
+                domaines_valides = CotationValidator.valider_grille_complete(domaines)
+            except ValidationError as e:
+                raise ValueError(f"Domaines invalides: {e}") from e
+            
+            # Créer une nouvelle version
+            last_version = GrilleVersion.query.filter_by(
+                grille_id=grille.id
+            ).order_by(GrilleVersion.version_num.desc()).first()
+            
+            if last_version and last_version.active:
+                last_version.active = False
+            
+            new_version = GrilleVersion()
+            new_version.grille_id = grille.id
+            new_version.version_num = 1 if not last_version else last_version.version_num + 1
+            new_version.domaines_config = json.dumps(domaines_valides)
+            new_version.active = True
+            
+            grille.domaines = domaines_valides
+            db.session.add(new_version)
+        
+        db.session.commit()
+        return grille
+
+    @staticmethod
+    def get_grilles_disponibles_pour_patient() -> Dict[str, List[Dict[str, Any]]]:
+        """Récupère toutes les grilles disponibles pour l'assignation à un patient."""
+        standards = CotationService.get_grilles_standards()
+        personnalisees = CotationService.get_grilles_utilisateur()
+        
+        return {
+            'standards': [
+                {
+                    'id': g.id,
+                    'nom': g.nom,
+                    'description': g.description,
+                    'reference_scientifique': g.reference_scientifique,
+                    'nb_domaines': len(g.domaines) if g.domaines else 0
+                }
+                for g in standards
+            ],
+            'personnalisees': [
+                {
+                    'id': g.id,
+                    'nom': g.nom,
+                    'description': g.description,
+                    'nb_domaines': len(g.domaines) if g.domaines else 0
+                }
+                for g in personnalisees
+            ]
+        }

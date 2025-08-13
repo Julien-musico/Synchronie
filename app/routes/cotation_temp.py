@@ -2,7 +2,7 @@
 Routes simplifiées pour le système de cotation thérapeutique
 Version temporaire sans dépendances sur les modèles manquants
 """
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, jsonify, render_template
 
 cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 

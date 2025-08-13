@@ -3,16 +3,16 @@ Factory pattern pour créer l'application Flask
 """
 from flask import Flask
 from flask_migrate import Migrate
+
 try:
     from flask_login import LoginManager  # type: ignore
     _LOGIN_AVAILABLE = True
 except Exception:  # pragma: no cover
     LoginManager = None  # type: ignore
     _LOGIN_AVAILABLE = False
-from config import config  # type: ignore
-
 # Import de la base de données depuis les modèles pour éviter les imports circulaires
-from app.models import db, User
+from app.models import User, db
+from config import config  # type: ignore
 
 migrate = Migrate()
 
@@ -78,6 +78,7 @@ def create_app(config_name: str = 'default') -> Flask:
     safe_register('app.routes.patients', 'patients', '/patients')
     safe_register('app.routes.seances', 'seances', '/seances')
     safe_register('app.routes.audio', 'audio', '/audio')
+    safe_register('app.routes.grilles', 'grilles', '/grilles')
     cotation_ok = safe_register('app.routes.cotation', 'cotation_bp')
 
     if not cotation_ok:

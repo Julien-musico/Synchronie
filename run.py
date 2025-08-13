@@ -3,6 +3,7 @@ Point d'entrée principal pour l'application Synchronie
 Version 2.0.0 - Application MVC complète avec interface moderne
 """
 import os
+
 from app import create_app
 
 # Création de l'application avec la configuration appropriée

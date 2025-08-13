@@ -5,6 +5,7 @@ from app.models import User  # type: ignore
 from app.models.cotation import GrilleEvaluation, GrilleVersion  # type: ignore
 from app.services.cotation_service import CotationService  # type: ignore
 
+
 @pytest.fixture(scope='module')
 def app():
     app = create_app('default')

@@ -2,6 +2,7 @@
 Configuration centralisée pour l'application Synchronie
 """
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()

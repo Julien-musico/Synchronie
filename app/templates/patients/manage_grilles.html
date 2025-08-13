@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Grilles de {{ patient.prenom }} {{ patient.nom }} - Synchronie{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-clipboard-check text-primary me-2"></i>
+                    Grilles de cotation
+                </h1>
+                <p class="text-muted mb-0">
+                    Gestion des grilles assignées à {{ patient.prenom }} {{ patient.nom }}
+                </p>
+            </div>
+            <div>
+                <a href="{{ url_for('patients.view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>
+                    Retour au patient
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <form method="POST" action="{{ url_for('patients.manage_grilles_patient', patient_id=patient.id) }}">
+            
+            <!-- Grilles actuellement assignées -->
+            {% if grilles_assignees %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Grilles actuellement assignées
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for grille in grilles_assignees %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="grilles_ids" 
+                                               value="{{ grille.id }}" id="assigned_{{ grille.id }}" checked>
+                                        <label class="form-check-label" for="assigned_{{ grille.id }}">
+                                            <strong>{{ grille.nom }}</strong>
+                                            {% if grille.type_grille == 'standard' %}
+                                                <span class="badge bg-success ms-1">Standard</span>
+                                                {% if grille.reference_scientifique %}
+                                                    <span class="badge bg-info ms-1">{{ grille.reference_scientifique }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-warning ms-1">Personnalisée</span>
+                                            {% endif %}
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ grille.nb_domaines }} domaines • 
+                                                Priorité {{ grille.priorite }}
+                                            </small>
+                                            {% if grille.date_assignation %}
+                                                <br><small class="text-muted">
+                                                    Assignée le {{ grille.date_assignation[:10] }}
+                                                </small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Grilles standards disponibles -->
+            {% if grilles_disponibles.standards %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-award me-2"></i>
+                        Grilles standards internationales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for grille in grilles_disponibles.standards %}
+                        {% set is_assigned = grilles_assignees|selectattr('id', 'equalto', grille.id)|list|length > 0 %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card {% if is_assigned %}border-success{% else %}border-light{% endif %}">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="grilles_ids" 
+                                               value="{{ grille.id }}" id="standard_{{ grille.id }}"
+                                               {% if is_assigned %}checked{% endif %}>
+                                        <label class="form-check-label" for="standard_{{ grille.id }}">
+                                            <strong>{{ grille.nom }}</strong>
+                                            {% if grille.reference_scientifique %}
+                                                <span class="badge bg-info ms-1">{{ grille.reference_scientifique }}</span>
+                                            {% endif %}
+                                            <br>
+                                            <small class="text-muted">{{ grille.nb_domaines }} domaines</small>
+                                            {% if grille.description %}
+                                                <br><small class="text-muted">{{ grille.description[:80] }}{% if grille.description|length > 80 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Grilles personnalisées disponibles -->
+            {% if grilles_disponibles.personnalisees %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-person-gear me-2"></i>
+                        Mes grilles personnalisées
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for grille in grilles_disponibles.personnalisees %}
+                        {% set is_assigned = grilles_assignees|selectattr('id', 'equalto', grille.id)|list|length > 0 %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card {% if is_assigned %}border-success{% else %}border-light{% endif %}">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="grilles_ids" 
+                                               value="{{ grille.id }}" id="custom_{{ grille.id }}"
+                                               {% if is_assigned %}checked{% endif %}>
+                                        <label class="form-check-label" for="custom_{{ grille.id }}">
+                                            <strong>{{ grille.nom }}</strong>
+                                            <span class="badge bg-warning ms-1">Personnalisée</span>
+                                            <br>
+                                            <small class="text-muted">{{ grille.nb_domaines }} domaines</small>
+                                            {% if grille.description %}
+                                                <br><small class="text-muted">{{ grille.description[:80] }}{% if grille.description|length > 80 %}...{% endif %}</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">Mise à jour des assignations</h6>
+                            <small class="text-muted">
+                                Les grilles sélectionnées seront assignées au patient dans l'ordre de priorité.
+                            </small>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary me-2" onclick="window.history.back()">
+                                Annuler
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Mettre à jour les grilles
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- Lien vers la gestion globale des grilles -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info d-flex align-items-center">
+            <i class="bi bi-info-circle me-2"></i>
+            <div class="flex-grow-1">
+                <strong>Besoin d'une nouvelle grille ?</strong>
+                Créez ou gérez vos grilles depuis l'interface dédiée.
+            </div>
+            <div class="ms-3">
+                <a href="{{ url_for('grilles.list_grilles') }}" class="btn btn-outline-primary" target="_blank">
+                    <i class="bi bi-clipboard-plus me-1"></i>
+                    Gérer les grilles
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,8 @@
 """Routes d'authentification basiques (login / logout / register)."""
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, login_required  # type: ignore
-from app.models import db, User
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import login_required, login_user, logout_user  # type: ignore
+
+from app.models import User, db
 
 auth = Blueprint('auth', __name__)
 

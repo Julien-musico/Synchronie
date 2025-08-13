@@ -3,12 +3,15 @@
 Permet de tester isolément la logique sans dépendre de Flask/SQLAlchemy.
 """
 from __future__ import annotations
-from typing import Dict, Any, Tuple, List
+
+import contextlib
 import json
+from typing import Any
+
 
 class CalculCotationService:
     @staticmethod
-    def extraire_domaines(domaines_config: Any) -> List[Dict[str, Any]]:
+    def extraire_domaines(domaines_config: Any) -> list[dict[str, Any]]:
         """Accepte domaines déjà chargés (list[dict]) ou JSON str."""
         if isinstance(domaines_config, list):
             return domaines_config  # type: ignore
@@ -20,7 +23,7 @@ class CalculCotationService:
         return []
 
     @staticmethod
-    def calculer_score_global(domaines_config: Any, scores_detailles: Dict[str, Any]) -> Tuple[float, float, float]:
+    def calculer_score_global(domaines_config: Any, scores_detailles: dict[str, Any]) -> tuple[float, float, float]:
         """Calcule score total, score max et pourcentage.
 
         Clé attendue dans scores_detailles: "<NomDomaine>_<NomIndicateur>"
@@ -35,14 +38,9 @@ class CalculCotationService:
                 cle = f"{d_nom}_{ind.get('nom')}"
                 # Valeur obtenue
                 if cle in scores_detailles:
-                    try:
+                    with contextlib.suppress(Exception):
                         total += float(scores_detailles[cle])
-                    except Exception:
-                        pass
-                # Valeur maximale possible
-                try:
+                with contextlib.suppress(Exception):
                     max_total += float(ind.get('max', 0))
-                except Exception:
-                    pass
         pct = (total / max_total * 100) if max_total > 0 else 0.0
         return total, max_total, pct
