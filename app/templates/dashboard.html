@@ -129,6 +129,14 @@
                     </div>
                     <div class="col-md-6">
                         <div class="d-grid">
+                            <a href="{{ url_for('cotation.seances_a_coter') }}" class="btn btn-outline-primary">
+                                <i class="bi bi-clipboard-data me-2"></i>
+                                Coter une séance
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
                             <button class="btn btn-outline-info">
                                 <i class="bi bi-file-text me-2"></i>
                                 Générer rapport
@@ -137,9 +145,25 @@
                     </div>
                     <div class="col-md-6">
                         <div class="d-grid">
-                            <button class="btn btn-outline-secondary">
-                                <i class="bi bi-gear me-2"></i>
+                            <a href="{{ url_for('cotation.grilles') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-clipboard-check me-2"></i>
                                 Grilles de cotation
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-warning" onclick="chargerAnalytics()">
+                                <i class="bi bi-graph-up me-2"></i>
+                                Statistiques globales
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-danger" onclick="chargerPatientsRisque()">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Patients à risque
                             </button>
                         </div>
                     </div>
@@ -277,6 +301,129 @@ async function loadDashboardData() {
         document.getElementById('recent-patients').innerHTML = 
             '<div class="text-center text-muted"><i class="bi bi-exclamation-triangle me-2"></i>Erreur de chargement</div>';
     }
+}
+
+// Fonction pour charger les analytics globaux
+async function chargerAnalytics() {
+    try {
+        const response = await fetch('/cotation/analytics/dashboard');
+        const data = await response.json();
+        
+        if (response.ok) {
+            const analyticsModal = `
+                <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">📊 Statistiques globales</h5>
+                                <button type="button" class="btn-close" onclick="fermerModal()"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h3 class="text-primary">${data.nb_patients || 0}</h3>
+                                                <p class="mb-0">Patients actifs</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h3 class="text-success">${data.nb_grilles || 0}</h3>
+                                                <p class="mb-0">Grilles d'évaluation</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h3 class="text-info">${data.nb_cotations || 0}</h3>
+                                                <p class="mb-0">Cotations réalisées</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Score moyen</h6>
+                                        <div class="progress">
+                                            <div class="progress-bar" style="width: ${data.score_moyen || 0}%">${data.score_moyen || 0}%</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Évolution générale</h6>
+                                        <p class="text-${data.evolution_positive ? 'success' : 'warning'}">
+                                            <i class="bi bi-${data.evolution_positive ? 'arrow-up' : 'arrow-down'}"></i>
+                                            ${data.evolution_positive ? 'Positive' : 'À surveiller'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', analyticsModal);
+        } else {
+            alert('Erreur lors du chargement des statistiques');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur de connexion aux analytics');
+    }
+}
+
+// Fonction pour charger les patients à risque
+async function chargerPatientsRisque() {
+    try {
+        const response = await fetch('/cotation/analytics/patients-risque');
+        const data = await response.json();
+        
+        if (response.ok) {
+            const patientsHtml = data.patients.map(patient => `
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${patient.nom} ${patient.prenom}</strong>
+                                <small class="text-muted d-block">Score: ${patient.derniere_cotation.score_total}%</small>
+                            </div>
+                            <span class="badge bg-danger">${patient.niveau_risque}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-center text-muted">Aucun patient à risque détecté</p>';
+            
+            const risqueModal = `
+                <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">⚠️ Patients à risque</h5>
+                                <button type="button" class="btn-close" onclick="fermerModal()"></button>
+                            </div>
+                            <div class="modal-body">
+                                ${patientsHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', risqueModal);
+        } else {
+            alert('Erreur lors du chargement des patients à risque');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur de connexion aux analytics');
+    }
+}
+
+// Fonction pour fermer les modals
+function fermerModal() {
+    const modals = document.querySelectorAll('.modal.show');
+    modals.forEach(modal => modal.remove());
 }
 </script>
 {% endblock %}

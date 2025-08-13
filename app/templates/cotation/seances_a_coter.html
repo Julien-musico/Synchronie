@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Séances à coter{% endblock %}
+
+{% block head %}
+<style>
+.seances-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px 0;
+}
+
+.seances-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.seances-header {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    padding: 25px;
+    text-align: center;
+}
+
+.seance-item {
+    background: white;
+    border: 2px solid #f1f3f4;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.seance-item:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+}
+
+.seance-date {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.seance-patient {
+    font-size: 1.2rem;
+    color: #333;
+    margin: 5px 0;
+}
+
+.seance-info {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.cotation-status {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-none {
+    background: #ffeaa7;
+    color: #fdcb6e;
+}
+
+.status-partial {
+    background: #fdcb6e;
+    color: #e17055;
+}
+
+.status-complete {
+    background: #00b894;
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.btn-coter {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.btn-coter:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="seances-container">
+    <div class="container">
+        <div class="seances-card">
+            <div class="seances-header">
+                <h2>🎯 Séances à coter</h2>
+                <p style="margin: 10px 0 0; opacity: 0.9;">Sélectionnez une séance pour commencer la cotation</p>
+            </div>
+            
+            <div style="padding: 30px;">
+                {% if seances_info %}
+                    {% for info in seances_info %}
+                    <div class="seance-item" onclick="coterSeance({{ info.seance.id }})">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="seance-date">
+                                    📅 {{ info.seance.date.strftime('%d/%m/%Y') if info.seance.date else 'Date non définie' }}
+                                </div>
+                                
+                                <div class="seance-patient">
+                                    👤 {{ info.seance.patient.prenom }} {{ info.seance.patient.nom }}
+                                </div>
+                                
+                                <div class="seance-info">
+                                    🏥 {{ info.seance.patient.pathologie or 'Pathologie non spécifiée' }}
+                                    {% if info.seance.duree %}
+                                    • ⏱️ {{ info.seance.duree }}min
+                                    {% endif %}
+                                </div>
+                                
+                                {% if info.seance.transcription_text %}
+                                <div class="seance-info mt-2">
+                                    📝 {{ info.seance.transcription_text[:100] }}...
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="text-end">
+                                {% if info.nb_cotations == 0 %}
+                                    <div class="cotation-status status-none">
+                                        🔴 Non cotée
+                                    </div>
+                                {% elif info.nb_cotations == 1 %}
+                                    <div class="cotation-status status-partial">
+                                        🟡 {{ info.nb_cotations }} cotation
+                                    </div>
+                                {% else %}
+                                    <div class="cotation-status status-complete">
+                                        🟢 {{ info.nb_cotations }} cotations
+                                    </div>
+                                {% endif %}
+                                
+                                <button class="btn-coter mt-2">
+                                    {% if info.nb_cotations == 0 %}
+                                        🎯 Commencer cotation
+                                    {% else %}
+                                        ➕ Nouvelle cotation
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <h4>Aucune séance disponible</h4>
+                        <p>Créez d'abord des séances pour pouvoir les coter.</p>
+                        <a href="{{ url_for('seances.list_seances') }}" class="btn btn-primary">
+                            📝 Voir mes séances
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function coterSeance(seanceId) {
+    window.location.href = `/cotation/seance/${seanceId}/coter`;
+}
+</script>
+{% endblock %}

@@ -73,6 +73,25 @@ def creer_grille_predefinee():
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@cotation_bp.route('/seances-a-coter')
+@login_required
+def seances_a_coter():
+    """Page listant les séances disponibles pour cotation"""
+    # Récupérer toutes les séances de l'utilisateur
+    seances = Seance.query.filter_by(user_id=current_user.id).order_by(Seance.date.desc()).all()
+    
+    # Enrichir avec info cotation
+    seances_info = []
+    for seance in seances:
+        cotations = CotationSeance.query.filter_by(seance_id=seance.id).all()
+        seances_info.append({
+            'seance': seance,
+            'nb_cotations': len(cotations),
+            'derniere_cotation': cotations[-1] if cotations else None
+        })
+    
+    return render_template('cotation/seances_a_coter.html', seances_info=seances_info)
+
 @cotation_bp.route('/seance/<int:seance_id>/coter')
 @login_required
 def interface_cotation(seance_id):
