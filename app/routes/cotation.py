@@ -21,19 +21,23 @@ cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 @login_required
 def grilles():  # type: ignore[no-untyped-def]
     """Page de gestion des grilles d'évaluation"""
-    grilles_user = GrilleEvaluation.query.filter_by(
-        musicotherapeute_id=current_user.id,
-        active=True
-    ).all()
-    
-    grilles_publiques = GrilleEvaluation.query.filter_by(
-        publique=True,
-        active=True
-    ).all()
-    
-    return render_template('cotation/grilles.html',
-                         grilles_user=grilles_user,
-                         grilles_publiques=grilles_publiques)
+    from flask import current_app
+    try:
+        grilles_user = GrilleEvaluation.query.filter_by(
+            musicotherapeute_id=current_user.id,
+            active=True
+        ).all()
+        grilles_publiques = GrilleEvaluation.query.filter_by(
+            publique=True,
+            active=True
+        ).all()
+        return render_template('cotation/grilles.html',
+                               grilles_user=grilles_user,
+                               grilles_publiques=grilles_publiques)
+    except Exception as e:  # pragma: no cover
+        current_app.logger.exception("Erreur chargement grilles")
+        flash('Erreur interne chargement des grilles', 'error')
+        return render_template('cotation/grilles.html', grilles_user=[], grilles_publiques=[]), 500
 
 @cotation_bp.route('/grilles/predefinies')
 @login_required
