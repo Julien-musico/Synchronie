@@ -1,0 +1,1379 @@
+{% extends "base.html" %}
+
+{% block title %}Cotation - {{ seance.patient.prenom }} {{ seance.patient.nom }}{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/cotation-enhanced.css') }}" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" data-seance-id="{{ seance.id }}">
+    <!-- Navigation breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('patients.view_patient', patient_id=seance.patient.id) }}">{{ seance.patient.prenom }} {{ seance.patient.nom }}</a></li>
+            <li class="breadcrumb-item active">Cotation séance</li>
+        </ol>
+    </nav>
+
+    <!-- Header avec informations de séance -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 bg-gradient-primary text-white">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="avatar-circle me-3">
+                                    <i class="bi bi-person-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <h3 class="mb-1 fw-bold">{{ seance.patient.prenom }} {{ seance.patient.nom }}</h3>
+                                    <p class="mb-0 opacity-75">
+                                        <i class="bi bi-calendar3 me-1"></i>
+                                        {{ seance.date_seance.strftime('%A %d %B %Y à %H:%M') }}
+                                        {% if seance.duree %}
+                                            • <i class="bi bi-clock me-1"></i>{{ seance.duree }} min
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="d-flex flex-column align-items-end">
+                                <div class="score-indicator mb-2" id="global-score-indicator">
+                                    <div class="score-circle-large" id="score-display">
+                                        <span class="score-value">0</span>
+                                        <span class="score-unit">%</span>
+                                    </div>
+                                </div>
+                                <small class="opacity-75">Score de la séance</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sélection de grille avec prévisualisation -->
+    <div class="row mb-4" id="grille-selection-section">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light border-0 py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="step-indicator me-3">
+                            <span class="step-number">1</span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-semibold">Choisir une grille d'évaluation</h5>
+                            <small class="text-muted">Sélectionnez la grille adaptée à cette séance</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% if grilles %}
+                        <div class="row">
+                            {% for grille in grilles %}
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="grille-card h-100" data-grille-id="{{ grille.id }}">
+                                    <input type="radio" name="grille_selection" value="{{ grille.id }}" 
+                                           id="grille_{{ grille.id }}" class="grille-radio d-none">
+                                    <label for="grille_{{ grille.id }}" class="grille-label h-100 d-block">
+                                        <div class="card h-100 border-2 grille-option">
+                                            <div class="card-body d-flex flex-column">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div class="grille-icon">
+                                                        {% if grille.reference_scientifique %}
+                                                            <i class="bi bi-award-fill text-warning fs-4"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-gear-fill text-primary fs-4"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="grille-badge">
+                                                        {% if grille.reference_scientifique %}
+                                                            <span class="badge bg-warning text-dark">{{ grille.reference_scientifique }}</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">Personnalisée</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <h6 class="card-title fw-bold mb-2">{{ grille.nom }}</h6>
+                                                
+                                                {% if grille.description %}
+                                                    <p class="card-text text-muted small flex-grow-1">
+                                                        {{ grille.description[:120] }}{% if grille.description|length > 120 %}...{% endif %}
+                                                    </p>
+                                                {% endif %}
+                                                
+                                                <div class="grille-stats mt-auto">
+                                                    <div class="d-flex justify-content-between text-muted small">
+                                                        <span>
+                                                            <i class="bi bi-grid-3x3-gap me-1"></i>
+                                                            {{ grille.domaines|length if grille.domaines else 0 }} domaines
+                                                        </span>
+                                                        <span>
+                                                            <i class="bi bi-list-check me-1"></i>
+                                                            {% set total_indicateurs = 0 %}
+                                                            {% if grille.domaines %}
+                                                                {% for domaine in grille.domaines %}
+                                                                    {% set total_indicateurs = total_indicateurs + (domaine.indicateurs|length if domaine.indicateurs else 0) %}
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                            {{ total_indicateurs }} indicateurs
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="selection-indicator mt-2">
+                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Bouton pour continuer -->
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-primary btn-lg px-5" id="btn-continuer" disabled>
+                                <i class="bi bi-arrow-right me-2"></i>
+                                Continuer vers l'évaluation
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                            <div>
+                                <h6 class="mb-1">Aucune grille disponible</h6>
+                                <p class="mb-0">Vous devez d'abord créer ou assigner des grilles d'évaluation.</p>
+                                <a href="{{ url_for('grilles.new_grille') }}" class="btn btn-warning btn-sm mt-2">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Créer une grille
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface de cotation -->
+    <div class="row" id="cotation-interface" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light border-0 py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="step-indicator me-3">
+                                <span class="step-number">2</span>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-semibold">Évaluation par domaines</h5>
+                                <small class="text-muted">Évaluez chaque indicateur de 0 à 5</small>
+                            </div>
+                        </div>
+                        <div class="cotation-progress">
+                            <div class="progress" style="width: 200px; height: 8px;">
+                                <div class="progress-bar bg-success" id="cotation-progress-bar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted mt-1 d-block text-center">
+                                <span id="progress-text">0 / 0 indicateurs cotés</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Conteneur des domaines -->
+                    <div id="domaines-container" class="p-4">
+                        <!-- Les domaines seront chargés ici via JavaScript -->
+                    </div>
+                    
+                    <!-- Section observations -->
+                    <div class="border-top p-4 bg-light">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-chat-quote me-2 text-primary"></i>
+                                    Observations et remarques
+                                </h6>
+                                <textarea class="form-control border-0 shadow-sm" 
+                                          id="observations" 
+                                          rows="4"
+                                          placeholder="Décrivez les moments marquants, les réactions du patient, les progrès observés, les difficultés rencontrées..."></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-graph-up me-2 text-success"></i>
+                                    Résumé instantané
+                                </h6>
+                                <div id="scores-summary" class="scores-summary">
+                                    <!-- Scores par domaine seront affichés ici -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="border-top p-4 bg-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-secondary me-3" onclick="resetCotation()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>
+                                    Réinitialiser
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="previewResults()">
+                                    <i class="bi bi-eye me-1"></i>
+                                    Aperçu
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="button" class="btn btn-success btn-lg px-4" onclick="saveCotation()" disabled id="btn-save">
+                                    <i class="bi bi-check-lg me-2"></i>
+                                    Enregistrer la cotation
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de prévisualisation -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-graph-up-arrow me-2"></i>
+                    Aperçu de la cotation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="preview-content">
+                <!-- Contenu généré dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-success" onclick="saveCotation(); bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Confirmer et sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+<script src="{{ url_for('static', filename='js/cotation-enhanced.js') }}"></script>
+{% endblock %}
+
+    <!-- Sélection de grille avec prévisualisation -->
+    <div class="row mb-4" id="grille-selection-section">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light border-0 py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="step-indicator me-3">
+                            <span class="step-number">1</span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-semibold">Choisir une grille d'évaluation</h5>
+                            <small class="text-muted">Sélectionnez la grille adaptée à cette séance</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% if grilles %}
+                        <div class="row">
+                            {% for grille in grilles %}
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="grille-card h-100" data-grille-id="{{ grille.id }}">
+                                    <input type="radio" name="grille_selection" value="{{ grille.id }}" 
+                                           id="grille_{{ grille.id }}" class="grille-radio d-none">
+                                    <label for="grille_{{ grille.id }}" class="grille-label h-100 d-block">
+                                        <div class="card h-100 border-2 grille-option">
+                                            <div class="card-body d-flex flex-column">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div class="grille-icon">
+                                                        {% if grille.reference_scientifique %}
+                                                            <i class="bi bi-award-fill text-warning fs-4"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-gear-fill text-primary fs-4"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="grille-badge">
+                                                        {% if grille.reference_scientifique %}
+                                                            <span class="badge bg-warning text-dark">{{ grille.reference_scientifique }}</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">Personnalisée</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <h6 class="card-title fw-bold mb-2">{{ grille.nom }}</h6>
+                                                
+                                                {% if grille.description %}
+                                                    <p class="card-text text-muted small flex-grow-1">
+                                                        {{ grille.description[:120] }}{% if grille.description|length > 120 %}...{% endif %}
+                                                    </p>
+                                                {% endif %}
+                                                
+                                                <div class="grille-stats mt-auto">
+                                                    <div class="d-flex justify-content-between text-muted small">
+                                                        <span>
+                                                            <i class="bi bi-grid-3x3-gap me-1"></i>
+                                                            {{ grille.domaines|length if grille.domaines else 0 }} domaines
+                                                        </span>
+                                                        <span>
+                                                            <i class="bi bi-list-check me-1"></i>
+                                                            {% set total_indicateurs = 0 %}
+                                                            {% if grille.domaines %}
+                                                                {% for domaine in grille.domaines %}
+                                                                    {% set total_indicateurs = total_indicateurs + (domaine.indicateurs|length if domaine.indicateurs else 0) %}
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                            {{ total_indicateurs }} indicateurs
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="selection-indicator mt-2">
+                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Bouton pour continuer -->
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-primary btn-lg px-5" id="btn-continuer" disabled>
+                                <i class="bi bi-arrow-right me-2"></i>
+                                Continuer vers l'évaluation
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                            <div>
+                                <h6 class="mb-1">Aucune grille disponible</h6>
+                                <p class="mb-0">Vous devez d'abord créer ou assigner des grilles d'évaluation.</p>
+                                <a href="{{ url_for('grilles.new_grille') }}" class="btn btn-warning btn-sm mt-2">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Créer une grille
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface de cotation -->
+    <div class="row" id="cotation-interface" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light border-0 py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="step-indicator me-3">
+                                <span class="step-number">2</span>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-semibold">Évaluation par domaines</h5>
+                                <small class="text-muted">Évaluez chaque indicateur de 0 à 5</small>
+                            </div>
+                        </div>
+                        <div class="cotation-progress">
+                            <div class="progress" style="width: 200px; height: 8px;">
+                                <div class="progress-bar bg-success" id="cotation-progress-bar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted mt-1 d-block text-center">
+                                <span id="progress-text">0 / 0 indicateurs cotés</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Conteneur des domaines -->
+                    <div id="domaines-container" class="p-4">
+                        <!-- Les domaines seront chargés ici via JavaScript -->
+                    </div>
+                    
+                    <!-- Section observations -->
+                    <div class="border-top p-4 bg-light">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-chat-quote me-2 text-primary"></i>
+                                    Observations et remarques
+                                </h6>
+                                <textarea class="form-control border-0 shadow-sm" 
+                                          id="observations" 
+                                          rows="4"
+                                          placeholder="Décrivez les moments marquants, les réactions du patient, les progrès observés, les difficultés rencontrées..."></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-graph-up me-2 text-success"></i>
+                                    Résumé instantané
+                                </h6>
+                                <div id="scores-summary" class="scores-summary">
+                                    <!-- Scores par domaine seront affichés ici -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="border-top p-4 bg-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-secondary me-3" onclick="resetCotation()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>
+                                    Réinitialiser
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="previewResults()">
+                                    <i class="bi bi-eye me-1"></i>
+                                    Aperçu
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="button" class="btn btn-success btn-lg px-4" onclick="saveCotation()" disabled id="btn-save">
+                                    <i class="bi bi-check-lg me-2"></i>
+                                    Enregistrer la cotation
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de prévisualisation -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-graph-up-arrow me-2"></i>
+                    Aperçu de la cotation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="preview-content">
+                <!-- Contenu généré dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-success" onclick="saveCotation(); bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Confirmer et sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Variables CSS pour cohérence */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --border-radius: 12px;
+    --shadow-soft: 0 4px 20px rgba(0,0,0,0.08);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Header gradient */
+.bg-gradient-primary {
+    background: var(--primary-gradient) !important;
+}
+
+/* Avatar circle pour le patient */
+.avatar-circle {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+/* Indicateur de score global */
+.score-circle-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    border: 3px solid rgba(255,255,255,0.3);
+    transition: var(--transition);
+}
+
+.score-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.score-unit {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* Step indicators */
+.step-indicator {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    box-shadow: var(--shadow-soft);
+}
+
+.step-number {
+    font-size: 1.1rem;
+}
+
+/* Grilles de sélection */
+.grille-card {
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.grille-option {
+    border: 2px solid #e9ecef !important;
+    border-radius: var(--border-radius) !important;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.grille-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+    transform: scaleX(0);
+    transition: var(--transition);
+}
+
+.grille-card:hover .grille-option {
+    border-color: #667eea !important;
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-soft);
+}
+
+.grille-card:hover .grille-option::before {
+    transform: scaleX(1);
+}
+
+.grille-radio:checked + .grille-label .grille-option {
+    border-color: #667eea !important;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+}
+
+.grille-radio:checked + .grille-label .grille-option::before {
+    transform: scaleX(1);
+}
+
+.selection-indicator {
+    opacity: 0;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.grille-radio:checked + .grille-label .selection-indicator {
+    opacity: 1;
+}
+
+/* Domaines de cotation */
+.domaine-section {
+    border: 1px solid #e9ecef;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    background: white;
+    transition: var(--transition);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.domaine-section:hover {
+    border-color: #667eea;
+    box-shadow: var(--shadow-soft);
+}
+
+.domaine-header {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 1.25rem;
+    position: relative;
+}
+
+.domaine-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255,255,255,0.3);
+}
+
+.domaine-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.domaine-score-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+}
+
+/* Indicateurs */
+.indicateur-item {
+    padding: 1.25rem;
+    border-bottom: 1px solid #f8f9fa;
+    transition: var(--transition);
+}
+
+.indicateur-item:last-child {
+    border-bottom: none;
+}
+
+.indicateur-item:hover {
+    background: #f8f9fa;
+}
+
+.indicateur-label {
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.indicateur-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    font-style: italic;
+}
+
+.indicateur-value-display {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #667eea;
+    background: #f8f9ff;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Sliders personnalisés */
+.slider-container {
+    margin: 1rem 0;
+    position: relative;
+}
+
+.noUi-target {
+    background: #e9ecef;
+    border-radius: 25px;
+    border: none;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.1);
+    height: 12px;
+}
+
+.noUi-connect {
+    background: var(--primary-gradient);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.noUi-handle {
+    background: white;
+    border: 3px solid #667eea;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    width: 28px;
+    height: 28px;
+    cursor: grab;
+    transition: var(--transition);
+}
+
+.noUi-handle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.noUi-handle:active {
+    cursor: grabbing;
+    transform: scale(1.05);
+}
+
+.noUi-handle:before,
+.noUi-handle:after {
+    display: none;
+}
+
+.noUi-tooltip {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    font-weight: 600;
+}
+
+/* Scores summary */
+.scores-summary {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.score-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.score-item:last-child {
+    border-bottom: none;
+}
+
+/* Progress animations */
+.cotation-progress .progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .score-circle-large {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .score-value {
+        font-size: 1.4rem;
+    }
+    
+    .avatar-circle {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .step-indicator {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .domaine-header {
+        padding: 1rem;
+    }
+    
+    .indicateur-item {
+        padding: 1rem;
+    }
+}
+
+/* Animations */
+.animate__animated {
+    animation-duration: 0.6s;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.8);
+    z-index: 1000;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+<script>
+let currentGrilleId = null;
+let currentScores = {};
+let totalIndicateurs = 0;
+let indicateursCotes = 0;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    initializeGrilleSelection();
+    setupAnimations();
+});
+
+function initializeGrilleSelection() {
+    const grilleRadios = document.querySelectorAll('.grille-radio');
+    const btnContinuer = document.getElementById('btn-continuer');
+    const cotationInterface = document.getElementById('cotation-interface');
+    
+    grilleRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                currentGrilleId = parseInt(this.value);
+                btnContinuer.disabled = false;
+                
+                // Animation de sélection
+                document.querySelectorAll('.grille-card').forEach(card => {
+                    card.classList.remove('animate__pulse');
+                });
+                this.closest('.grille-card').classList.add('animate__animated', 'animate__pulse');
+            }
+        });
+    });
+    
+    btnContinuer.addEventListener('click', function() {
+        if (currentGrilleId) {
+            // Animation de transition
+            document.getElementById('grille-selection-section').classList.add('animate__animated', 'animate__fadeOutUp');
+            
+            setTimeout(() => {
+                document.getElementById('grille-selection-section').style.display = 'none';
+                loadGrilleData(currentGrilleId);
+                cotationInterface.style.display = 'block';
+                cotationInterface.classList.add('animate__animated', 'animate__fadeInUp');
+                
+                // Scroll vers l'interface
+                cotationInterface.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 300);
+        }
+    });
+}
+
+function loadGrilleData(grilleId) {
+    showLoading(true);
+    
+    fetch(`/grilles/api/${grilleId}/domaines`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderDomaines(data.domaines);
+                setupProgressTracking();
+            } else {
+                showAlert(data.message || 'Erreur lors du chargement de la grille', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement de la grille:', error);
+            showAlert('Erreur lors du chargement de la grille', 'error');
+        })
+        .finally(() => {
+            showLoading(false);
+        });
+}
+
+function renderDomaines(domaines) {
+    const container = document.getElementById('domaines-container');
+    container.innerHTML = '';
+    
+    totalIndicateurs = 0;
+    
+    domaines.forEach((domaine, index) => {
+        totalIndicateurs += domaine.indicateurs.length;
+        const domaineElement = createDomaineElement(domaine, index);
+        container.appendChild(domaineElement);
+    });
+    
+    updateProgressDisplay();
+    initializeSliders();
+}
+
+function createDomaineElement(domaine, index) {
+    const domaineDiv = document.createElement('div');
+    domaineDiv.className = 'domaine-section animate__animated animate__fadeInUp';
+    domaineDiv.style.animationDelay = `${index * 0.1}s`;
+    
+    domaineDiv.innerHTML = `
+        <div class="domaine-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="domaine-title">
+                    <i class="bi bi-grid-3x3-gap me-2"></i>
+                    ${domaine.nom}
+                </h6>
+                <span class="domaine-score-badge" id="score-domaine-${domaine.id}">0%</span>
+            </div>
+            ${domaine.description ? `<p class="mt-2 mb-0 opacity-75 small">${domaine.description}</p>` : ''}
+        </div>
+        <div class="domaine-content">
+            ${domaine.indicateurs.map(indicateur => `
+                <div class="indicateur-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="flex-grow-1">
+                            <div class="indicateur-label">${indicateur.nom}</div>
+                            ${indicateur.description ? `<div class="indicateur-description">${indicateur.description}</div>` : ''}
+                        </div>
+                        <div class="indicateur-value-display" id="value-${indicateur.id}">0</div>
+                    </div>
+                    <div class="slider-container">
+                        <div id="slider-${indicateur.id}" class="slider" 
+                             data-indicateur-id="${indicateur.id}"
+                             data-domaine-id="${domaine.id}"
+                             data-poids="${indicateur.poids || 1}"></div>
+                        <div class="d-flex justify-content-between mt-2 text-muted small">
+                            <span>Inexistant</span>
+                            <span>Faible</span>
+                            <span>Moyen</span>
+                            <span>Bon</span>
+                            <span>Très bon</span>
+                            <span>Excellent</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    return domaineDiv;
+}
+
+function initializeSliders() {
+    const sliders = document.querySelectorAll('.slider');
+    
+    sliders.forEach(sliderElement => {
+        const indicateurId = sliderElement.dataset.indicateurId;
+        
+        noUiSlider.create(sliderElement, {
+            start: [0],
+            connect: [true, false],
+            range: {
+                'min': 0,
+                'max': 5
+            },
+            step: 1,
+            tooltips: true,
+            format: {
+                to: function(value) {
+                    const labels = ['Non observé', 'Émergent', 'En cours', 'Acquis', 'Maîtrisé', 'Expert'];
+                    return labels[Math.round(value)] || Math.round(value);
+                },
+                from: function(value) {
+                    return Number(value);
+                }
+            }
+        });
+        
+        // Animation au focus
+        sliderElement.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.02)';
+        });
+        
+        sliderElement.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+        
+        // Écouter les changements
+        sliderElement.noUiSlider.on('update', function(values) {
+            const value = parseInt(values[0]);
+            const domaineId = sliderElement.dataset.domaineId;
+            
+            // Mettre à jour l'affichage de la valeur
+            document.getElementById(`value-${indicateurId}`).textContent = value;
+            
+            // Animation de la valeur
+            const valueDisplay = document.getElementById(`value-${indicateurId}`);
+            valueDisplay.classList.add('animate__animated', 'animate__pulse');
+            setTimeout(() => {
+                valueDisplay.classList.remove('animate__animated', 'animate__pulse');
+            }, 600);
+            
+            // Sauvegarder le score
+            if (!currentScores[domaineId]) {
+                currentScores[domaineId] = {};
+            }
+            
+            const oldValue = currentScores[domaineId][indicateurId]?.value || 0;
+            currentScores[domaineId][indicateurId] = {
+                value: value,
+                poids: parseFloat(sliderElement.dataset.poids)
+            };
+            
+            // Tracking des indicateurs cotés
+            if (oldValue === 0 && value > 0) {
+                indicateursCotes++;
+            } else if (oldValue > 0 && value === 0) {
+                indicateursCotes--;
+            }
+            
+            // Recalculer les scores
+            updateScores();
+            updateProgressDisplay();
+            updateSaveButtonState();
+        });
+    });
+}
+
+function updateScores() {
+    let totalScore = 0;
+    let totalWeight = 0;
+    const scoresDetail = document.getElementById('scores-summary');
+    scoresDetail.innerHTML = '';
+    
+    // Calculer les scores par domaine
+    Object.keys(currentScores).forEach(domaineId => {
+        const domaineScores = currentScores[domaineId];
+        let domaineTotal = 0;
+        let domaineWeight = 0;
+        
+        Object.values(domaineScores).forEach(score => {
+            domaineTotal += score.value * score.poids;
+            domaineWeight += score.poids * 5; // 5 = score maximum
+        });
+        
+        const domainePercent = domaineWeight > 0 ? Math.round((domaineTotal / domaineWeight) * 100) : 0;
+        
+        // Mettre à jour l'affichage du domaine
+        const scoreDomaine = document.getElementById(`score-domaine-${domaineId}`);
+        if (scoreDomaine) {
+            scoreDomaine.textContent = `${domainePercent}%`;
+            
+            // Couleur dynamique
+            if (domainePercent >= 80) {
+                scoreDomaine.style.background = 'rgba(34, 197, 94, 0.2)';
+                scoreDomaine.style.color = '#15803d';
+            } else if (domainePercent >= 60) {
+                scoreDomaine.style.background = 'rgba(251, 191, 36, 0.2)';
+                scoreDomaine.style.color = '#d97706';
+            } else {
+                scoreDomaine.style.background = 'rgba(239, 68, 68, 0.2)';
+                scoreDomaine.style.color = '#dc2626';
+            }
+        }
+        
+        // Ajouter au total
+        totalScore += domaineTotal;
+        totalWeight += domaineWeight;
+        
+        // Ajouter au résumé
+        const domaineElement = document.querySelector(`[data-domaine-id="${domaineId}"]`);
+        if (domaineElement) {
+            const domaineNom = domaineElement.closest('.domaine-section').querySelector('.domaine-title').textContent.trim().replace(/^\s*\S+\s*/, '');
+            scoresDetail.innerHTML += `
+                <div class="score-item">
+                    <span class="flex-grow-1">${domaineNom}</span>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 60px; height: 6px;">
+                            <div class="progress-bar bg-primary" style="width: ${domainePercent}%"></div>
+                        </div>
+                        <span class="small fw-semibold text-primary">${domainePercent}%</span>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    // Score global
+    const globalPercent = totalWeight > 0 ? Math.round((totalScore / totalWeight) * 100) : 0;
+    updateGlobalScore(globalPercent);
+}
+
+function updateGlobalScore(percent) {
+    const scoreDisplay = document.getElementById('score-display');
+    const scoreValue = scoreDisplay.querySelector('.score-value');
+    
+    // Animation du score
+    const currentValue = parseInt(scoreValue.textContent) || 0;
+    const increment = percent > currentValue ? 1 : -1;
+    const steps = Math.abs(percent - currentValue);
+    
+    if (steps > 0) {
+        let step = 0;
+        const interval = setInterval(() => {
+            step++;
+            const newValue = currentValue + (increment * step);
+            scoreValue.textContent = newValue;
+            
+            // Couleur dynamique du cercle
+            if (newValue >= 80) {
+                scoreDisplay.style.background = 'rgba(34, 197, 94, 0.2)';
+                scoreDisplay.style.borderColor = 'rgba(34, 197, 94, 0.5)';
+            } else if (newValue >= 60) {
+                scoreDisplay.style.background = 'rgba(251, 191, 36, 0.2)';
+                scoreDisplay.style.borderColor = 'rgba(251, 191, 36, 0.5)';
+            } else {
+                scoreDisplay.style.background = 'rgba(239, 68, 68, 0.2)';
+                scoreDisplay.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+            }
+            
+            if (step >= steps) {
+                clearInterval(interval);
+            }
+        }, 50);
+    }
+}
+
+function updateProgressDisplay() {
+    const progressBar = document.getElementById('cotation-progress-bar');
+    const progressText = document.getElementById('progress-text');
+    
+    const progressPercent = totalIndicateurs > 0 ? (indicateursCotes / totalIndicateurs) * 100 : 0;
+    
+    progressBar.style.width = `${progressPercent}%`;
+    progressText.textContent = `${indicateursCotes} / ${totalIndicateurs} indicateurs cotés`;
+}
+
+function updateSaveButtonState() {
+    const btnSave = document.getElementById('btn-save');
+    const hasScores = Object.keys(currentScores).length > 0 && indicateursCotes > 0;
+    
+    btnSave.disabled = !hasScores;
+    
+    if (hasScores) {
+        btnSave.classList.add('animate__animated', 'animate__pulse');
+        setTimeout(() => {
+            btnSave.classList.remove('animate__animated', 'animate__pulse');
+        }, 1000);
+    }
+}
+
+function setupProgressTracking() {
+    // Animation d'entrée pour la barre de progression
+    setTimeout(() => {
+        document.querySelector('.cotation-progress').classList.add('animate__animated', 'animate__fadeInRight');
+    }, 500);
+}
+
+function previewResults() {
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    const content = document.getElementById('preview-content');
+    
+    // Générer le contenu de prévisualisation
+    let previewHTML = `
+        <div class="mb-4">
+            <h6 class="text-primary">Résumé de la cotation</h6>
+            <div class="row">
+                <div class="col-md-8">
+                    <p><strong>Patient:</strong> {{ seance.patient.prenom }} {{ seance.patient.nom }}</p>
+                    <p><strong>Date:</strong> {{ seance.date_seance.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    <p><strong>Grille utilisée:</strong> <span id="preview-grille-nom"></span></p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="score-circle-large mx-auto">
+                        <span class="score-value">${document.getElementById('score-display').querySelector('.score-value').textContent}</span>
+                        <span class="score-unit">%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <h6 class="text-primary">Scores par domaine</h6>
+            <div id="preview-domaines"></div>
+        </div>
+        
+        <div class="mb-4">
+            <h6 class="text-primary">Observations</h6>
+            <div class="border rounded p-3 bg-light">
+                ${document.getElementById('observations').value || '<em class="text-muted">Aucune observation saisie</em>'}
+            </div>
+        </div>
+    `;
+    
+    content.innerHTML = previewHTML;
+    
+    // Remplir les détails des domaines
+    const previewDomaines = document.getElementById('preview-domaines');
+    document.getElementById('scores-summary').innerHTML && (previewDomaines.innerHTML = document.getElementById('scores-summary').innerHTML);
+    
+    modal.show();
+}
+
+function resetCotation() {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser toute la cotation ?')) {
+        currentScores = {};
+        indicateursCotes = 0;
+        
+        // Réinitialiser tous les sliders
+        document.querySelectorAll('.slider').forEach(slider => {
+            if (slider.noUiSlider) {
+                slider.noUiSlider.set(0);
+            }
+        });
+        
+        // Réinitialiser les observations
+        document.getElementById('observations').value = '';
+        
+        // Réinitialiser les affichages
+        updateProgressDisplay();
+        updateGlobalScore(0);
+        updateSaveButtonState();
+        
+        // Animation de confirmation
+        showAlert('Cotation réinitialisée', 'info');
+    }
+}
+
+function saveCotation() {
+    const observations = document.getElementById('observations').value;
+    
+    if (Object.keys(currentScores).length === 0) {
+        showAlert('Veuillez évaluer au moins un indicateur avant d\'enregistrer.', 'warning');
+        return;
+    }
+    
+    const btnSave = document.getElementById('btn-save');
+    const originalText = btnSave.innerHTML;
+    
+    // État de chargement
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Enregistrement...';
+    showLoading(true);
+    
+    const cotationData = {
+        seance_id: {{ seance.id }},
+        grille_id: currentGrilleId,
+        scores: currentScores,
+        observations: observations
+    };
+    
+    // Sauvegarder via AJAX
+    fetch('/cotation/api/cotation/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(cotationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Cotation enregistrée avec succès !', 'success');
+            
+            // Animation de succès
+            btnSave.innerHTML = '<i class="bi bi-check-lg me-2"></i>Enregistré !';
+            btnSave.classList.add('btn-success');
+            btnSave.classList.remove('btn-primary');
+            
+            setTimeout(() => {
+                window.location.href = "{{ url_for('patients.view_patient', patient_id=seance.patient.id) }}";
+            }, 2000);
+        } else {
+            throw new Error(data.message || 'Erreur lors de l\'enregistrement');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showAlert('Erreur lors de l\'enregistrement de la cotation: ' + error.message, 'error');
+        
+        // Restaurer le bouton
+        btnSave.disabled = false;
+        btnSave.innerHTML = originalText;
+    })
+    .finally(() => {
+        showLoading(false);
+    });
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show animate__animated animate__fadeInDown`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    
+    alertDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi bi-${type === 'success' ? 'check-circle-fill' : type === 'warning' ? 'exclamation-triangle-fill' : type === 'error' ? 'x-circle-fill' : 'info-circle-fill'} me-2"></i>
+            ${message}
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto-hide après 5 secondes
+    setTimeout(() => {
+        alertDiv.classList.add('animate__fadeOutUp');
+        setTimeout(() => alertDiv.remove(), 500);
+    }, 5000);
+}
+
+function showLoading(show) {
+    const container = document.querySelector('.container-fluid');
+    if (show) {
+        container.classList.add('loading');
+    } else {
+        container.classList.remove('loading');
+    }
+}
+
+function setupAnimations() {
+    // Animation d'entrée pour les éléments
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate__animated', 'animate__fadeInUp');
+            }
+        });
+    });
+    
+    document.querySelectorAll('.card').forEach(card => {
+        observer.observe(card);
+    });
+}
+
+function getCsrfToken() {
+    const csrfToken = document.querySelector('meta[name=csrf-token]');
+    return csrfToken ? csrfToken.getAttribute('content') : '';
+}
+</script>
+{% endblock %}

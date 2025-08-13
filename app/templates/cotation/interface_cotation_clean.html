@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}Cotation - {{ seance.patient.prenom }} {{ seance.patient.nom }}{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/cotation-enhanced.css') }}" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3" data-seance-id="{{ seance.id }}">
+    <!-- Navigation breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Accueil</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('patients.view_patient', patient_id=seance.patient.id) }}">{{ seance.patient.prenom }} {{ seance.patient.nom }}</a></li>
+            <li class="breadcrumb-item active">Cotation séance</li>
+        </ol>
+    </nav>
+
+    <!-- Header avec informations de séance -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 bg-gradient-primary text-white">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="avatar-circle me-3">
+                                    <i class="bi bi-person-fill fs-3"></i>
+                                </div>
+                                <div>
+                                    <h3 class="mb-1 fw-bold">{{ seance.patient.prenom }} {{ seance.patient.nom }}</h3>
+                                    <p class="mb-0 opacity-75">
+                                        <i class="bi bi-calendar3 me-1"></i>
+                                        {{ seance.date_seance.strftime('%A %d %B %Y à %H:%M') }}
+                                        {% if seance.duree %}
+                                            • <i class="bi bi-clock me-1"></i>{{ seance.duree }} min
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="d-flex flex-column align-items-end">
+                                <div class="score-indicator mb-2" id="global-score-indicator">
+                                    <div class="score-circle-large" id="score-display">
+                                        <span class="score-value">0</span>
+                                        <span class="score-unit">%</span>
+                                    </div>
+                                </div>
+                                <small class="opacity-75">Score de la séance</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sélection de grille avec prévisualisation -->
+    <div class="row mb-4" id="grille-selection-section">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light border-0 py-3">
+                    <div class="d-flex align-items-center">
+                        <div class="step-indicator me-3">
+                            <span class="step-number">1</span>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-semibold">Choisir une grille d'évaluation</h5>
+                            <small class="text-muted">Sélectionnez la grille adaptée à cette séance</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% if grilles %}
+                        <div class="row">
+                            {% for grille in grilles %}
+                            <div class="col-lg-4 col-md-6 mb-3">
+                                <div class="grille-card h-100" data-grille-id="{{ grille.id }}">
+                                    <input type="radio" name="grille_selection" value="{{ grille.id }}" 
+                                           id="grille_{{ grille.id }}" class="grille-radio d-none">
+                                    <label for="grille_{{ grille.id }}" class="grille-label h-100 d-block">
+                                        <div class="card h-100 border-2 grille-option">
+                                            <div class="card-body d-flex flex-column">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div class="grille-icon">
+                                                        {% if grille.reference_scientifique %}
+                                                            <i class="bi bi-award-fill text-warning fs-4"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-gear-fill text-primary fs-4"></i>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="grille-badge">
+                                                        {% if grille.reference_scientifique %}
+                                                            <span class="badge bg-warning text-dark">{{ grille.reference_scientifique }}</span>
+                                                        {% else %}
+                                                            <span class="badge bg-secondary">Personnalisée</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                
+                                                <h6 class="card-title fw-bold mb-2">{{ grille.nom }}</h6>
+                                                
+                                                {% if grille.description %}
+                                                    <p class="card-text text-muted small flex-grow-1">
+                                                        {{ grille.description[:120] }}{% if grille.description|length > 120 %}...{% endif %}
+                                                    </p>
+                                                {% endif %}
+                                                
+                                                <div class="grille-stats mt-auto">
+                                                    <div class="d-flex justify-content-between text-muted small">
+                                                        <span>
+                                                            <i class="bi bi-grid-3x3-gap me-1"></i>
+                                                            {{ grille.domaines|length if grille.domaines else 0 }} domaines
+                                                        </span>
+                                                        <span>
+                                                            <i class="bi bi-list-check me-1"></i>
+                                                            {% set total_indicateurs = 0 %}
+                                                            {% if grille.domaines %}
+                                                                {% for domaine in grille.domaines %}
+                                                                    {% set total_indicateurs = total_indicateurs + (domaine.indicateurs|length if domaine.indicateurs else 0) %}
+                                                                {% endfor %}
+                                                            {% endif %}
+                                                            {{ total_indicateurs }} indicateurs
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="selection-indicator mt-2">
+                                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Bouton pour continuer -->
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-primary btn-lg px-5" id="btn-continuer" disabled>
+                                <i class="bi bi-arrow-right me-2"></i>
+                                Continuer vers l'évaluation
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                            <div>
+                                <h6 class="mb-1">Aucune grille disponible</h6>
+                                <p class="mb-0">Vous devez d'abord créer ou assigner des grilles d'évaluation.</p>
+                                <a href="{{ url_for('grilles.new_grille') }}" class="btn btn-warning btn-sm mt-2">
+                                    <i class="bi bi-plus-circle me-1"></i>
+                                    Créer une grille
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface de cotation -->
+    <div class="row" id="cotation-interface" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light border-0 py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="step-indicator me-3">
+                                <span class="step-number">2</span>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-semibold">Évaluation par domaines</h5>
+                                <small class="text-muted">Évaluez chaque indicateur de 0 à 5</small>
+                            </div>
+                        </div>
+                        <div class="cotation-progress">
+                            <div class="progress" style="width: 200px; height: 8px;">
+                                <div class="progress-bar bg-success" id="cotation-progress-bar" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted mt-1 d-block text-center">
+                                <span id="progress-text">0 / 0 indicateurs cotés</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Conteneur des domaines -->
+                    <div id="domaines-container" class="p-4">
+                        <!-- Les domaines seront chargés ici via JavaScript -->
+                    </div>
+                    
+                    <!-- Section observations -->
+                    <div class="border-top p-4 bg-light">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-chat-quote me-2 text-primary"></i>
+                                    Observations et remarques
+                                </h6>
+                                <textarea class="form-control border-0 shadow-sm" 
+                                          id="observations" 
+                                          rows="4"
+                                          placeholder="Décrivez les moments marquants, les réactions du patient, les progrès observés, les difficultés rencontrées..."></textarea>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="mb-3">
+                                    <i class="bi bi-graph-up me-2 text-success"></i>
+                                    Résumé instantané
+                                </h6>
+                                <div id="scores-summary" class="scores-summary">
+                                    <!-- Scores par domaine seront affichés ici -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="border-top p-4 bg-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <button type="button" class="btn btn-outline-secondary me-3" onclick="resetCotation()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>
+                                    Réinitialiser
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="previewResults()">
+                                    <i class="bi bi-eye me-1"></i>
+                                    Aperçu
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button type="button" class="btn btn-success btn-lg px-4" onclick="saveCotation()" disabled id="btn-save">
+                                    <i class="bi bi-check-lg me-2"></i>
+                                    Enregistrer la cotation
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de prévisualisation -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-graph-up-arrow me-2"></i>
+                    Aperçu de la cotation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="preview-content">
+                <!-- Contenu généré dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-success" onclick="saveCotation(); bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();">
+                    <i class="bi bi-check-lg me-1"></i>
+                    Confirmer et sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+<script src="{{ url_for('static', filename='js/cotation-enhanced.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,892 @@
+/* ===========================================
+   SYNCHRONIE - Interface Cotation Enhanced
+   Styles pour une expérience utilisateur optimale
+   =========================================== */
+
+/* Variables CSS pour cohérence */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --border-radius: 12px;
+    --shadow-soft: 0 4px 20px rgba(0,0,0,0.08);
+    --shadow-hover: 0 8px 30px rgba(102, 126, 234, 0.15);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+}
+
+/* ==========================================
+   LAYOUT ET STRUCTURE
+   ========================================== */
+
+.container-fluid {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    min-height: 100vh;
+}
+
+/* Header gradient */
+.bg-gradient-primary {
+    background: var(--primary-gradient) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-gradient-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.1);
+    transform: skewY(-2deg);
+    transform-origin: top left;
+}
+
+/* ==========================================
+   COMPOSANTS VISUELS
+   ========================================== */
+
+/* Avatar circle pour le patient */
+.avatar-circle {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.3);
+    transition: var(--transition);
+}
+
+.avatar-circle:hover {
+    transform: scale(1.05);
+    background: rgba(255,255,255,0.3);
+}
+
+/* Indicateur de score global */
+.score-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.score-circle-large {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    border: 3px solid rgba(255,255,255,0.3);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.score-circle-large::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: conic-gradient(from 0deg, transparent 0%, var(--success-gradient) 100%);
+    border-radius: 50%;
+    opacity: 0.3;
+    transform: rotate(-90deg);
+    transition: var(--transition);
+}
+
+.score-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+    z-index: 1;
+    position: relative;
+}
+
+.score-unit {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    z-index: 1;
+    position: relative;
+}
+
+/* Step indicators */
+.step-indicator {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    box-shadow: var(--shadow-soft);
+    position: relative;
+    overflow: hidden;
+}
+
+.step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    transform: scale(0);
+    transition: var(--transition);
+}
+
+.step-indicator:hover::before {
+    transform: scale(1);
+}
+
+.step-number {
+    font-size: 1.1rem;
+    z-index: 1;
+    position: relative;
+}
+
+/* ==========================================
+   SÉLECTION DE GRILLE
+   ========================================== */
+
+.grille-card {
+    transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+}
+
+.grille-option {
+    border: 2px solid #e9ecef !important;
+    border-radius: var(--border-radius) !important;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    background: white;
+}
+
+.grille-option::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--primary-gradient);
+    transform: scaleX(0);
+    transition: var(--transition);
+    z-index: 1;
+}
+
+.grille-option::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--primary-gradient);
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.grille-card:hover .grille-option {
+    border-color: #667eea !important;
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-soft);
+}
+
+.grille-card:hover .grille-option::before {
+    transform: scaleX(1);
+}
+
+.grille-card:hover .grille-option::after {
+    opacity: 0.02;
+}
+
+.grille-radio:checked + .grille-label .grille-option {
+    border-color: #667eea !important;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.grille-radio:checked + .grille-label .grille-option::before {
+    transform: scaleX(1);
+}
+
+.grille-radio:checked + .grille-label .grille-option::after {
+    opacity: 0.05;
+}
+
+.grille-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.grille-card:hover .grille-icon {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.grille-badge {
+    position: relative;
+    z-index: 2;
+}
+
+.grille-stats {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.selection-indicator {
+    opacity: 0;
+    transition: var(--transition);
+    text-align: center;
+    font-size: 1.5rem;
+    transform: scale(0.8);
+}
+
+.grille-radio:checked + .grille-label .selection-indicator {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ==========================================
+   INTERFACE DE COTATION
+   ========================================== */
+
+/* Domaines de cotation */
+.domaine-section {
+    border: 1px solid #e9ecef;
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-lg);
+    overflow: hidden;
+    background: white;
+    transition: var(--transition);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    position: relative;
+}
+
+.domaine-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary-gradient);
+    transform: scaleY(0);
+    transition: var(--transition);
+}
+
+.domaine-section:hover {
+    border-color: #667eea;
+    box-shadow: var(--shadow-soft);
+    transform: translateY(-2px);
+}
+
+.domaine-section:hover::before {
+    transform: scaleY(1);
+}
+
+.domaine-header {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 1.25rem;
+    position: relative;
+    z-index: 1;
+}
+
+.domaine-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255,255,255,0.3);
+}
+
+.domaine-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.domaine-score-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-weight: 600;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    transition: var(--transition);
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Indicateurs */
+.indicateur-item {
+    padding: 1.25rem;
+    border-bottom: 1px solid #f8f9fa;
+    transition: var(--transition);
+    position: relative;
+}
+
+.indicateur-item:last-child {
+    border-bottom: none;
+}
+
+.indicateur-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--primary-gradient);
+    transform: scaleY(0);
+    transition: var(--transition);
+}
+
+.indicateur-item:hover {
+    background: linear-gradient(135deg, #f8faff, #f1f5ff);
+}
+
+.indicateur-item:hover::before {
+    transform: scaleY(1);
+}
+
+.indicateur-label {
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.indicateur-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-md);
+    font-style: italic;
+    line-height: 1.5;
+}
+
+.indicateur-value-display {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #667eea;
+    background: linear-gradient(135deg, #f8f9ff, #f1f5ff);
+    border: 2px solid #e0e7ff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    min-width: 60px;
+    text-align: center;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.indicateur-value-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--primary-gradient);
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.indicateur-value-display:hover::before {
+    opacity: 0.1;
+}
+
+/* ==========================================
+   SLIDERS PERSONNALISÉS
+   ========================================== */
+
+.slider-container {
+    margin: var(--spacing-md) 0;
+    position: relative;
+    padding: 0 4px;
+}
+
+.noUi-target {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    border-radius: 25px;
+    border: none;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.1);
+    height: 12px;
+    position: relative;
+}
+
+.noUi-target::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        #ef4444 0%, 
+        #f97316 20%, 
+        #eab308 40%, 
+        #22c55e 60%, 
+        #3b82f6 80%, 
+        #8b5cf6 100%);
+    border-radius: 25px;
+    opacity: 0.3;
+}
+
+.noUi-connect {
+    background: var(--primary-gradient);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+    border-radius: 25px;
+}
+
+.noUi-handle {
+    background: white;
+    border: 3px solid #667eea;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    width: 28px;
+    height: 28px;
+    cursor: grab;
+    transition: var(--transition);
+    position: relative;
+}
+
+.noUi-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    opacity: 0.7;
+}
+
+.noUi-handle::after {
+    display: none;
+}
+
+.noUi-handle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    border-color: #5b6cde;
+}
+
+.noUi-handle:active {
+    cursor: grabbing;
+    transform: scale(1.05);
+}
+
+.noUi-tooltip {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    white-space: nowrap;
+}
+
+/* Légendes des sliders */
+.slider-container .d-flex {
+    margin-top: 8px;
+}
+
+.slider-container .d-flex span {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-align: center;
+    flex: 1;
+    position: relative;
+}
+
+.slider-container .d-flex span::before {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 6px;
+    background: #dee2e6;
+}
+
+/* ==========================================
+   SCORES ET RÉSUMÉS
+   ========================================== */
+
+.scores-summary {
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.scores-summary::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scores-summary::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 2px;
+}
+
+.scores-summary::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 2px;
+}
+
+.score-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+    transition: var(--transition);
+}
+
+.score-item:last-child {
+    border-bottom: none;
+}
+
+.score-item:hover {
+    background: rgba(102, 126, 234, 0.02);
+    border-radius: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+/* Progress bars dans scores */
+.score-item .progress {
+    border-radius: 10px;
+    background: #e9ecef;
+    overflow: hidden;
+}
+
+.score-item .progress-bar {
+    border-radius: 10px;
+    background: var(--primary-gradient);
+    transition: width 0.6s ease;
+}
+
+/* ==========================================
+   BOUTONS ET ACTIONS
+   ========================================== */
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: var(--transition);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.2);
+    transform: scaleX(0);
+    transition: var(--transition);
+    transform-origin: left;
+}
+
+.btn:hover::before {
+    transform: scaleX(1);
+}
+
+.btn-primary {
+    background: var(--primary-gradient);
+    border: none;
+}
+
+.btn-success {
+    background: var(--success-gradient);
+    border: none;
+}
+
+.btn-lg {
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+}
+
+/* ==========================================
+   PROGRESS ET FEEDBACK
+   ========================================== */
+
+.cotation-progress .progress {
+    border-radius: 8px;
+    background: rgba(255,255,255,0.2);
+    overflow: hidden;
+}
+
+.cotation-progress .progress-bar {
+    border-radius: 8px;
+    background: var(--success-gradient);
+    transition: width 0.6s ease;
+    position: relative;
+}
+
+.cotation-progress .progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* ==========================================
+   RESPONSIVE DESIGN
+   ========================================== */
+
+@media (max-width: 768px) {
+    .score-circle-large {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .score-value {
+        font-size: 1.4rem;
+    }
+    
+    .avatar-circle {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .step-indicator {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .domaine-header {
+        padding: 1rem;
+    }
+    
+    .indicateur-item {
+        padding: 1rem;
+    }
+    
+    .grille-card {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-lg {
+        padding: 0.6rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
+
+.animate__animated {
+    animation-duration: 0.6s;
+    animation-fill-mode: both;
+}
+
+.animate__fadeInUp {
+    animation-name: fadeInUp;
+}
+
+.animate__fadeInRight {
+    animation-name: fadeInRight;
+}
+
+.animate__fadeOutUp {
+    animation-name: fadeOutUp;
+}
+
+.animate__pulse {
+    animation-name: pulse;
+    animation-duration: 1s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 30px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes fadeInRight {
+    from {
+        opacity: 0;
+        transform: translate3d(30px, 0, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes fadeOutUp {
+    from {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate3d(0, -30px, 0);
+    }
+}
+
+@keyframes pulse {
+    from {
+        transform: scale3d(1, 1, 1);
+    }
+    50% {
+        transform: scale3d(1.05, 1.05, 1.05);
+    }
+    to {
+        transform: scale3d(1, 1, 1);
+    }
+}
+
+/* ==========================================
+   ÉTATS DE CHARGEMENT
+   ========================================== */
+
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.8);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 1001;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ==========================================
+   ACCESSIBILITÉ
+   ========================================== */
+
+.grille-radio:focus + .grille-label .grille-option {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+.btn:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+.noUi-handle:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Haut contraste pour accessibilité */
+@media (prefers-contrast: high) {
+    :root {
+        --primary-gradient: linear-gradient(135deg, #000080 0%, #000040 100%);
+        --shadow-soft: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    
+    .grille-option {
+        border-color: #333 !important;
+    }
+    
+    .indicateur-value-display {
+        border-color: #333;
+        background: white;
+        color: #000;
+    }
+}
+
+/* Réduction de mouvement pour accessibilité */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

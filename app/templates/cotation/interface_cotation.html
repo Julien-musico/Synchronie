@@ -21,7 +21,7 @@
                             </h4>
                         </div>
                         <div class="col-auto">
-                            <a href="{{ url_for('patients.detail_patient', patient_id=seance.patient.id) }}" 
+                            <a href="{{ url_for('patients.view_patient', patient_id=seance.patient.id) }}" 
                                class="btn btn-light btn-sm">
                                 <i class="bi bi-arrow-left me-1"></i>
                                 Retour au patient
@@ -806,7 +806,7 @@ document.getElementById('save-cotation').addEventListener('click', async functio
         
         if (response.ok && result.success) {
             alert('Cotation sauvegardée avec succès!');
-            window.location.href = "{{ url_for('seances.view_seance', seance_id=seance.id) }}";
+            window.location.href = "{{ url_for('patients.view_patient', patient_id=seance.patient.id) }}";
         } else {
             alert('Erreur lors de la sauvegarde: ' + (result.error || 'Erreur inconnue'));
         }

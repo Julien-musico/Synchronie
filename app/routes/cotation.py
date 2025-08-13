@@ -127,7 +127,7 @@ def interface_cotation(seance_id):
         # Cotations existantes pour cette séance
         cotations_existantes = CotationSeance.query.filter_by(seance_id=seance_id).all()
         
-        return render_template('cotation/interface_cotation_simple.html',
+        return render_template('cotation/interface_cotation_clean.html',
                              seance=seance,
                              grilles=grilles,
                              cotations_existantes=cotations_existantes)
