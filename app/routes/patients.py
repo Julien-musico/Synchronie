@@ -37,10 +37,10 @@ def create_patient():
     """Traitement de la création d'un patient"""
     data = request.form.to_dict()
     
-    # Gérer les grilles sélectionnées (checkboxes multiples)
-    grilles_ids = request.form.getlist('grilles_ids')
-    if grilles_ids:
-        data['grilles_ids'] = [int(gid) for gid in grilles_ids if gid.isdigit()]
+    # Gérer la grille sélectionnée (radio button unique)
+    grille_id = request.form.get('grille_id')
+    if grille_id and grille_id.isdigit():
+        data['grilles_ids'] = [int(grille_id)]  # Convertir en liste pour compatibilité
     
     success, message, patient = PatientService.create_patient(data)
     

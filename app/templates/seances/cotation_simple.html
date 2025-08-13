@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header avec info patient et séance -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-0">
+                                <i class="fas fa-clipboard-list me-2"></i>
+                                Cotation de séance
+                            </h4>
+                            <p class="mb-0 mt-1">
+                                <strong>Patient :</strong> {{ seance.patient.prenom }} {{ seance.patient.nom }} |
+                                <strong>Date :</strong> {{ seance.date_seance.strftime('%d/%m/%Y') }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge bg-light text-dark fs-6">
+                                {% if grille %}
+                                    Grille : {{ grille.nom }}
+                                {% else %}
+                                    Aucune grille assignée
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if not grille %}
+        <!-- Message d'erreur si pas de grille -->
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Aucune grille assignée</h5>
+                    <p>Ce patient n'a pas de grille de cotation assignée. Vous devez d'abord :</p>
+                    <ol>
+                        <li>Aller sur le profil du patient</li>
+                        <li>Assigner une grille de cotation</li>
+                        <li>Revenir coter cette séance</li>
+                    </ol>
+                    <a href="{{ url_for('patients.view_patient', patient_id=seance.patient.id) }}" class="btn btn-primary">
+                        <i class="fas fa-user me-2"></i>Aller au profil patient
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Interface de cotation -->
+        <form id="cotation-form" method="POST" action="{{ url_for('seances.save_cotation', seance_id=seance.id) }}">
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Domaines et indicateurs -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-sliders-h me-2"></i>
+                                Évaluation des indicateurs
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if grille.get('domaines') %}
+                                {% for domaine in grille.domaines %}
+                                    <div class="domaine-section mb-4">
+                                        <h6 class="text-primary border-bottom pb-2">
+                                            <i class="fas fa-folder me-2"></i>{{ domaine.get('nom', 'Domaine sans nom') }}
+                                        </h6>
+                                        {% if domaine.get('description') %}
+                                            <p class="text-muted small mb-3">{{ domaine.description }}</p>
+                                        {% endif %}
+                                        
+                                        {% if domaine.get('indicateurs') %}
+                                            {% for indicateur in domaine.indicateurs %}
+                                                <div class="indicateur-item mb-3 p-3 bg-light rounded">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-4">
+                                                            <label class="form-label fw-bold">
+                                                                {{ indicateur.get('nom', 'Indicateur') }}
+                                                            </label>
+                                                            {% if indicateur.get('description') %}
+                                                                <p class="small text-muted mb-0">{{ indicateur.description }}</p>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <!-- Curseur de 0 à 5 -->
+                                                            <div class="slider-container">
+                                                                <input type="range" 
+                                                                       class="form-range cotation-slider" 
+                                                                       min="0" 
+                                                                       max="5" 
+                                                                       step="1" 
+                                                                       value="0"
+                                                                       name="score_{{ domaine.get('nom', 'domaine')|replace(' ', '_') }}_{{ indicateur.get('nom', 'indicateur')|replace(' ', '_') }}"
+                                                                       data-domaine="{{ domaine.get('nom', 'domaine') }}"
+                                                                       data-indicateur="{{ indicateur.get('nom', 'indicateur') }}">
+                                                                <div class="slider-labels d-flex justify-content-between small text-muted mt-1">
+                                                                    <span>0 - Inexistant</span>
+                                                                    <span>1 - Émergent</span>
+                                                                    <span>2 - Développé</span>
+                                                                    <span>3 - Acquis</span>
+                                                                    <span>4 - Maîtrisé</span>
+                                                                    <span>5 - Expert</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2 text-center">
+                                                            <span class="badge bg-primary fs-6 score-display">0</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <p class="text-muted">Aucun indicateur défini pour ce domaine.</p>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="alert alert-info">
+                                    <h6>Grille sans structure définie</h6>
+                                    <p>Cette grille n'a pas de domaines ou d'indicateurs configurés. Contactez votre administrateur.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <!-- Panel de résumé -->
+                    <div class="card position-sticky" style="top: 20px;">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Résumé de cotation
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Score global -->
+                            <div class="text-center mb-4">
+                                <h6>Score global</h6>
+                                <div class="score-global-container">
+                                    <span id="score-global" class="display-4 text-success">0.0</span>
+                                    <span class="text-muted">/5.0</span>
+                                </div>
+                                <div class="progress mt-2" style="height: 10px;">
+                                    <div id="progress-global" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Scores par domaine -->
+                            <h6>Scores par domaine</h6>
+                            <div id="scores-domaines">
+                                {% if grille.get('domaines') %}
+                                    {% for domaine in grille.domaines %}
+                                        <div class="domaine-score d-flex justify-content-between align-items-center mb-2">
+                                            <span class="small">{{ domaine.get('nom', 'Domaine') }}</span>
+                                            <span class="badge bg-secondary" id="score-{{ domaine.get('nom', 'domaine')|replace(' ', '_') }}">0.0</span>
+                                        </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Zone observations -->
+                            <div class="mt-4">
+                                <label for="observations" class="form-label">Observations</label>
+                                <textarea class="form-control" 
+                                          id="observations" 
+                                          name="observations" 
+                                          rows="4" 
+                                          placeholder="Notes sur cette séance..."></textarea>
+                            </div>
+                            
+                            <!-- Boutons d'action -->
+                            <div class="mt-4 d-grid gap-2">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save me-2"></i>
+                                    Sauvegarder la cotation
+                                </button>
+                                <a href="{{ url_for('patients.view_patient', patient_id=seance.patient.id) }}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>
+                                    Retour au patient
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+</div>
+
+<style>
+.cotation-slider {
+    width: 100%;
+}
+
+.slider-labels {
+    font-size: 0.75rem;
+}
+
+.score-display {
+    min-width: 40px;
+    display: inline-block;
+}
+
+.domaine-section {
+    border-left: 4px solid #007bff;
+    padding-left: 15px;
+}
+
+.indicateur-item {
+    transition: all 0.2s ease;
+}
+
+.indicateur-item:hover {
+    background-color: #e9ecef !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.score-global-container {
+    padding: 20px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 10px;
+    color: white;
+    margin: 10px 0;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sliders = document.querySelectorAll('.cotation-slider');
+    
+    sliders.forEach(slider => {
+        const scoreDisplay = slider.closest('.indicateur-item').querySelector('.score-display');
+        
+        // Mise à jour de l'affichage du score
+        slider.addEventListener('input', function() {
+            scoreDisplay.textContent = this.value;
+            scoreDisplay.className = `badge fs-6 ${getScoreColor(this.value)}`;
+            
+            // Calculer les scores par domaine et global
+            calculateScores();
+        });
+    });
+    
+    function getScoreColor(score) {
+        const scoreNum = parseInt(score);
+        if (scoreNum === 0) return 'bg-secondary';
+        if (scoreNum <= 2) return 'bg-danger';
+        if (scoreNum <= 3) return 'bg-warning';
+        return 'bg-success';
+    }
+    
+    function calculateScores() {
+        const domainesScores = {};
+        let totalScore = 0;
+        let totalIndicateurs = 0;
+        
+        // Calculer score par domaine
+        sliders.forEach(slider => {
+            const domaine = slider.dataset.domaine;
+            const score = parseInt(slider.value);
+            
+            if (!domainesScores[domaine]) {
+                domainesScores[domaine] = { total: 0, count: 0 };
+            }
+            
+            domainesScores[domaine].total += score;
+            domainesScores[domaine].count += 1;
+            totalScore += score;
+            totalIndicateurs += 1;
+        });
+        
+        // Mettre à jour l'affichage des scores par domaine
+        Object.keys(domainesScores).forEach(domaine => {
+            const moyenneDomaine = domainesScores[domaine].total / domainesScores[domaine].count;
+            const elementId = `score-${domaine.replace(/\s+/g, '_')}`;
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = moyenneDomaine.toFixed(1);
+                element.className = `badge ${getScoreColor(moyenneDomaine)}`;
+            }
+        });
+        
+        // Mettre à jour le score global
+        const scoreGlobal = totalIndicateurs > 0 ? totalScore / totalIndicateurs : 0;
+        document.getElementById('score-global').textContent = scoreGlobal.toFixed(1);
+        document.getElementById('progress-global').style.width = `${(scoreGlobal / 5) * 100}%`;
+    }
+});
+</script>
+{% endblock %}
