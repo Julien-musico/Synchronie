@@ -24,6 +24,12 @@ def create_app(config_name: str = 'default') -> Flask:
     
     # Chargement de la configuration
     app.config.from_object(config[config_name])  # type: ignore
+
+    # Filtres Jinja personnalisés
+    def nl2br(value: str) -> str:
+        """Convertit les retours ligne en balises <br>."""
+        return value.replace('\r\n', '\n').replace('\n', '<br>') if isinstance(value, str) else value  # type: ignore
+    app.jinja_env.filters['nl2br'] = nl2br  # type: ignore
     
     # Initialisation des extensions avec l'app
     db.init_app(app)
