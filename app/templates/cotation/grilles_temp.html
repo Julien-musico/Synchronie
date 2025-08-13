@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Système de Cotation - En cours de déploiement{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        🎯 Système de Cotation Thérapeutique
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> Déploiement en cours</h5>
+                        <p>Le système de cotation visuel est en cours de déploiement. Les tables de base de données sont en cours de création.</p>
+                    </div>
+                    
+                    <h5>Fonctionnalités prévues :</h5>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">
+                            <strong>🎨 Interface visuelle</strong><br>
+                            <small class="text-muted">Sliders interactifs avec couleurs graduées</small>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>🏆 Grilles scientifiques</strong><br>
+                            <small class="text-muted">AMTA, IMCAP-ND, MRS validées</small>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>📱 Design adaptatif</strong><br>
+                            <small class="text-muted">Optimisé tablettes et smartphones</small>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>📊 Calculs automatiques</strong><br>
+                            <small class="text-muted">Scores globaux et pourcentages en temps réel</small>
+                        </li>
+                    </ul>
+                    
+                    <div class="alert alert-warning">
+                        <strong>État actuel :</strong> Base de données en cours de configuration
+                    </div>
+                    
+                    <div class="text-center">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">
+                            <i class="bi bi-arrow-left"></i> Retour au tableau de bord
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
