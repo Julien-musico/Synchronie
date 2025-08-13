@@ -410,7 +410,7 @@
                 <button class="btn-cotation btn-save" id="save-cotation">
                     💾 Sauvegarder la cotation
                 </button>
-                <a href="{{ url_for('seances.detail', seance_id=seance.id) }}" class="btn-cotation btn-cancel">
+                <a href="{{ url_for('seances.view_seance', seance_id=seance.id) }}" class="btn-cotation btn-cancel">
                     ↩️ Retour à la séance
                 </a>
             </div>
@@ -646,7 +646,7 @@ document.getElementById('save-cotation').addEventListener('click', async functio
         
         if (response.ok && result.success) {
             alert('Cotation sauvegardée avec succès!');
-            window.location.href = "{{ url_for('seances.detail', seance_id=seance.id) }}";
+            window.location.href = "{{ url_for('seances.view_seance', seance_id=seance.id) }}";
         } else {
             alert('Erreur lors de la sauvegarde: ' + (result.error || 'Erreur inconnue'));
         }
