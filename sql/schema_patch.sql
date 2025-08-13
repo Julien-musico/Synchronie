@@ -54,6 +54,12 @@ CREATE TABLE IF NOT EXISTS grille_evaluation (
     date_modification TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
+-- Assurer présence colonnes timestamp si table préexistante sans celles-ci
+ALTER TABLE grille_evaluation
+    ADD COLUMN IF NOT EXISTS date_creation TIMESTAMPTZ DEFAULT NOW() NOT NULL;
+ALTER TABLE grille_evaluation
+    ADD COLUMN IF NOT EXISTS date_modification TIMESTAMPTZ DEFAULT NOW() NOT NULL;
+
 -- Ajouter colonne musicotherapeute_id si table existait sans
 DO $$
 BEGIN
