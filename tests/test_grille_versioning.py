@@ -55,7 +55,9 @@ def test_cotation_uses_active_version(user_client, app_ctx):
         g = CotationService.creer_grille_personnalisee('Test V', 'Desc', [
             {'nom':'D1','couleur':'#111','description':'','indicateurs':[{'nom':'I1','min':0,'max':5,'unite':'pts'}]}
         ])
-    active_v = GrilleVersion.query.filter_by(grille_id=g.id, active=True).first()  # type: ignore
     # Créer une cotation factice (séance id arbitraire 1)
     c = CotationService.creer_cotation(seance_id=1, grille_id=g.id, scores={'D1_I1':3})
-    assert c.grille_version_id == (active_v.id if active_v else None)
+    # Le lien direct vers une version de grille a été retiré (grille_version_id supprimé).
+    # On vérifie simplement que la cotation référence la bonne grille et calcule un score.
+    assert c.grille_id == g.id
+    assert c.score_global is not None
