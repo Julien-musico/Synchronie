@@ -7,6 +7,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 from flask_login import login_required  # type: ignore
 
 from app.services.audio_service import AudioTranscriptionService
+from app.services.patient_service import PatientService
 from app.services.seance_service import SeanceService
 
 audio = Blueprint('audio', __name__, url_prefix='/audio')
@@ -98,6 +99,31 @@ def transcribe_only(seance_id: int):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@audio.route('/transcribe-temp', methods=['POST'])
+@login_required  # type: ignore
+def transcribe_temp():
+    """Transcrit un fichier audio sans associer à une séance (mode création)"""
+    if 'audio_file' not in request.files:
+        return jsonify({'success': False, 'message': 'Aucun fichier fourni'}), 400
+    file = request.files['audio_file']
+
+    try:
+        if not os.environ.get('OPENAI_API_KEY'):
+            return jsonify({'success': False, 'message': 'Service non configuré'}), 500
+
+        audio_service = AudioTranscriptionService()
+        success, message, transcription = audio_service.transcribe_audio(file)
+
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Transcription réussie',
+                'transcription': transcription
+            })
+        return jsonify({'success': False, 'message': message}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @audio.route('/analyze/<int:seance_id>', methods=['POST'])
 @login_required  # type: ignore
 def generate_analysis(seance_id: int):
@@ -115,16 +141,25 @@ def generate_analysis(seance_id: int):
         
         audio_service = AudioTranscriptionService()
         
-        # Informations du patient depuis la relation
+        # Informations du patient à partir du service
+        patient = PatientService.get_patient_by_id(seance.patient_id)
         patient_info = {
-            'prenom': getattr(seance, 'patient_prenom', ''),
-            'pathologie': getattr(seance, 'pathologie', ''),
-            'objectifs_therapeutiques': getattr(seance, 'objectifs', '')
+            'prenom': getattr(patient, 'prenom', '') if patient else '',
+            'pathologie': getattr(patient, 'pathologie', '') if patient else '',
+            'objectifs_therapeutiques': getattr(patient, 'objectifs_therapeutiques', '') if patient else ''
+        }
+        
+        # Contexte de séance
+        session_context = {
+            'objectifs_seance': getattr(seance, 'objectifs_seance', ''),
+            'activites_realisees': getattr(seance, 'activites_realisees', ''),
+            'observations': getattr(seance, 'observations', ''),
         }
         
         success, message, analysis = audio_service.generate_session_analysis(
-            seance.transcription_audio, 
-            patient_info
+            seance.transcription_audio,
+            patient_info,
+            session_context=session_context
         )
         
         if success:
@@ -138,6 +173,106 @@ def generate_analysis(seance_id: int):
             })
         return jsonify({'success': False, 'message': message}), 500
             
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@audio.route('/generate-with-context/<int:seance_id>', methods=['POST'])
+@login_required  # type: ignore
+def generate_with_context(seance_id: int):
+    """Génère une synthèse IA en utilisant la transcription si dispo sinon les observations et le contexte de séance"""
+    seance = SeanceService.get_seance_by_id(seance_id)
+    if not seance:
+        return jsonify({'success': False, 'message': 'Séance non trouvée'}), 404
+
+    try:
+        if not os.environ.get('OPENAI_API_KEY'):
+            return jsonify({'success': False, 'message': 'Service non configuré'}), 500
+
+        # Payload optionnel
+        req_json = {}
+        try:
+            req_json = request.get_json(silent=True) or {}
+        except Exception:
+            req_json = {}
+
+        use_transcription = req_json.get('use_transcription', True)
+        override_text = req_json.get('text')  # Permet de passer un texte alternatif (ex: observations)
+
+        # Construire le texte source
+        source_text = None
+        if use_transcription and getattr(seance, 'transcription_audio', None):
+            source_text = seance.transcription_audio
+        elif override_text:
+            source_text = override_text
+        else:
+            # fallback: concaténer observations + objectifs + activités
+            parts = [
+                getattr(seance, 'observations', '') or '',
+                getattr(seance, 'objectifs_seance', '') or '',
+                getattr(seance, 'activites_realisees', '') or ''
+            ]
+            source_text = "\n\n".join([p for p in parts if p])
+
+        if not source_text:
+            return jsonify({'success': False, 'message': 'Aucune donnée disponible pour générer la synthèse'}), 400
+
+        audio_service = AudioTranscriptionService()
+
+        # Informations patient et contexte séance
+        patient = PatientService.get_patient_by_id(seance.patient_id)
+        patient_info = {
+            'prenom': getattr(patient, 'prenom', '') if patient else '',
+            'pathologie': getattr(patient, 'pathologie', '') if patient else '',
+            'objectifs_therapeutiques': getattr(patient, 'objectifs_therapeutiques', '') if patient else ''
+        }
+
+        session_context = {
+            'objectifs_seance': getattr(seance, 'objectifs_seance', ''),
+            'activites_realisees': getattr(seance, 'activites_realisees', ''),
+            'observations': getattr(seance, 'observations', ''),
+        }
+
+        success, message, analysis = audio_service.generate_session_analysis(
+            source_text,
+            patient_info,
+            session_context=session_context
+        )
+
+        if success:
+            # Persist synthèse
+            seance.synthese_ia = analysis
+            from app.models import db
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Synthèse générée', 'analysis': analysis})
+        return jsonify({'success': False, 'message': message}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@audio.route('/generate-temp', methods=['POST'])
+@login_required  # type: ignore
+def generate_temp():
+    """Génère une synthèse IA temporaire sans sauvegarde (mode création)"""
+    try:
+        if not os.environ.get('OPENAI_API_KEY'):
+            return jsonify({'success': False, 'message': 'Service non configuré'}), 500
+
+        payload = request.get_json(silent=True) or {}
+        text = payload.get('text')
+        patient_info = payload.get('patient_info') or {}
+        session_context = payload.get('session_context') or {}
+
+        if not text:
+            return jsonify({'success': False, 'message': 'Aucun texte fourni pour la synthèse'}), 400
+
+        audio_service = AudioTranscriptionService()
+        success, message, analysis = audio_service.generate_session_analysis(
+            text,
+            patient_info,
+            session_context=session_context
+        )
+        if success:
+            return jsonify({'success': True, 'message': 'Synthèse générée', 'analysis': analysis})
+        return jsonify({'success': False, 'message': message}), 500
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 

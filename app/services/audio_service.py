@@ -186,7 +186,7 @@ class AudioTranscriptionService:
             logger.error(f"Erreur lors de la transcription: {e}")
             return False, f"Erreur de transcription: {str(e)}", None
     
-    def generate_session_analysis(self, transcription: str, patient_info: Dict[str, Any]) -> Tuple[bool, str, Optional[str]]:
+    def generate_session_analysis(self, transcription: str, patient_info: Dict[str, Any], session_context: Optional[Dict[str, Any]] = None) -> Tuple[bool, str, Optional[str]]:
         """
         Génère une analyse IA de la séance à partir de la transcription
         
@@ -206,7 +206,7 @@ class AudioTranscriptionService:
             logger.info("Génération de l'analyse IA de la séance")
             
             # Prompt spécialisé pour l'analyse de musicothérapie
-            system_prompt = """Tu es un assistant spécialisé en musicothérapie. Analyse cette transcription de séance et génère une synthèse thérapeutique structurée.
+            system_prompt = """Tu es un assistant spécialisé en musicothérapie. Analyse cette séance et génère une synthèse thérapeutique structurée.
 
 La synthèse doit inclure :
 1. **Observations générales** - Ambiance et déroulement de la séance
@@ -218,12 +218,25 @@ La synthèse doit inclure :
 
 Reste professionnel, bienveillant et utilise un vocabulaire approprié au domaine de la musicothérapie."""
             
+            contexte = ""
+            if session_context:
+                objectifs = session_context.get('objectifs_seance') or ''
+                activites = session_context.get('activites_realisees') or ''
+                observations = session_context.get('observations') or ''
+                if any([objectifs, activites, observations]):
+                    contexte = ("\n\nContexte de séance fourni par le thérapeute :\n"
+                               f"- Objectifs de séance : {objectifs or 'Non renseignés'}\n"
+                               f"- Activités réalisées : {activites or 'Non renseignées'}\n"
+                               f"- Observations : {observations or 'Non renseignées'}\n")
+
             user_prompt = f"""Informations du patient :
 - Prénom : {patient_info.get('prenom', 'Non renseigné')}
 - Pathologie : {patient_info.get('pathologie', 'Non renseignée')}
 - Objectifs thérapeutiques : {patient_info.get('objectifs_therapeutiques', 'Non renseignés')}
 
-Transcription de la séance :
+{contexte}
+
+Contenu à analyser (transcription ou notes) :
 {transcription}
 
 Génère une synthèse thérapeutique détaillée de cette séance de musicothérapie."""

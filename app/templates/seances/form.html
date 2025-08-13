@@ -82,6 +82,20 @@
                                        value="{% if seance %}{{ seance.duree_minutes or '' }}{% elif data %}{{ data.duree_minutes or '' }}{% endif %}" placeholder="45">
                             </div>
                         </div>
+                        {% if mode == 'create' and (not grille) and grilles_disponibles %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="assign_grille_id" class="form-label">Grille de cotation</label>
+                                <select class="form-select" id="assign_grille_id" name="assign_grille_id">
+                                    <option value="">Aucune (vous pourrez en ajouter plus tard)</option>
+                                    {% for g in grilles_disponibles %}
+                                        <option value="{{ g.id }}">{{ g.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">Aucune grille n'est assignée à ce patient. Vous pouvez en choisir une ici.</div>
+                            </div>
+                        </div>
+                        {% endif %}
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="score_engagement" class="form-label">Score d'engagement (1-10)</label>
@@ -161,13 +175,23 @@
 
                     <!-- Statut de transcription -->
                     <div id="transcription-status" class="alert alert-info" style="display: none;">
-                        <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center mb-2">
                             <div class="spinner-border spinner-border-sm text-info me-2" role="status">
                                 <span class="visually-hidden">Transcription...</span>
                             </div>
-                            <span id="transcription-text">Transcription en cours en arrière-plan...</span>
+                            <span id="transcription-text">Transcription en cours...</span>
                         </div>
+                        <div class="progress" style="height: 6px;">
+                            <div id="transcription-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div class="text-end small mt-1"><span id="transcription-percent">0%</span></div>
                     </div>
+
+                    <!-- Hidden fields to carry temp results in create mode -->
+                    {% if mode == 'create' %}
+                    <input type="hidden" id="transcription_temp_text" name="transcription_temp_text" />
+                    <input type="hidden" id="synthese_temp_text" name="synthese_temp_text" />
+                    {% endif %}
 
                     <!-- Zone de transcription (si disponible) -->
                     {% if seance and seance.transcription_audio %}
@@ -192,6 +216,21 @@
                     </div>
                     {% endif %}
 
+                    <!-- Preview zone for temp transcription in create mode -->
+                    {% if mode == 'create' %}
+                    <div id="transcription-preview" class="mb-3" style="display:none;">
+                        <label class="form-label">
+                            <i class="bi bi-file-text me-1"></i>
+                            Transcription (prévisualisation)
+                        </label>
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <div id="transcription-preview-text" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <!-- Zone de synthèse IA (si disponible) -->
                     {% if seance and seance.synthese_ia %}
                     <div class="mb-3">
@@ -210,6 +249,21 @@
                                         Voir en plein écran
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Preview zone for temp synthesis in create mode -->
+                    {% if mode == 'create' %}
+                    <div id="synthese-preview" class="mb-3" style="display:none;">
+                        <label class="form-label">
+                            <i class="bi bi-robot me-1"></i>
+                            Synthèse thérapeutique IA (prévisualisation)
+                        </label>
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <div id="synthese-preview-text" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></div>
                             </div>
                         </div>
                     </div>
@@ -316,21 +370,30 @@
 
                     <hr class="my-4">
 
-                    <div class="d-flex justify-content-end gap-2">
-                        <a href="{{ url_for('patients.view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle me-2"></i>
-                            Annuler
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            {% if mode == 'edit' %}
-                                <i class="bi bi-save me-2"></i>
-                                Mettre à jour
-                            {% else %}
-                                <i class="bi bi-save me-2"></i>
-                                Enregistrer la séance
-                            {% endif %}
-                        </button>
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                        <div>
+                            <button type="button" class="btn btn-outline-success" id="btn-generate-synthese">
+                                <i class="bi bi-magic me-1"></i>
+                                Générer synthèse
+                            </button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('patients.view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>
+                                Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if mode == 'edit' %}
+                                    <i class="bi bi-save me-2"></i>
+                                    Mettre à jour
+                                {% else %}
+                                    <i class="bi bi-save me-2"></i>
+                                    Enregistrer la séance
+                                {% endif %}
+                            </button>
+                        </div>
                     </div>
+                    
                 </form>
             </div>
         </div>
@@ -404,7 +467,10 @@ document.addEventListener('DOMContentLoaded', function() {
                          String(now.getDate()).padStart(2, '0') + 'T' + 
                          String(now.getHours()).padStart(2, '0') + ':' + 
                          String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('date_seance').value = dateTimeLocal;
+    const dateInput = document.getElementById('date_seance');
+    if (dateInput && !dateInput.value) {
+        dateInput.value = dateTimeLocal;
+    }
     
     // Gestion de l'affichage/masquage de la section de cotation
     const toggleButton = document.getElementById('toggle-cotation');
@@ -523,6 +589,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 inlineUploadBtn.disabled = false;
             } else if (inlineUploadBtn) {
                 inlineUploadBtn.disabled = true;
+            }
+
+            // Auto-transcription en mode création
+            const isCreate = '{{ mode }}' === 'create';
+            if (isCreate && file && validateAudioFile(file, e.target)) {
+                startTempTranscription(file);
             }
         });
     }
@@ -670,7 +742,171 @@ function startBackgroundTranscription(seanceId, audioFile) {
         transcriptionStatus.classList.add('alert-danger');
     });
 }
+
+// Temp transcription (create mode) with simulated progress
+function startTempTranscription(file) {
+    const status = document.getElementById('transcription-status');
+    const text = document.getElementById('transcription-text');
+    const bar = document.getElementById('transcription-progress');
+    const pct = document.getElementById('transcription-percent');
+    const preview = document.getElementById('transcription-preview');
+    const previewText = document.getElementById('transcription-preview-text');
+    const hiddenInput = document.getElementById('transcription_temp_text');
+
+    if (!status || !bar || !pct) return;
+
+    status.style.display = 'block';
+    status.classList.remove('alert-success','alert-warning','alert-danger');
+    status.classList.add('alert-info');
+    text.textContent = 'Transcription en cours...';
+    bar.style.width = '0%';
+    pct.textContent = '0%';
+
+    let progress = 0;
+    const timer = setInterval(() => {
+        // Simuler une progression jusqu'à 90%
+        progress = Math.min(progress + Math.random() * 12, 90);
+        bar.style.width = progress.toFixed(0) + '%';
+        pct.textContent = progress.toFixed(0) + '%';
+    }, 400);
+
+    const formData = new FormData();
+    formData.append('audio_file', file);
+
+    fetch('/audio/transcribe-temp', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                clearInterval(timer);
+                bar.style.width = '100%';
+                pct.textContent = '100%';
+                status.classList.remove('alert-info');
+                status.classList.add('alert-success');
+                text.textContent = 'Transcription terminée';
+
+                if (hiddenInput) hiddenInput.value = data.transcription || '';
+                if (preview && previewText) {
+                    preview.style.display = 'block';
+                    previewText.textContent = data.transcription || '';
+                }
+            } else {
+                throw new Error(data.message || 'Erreur inconnue');
+            }
+        })
+        .catch(err => {
+            clearInterval(timer);
+            status.classList.remove('alert-info');
+            status.classList.add('alert-danger');
+            text.textContent = 'Erreur de transcription: ' + err.message;
+        });
+}
+
+// Generate synthesis button
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('btn-generate-synthese');
+    if (!btn) return;
+
+    btn.addEventListener('click', function() {
+        const mode = '{{ mode }}';
+        const observations = document.getElementById('observations')?.value || '';
+        const objectifs = document.getElementById('objectifs_seance')?.value || '';
+        const activites = document.getElementById('activites_realisees')?.value || '';
+        const transcrTemp = document.getElementById('transcription_temp_text')?.value || '';
+        const synthHidden = document.getElementById('synthese_temp_text');
+
+        // Afficher un statut
+        const status = document.getElementById('transcription-status');
+        const text = document.getElementById('transcription-text');
+        if (status && text) {
+            status.style.display = 'block';
+            status.classList.remove('alert-success','alert-warning','alert-danger');
+            status.classList.add('alert-info');
+            text.textContent = 'Génération de la synthèse...';
+        }
+
+    if (mode === 'edit') {
+            const seanceId = '{{ seance.id if seance else "" }}';
+            fetch(`/audio/generate-with-context/${seanceId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    use_transcription: true,
+                    // Always provide a fallback text; backend will use transcription if available
+                    text: [observations, objectifs, activites].filter(Boolean).join('\n\n')
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    if (status && text) {
+                        status.classList.remove('alert-info');
+                        status.classList.add('alert-success');
+                        text.textContent = 'Synthèse générée';
+                    }
+                    // Recharger pour afficher la synthèse persistée
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    throw new Error(data.message || 'Erreur inconnue');
+                }
+            })
+            .catch(err => {
+                if (status && text) {
+                    status.classList.remove('alert-info');
+                    status.classList.add('alert-danger');
+                    text.textContent = 'Erreur de synthèse: ' + err.message;
+                }
+            });
+        } else {
+            // create mode: generate temp and preview
+            const patientInfoEl = document.getElementById('patient-info-json');
+            let patientInfo = { prenom: '', pathologie: '', objectifs_therapeutiques: '' };
+            if (patientInfoEl && patientInfoEl.textContent) {
+                try { patientInfo = JSON.parse(patientInfoEl.textContent); } catch(e) { /* ignore */ }
+            }
+            const sessionContext = {
+                objectifs_seance: objectifs,
+                activites_realisees: activites,
+                observations: observations
+            };
+            const textToUse = transcrTemp || [observations, objectifs, activites].filter(Boolean).join('\n\n');
+            fetch('/audio/generate-temp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: textToUse, patient_info: patientInfo, session_context: sessionContext })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    if (status && text) {
+                        status.classList.remove('alert-info');
+                        status.classList.add('alert-success');
+                        text.textContent = 'Synthèse générée (prévisualisation)';
+                    }
+                    const prev = document.getElementById('synthese-preview');
+                    const prevText = document.getElementById('synthese-preview-text');
+                    if (prev && prevText) {
+                        prev.style.display = 'block';
+                        prevText.textContent = data.analysis || '';
+                    }
+                    if (synthHidden) synthHidden.value = data.analysis || '';
+                } else {
+                    throw new Error(data.message || 'Erreur inconnue');
+                }
+            })
+            .catch(err => {
+                if (status && text) {
+                    status.classList.remove('alert-info');
+                    status.classList.add('alert-danger');
+                    text.textContent = 'Erreur de synthèse: ' + err.message;
+                }
+            });
+        }
+    });
+});
 </script>
+
+<!-- Patient info JSON for JS consumption -->
+<script id="patient-info-json" type="application/json">{{ {'prenom': patient.prenom, 'pathologie': patient.pathologie or '', 'objectifs_therapeutiques': patient.objectifs_therapeutiques or ''} | tojson }}</script>
 
 <style>
 .cotation-section {

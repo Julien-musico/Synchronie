@@ -4,6 +4,7 @@ Routes pour la gestion des séances
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required  # type: ignore
 
+from app.models import db
 from app.services.patient_service import PatientService
 from app.services.seance_service import SeanceService
 
@@ -41,6 +42,7 @@ def new_seance(patient_id):
     from app.models.cotation import GrilleEvaluation
     grilles_patient = PatientService.get_grilles_patient(patient_id)
     grille_data = None
+    grilles_disponibles = []
     
     if grilles_patient:
         # Récupérer l'objet GrilleEvaluation complet avec les domaines
@@ -54,7 +56,19 @@ def new_seance(patient_id):
                 'domaines': grille_obj.domaines
             }
     
-    return render_template('seances/form.html', patient=patient, seance=None, mode='create', grille=grille_data)
+    # Si aucune grille assignée, proposer un choix de grilles disponibles
+    if not grilles_patient:
+        try:
+            from app.services.cotation_service import CotationService
+            gr_std = CotationService.get_grilles_standards()
+            gr_usr = CotationService.get_grilles_utilisateur()
+            # Construire une liste simple pour le select
+            grilles_disponibles = ([{'id': g.id, 'nom': g.nom, 'description': g.description, 'type': 'standard'} for g in gr_std] +
+                                   [{'id': g.id, 'nom': g.nom, 'description': g.description, 'type': 'personnalisee'} for g in gr_usr])
+        except Exception:
+            grilles_disponibles = []
+
+    return render_template('seances/form.html', patient=patient, seance=None, mode='create', grille=grille_data, grilles_disponibles=grilles_disponibles)
 
 @seances.route('/patient/<int:patient_id>/create', methods=['POST'])
 @login_required  # type: ignore
@@ -72,6 +86,17 @@ def create_seance(patient_id):
     success, message, seance = SeanceService.create_seance(patient_id, data)
     
     if success and seance:
+        # Si une grille a été choisie depuis le formulaire (cas: aucune assignée initialement), l'assigner au patient
+        assign_msg = ""
+        assign_id = request.form.get('assign_grille_id')
+        if assign_id:
+            try:
+                gid = int(assign_id)
+                if gid > 0:
+                    ok, msg = PatientService.modifier_grilles_patient(patient_id, [gid])
+                    assign_msg = (" - Grille assignée au patient" if ok else f" - Grille non assignée: {msg}")
+            except Exception:
+                pass
         # Vérifier si des scores de cotation ont été soumis
         cotation_scores = {}
         cotation_observations = request.form.get('cotation_observations', '')
@@ -104,19 +129,35 @@ def create_seance(patient_id):
                 if cotation_success and cotation_scores:
                     cotation_message = " - Cotation également sauvegardée"
         
+        # Si une transcription temporaire/synthèse temporaire est fournie (mode création), les sauvegarder
+        try:
+            temp_transcription = request.form.get('transcription_temp_text', '').strip()
+            temp_synthese = request.form.get('synthese_temp_text', '').strip()
+            if temp_transcription:
+                seance.transcription_audio = temp_transcription
+            if temp_synthese:
+                seance.synthese_ia = temp_synthese
+            if temp_transcription or temp_synthese:
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+            # on ignore silencieusement si la sauvegarde temporaire échoue
+
         # Gérer la transcription audio en arrière-plan si un fichier a été uploadé
         transcription_message = ""
-        if 'fichier_audio' in files and files['fichier_audio'].filename:
+        # Si déjà une transcription temporaire saisie, ne relance pas immédiatement le pipeline complet
+        already_transcribed = bool(request.form.get('transcription_temp_text'))
+        if (not already_transcribed) and 'fichier_audio' in files and files['fichier_audio'].filename:
             audio_file = files['fichier_audio']
             try:
                 import os
                 if os.environ.get('OPENAI_API_KEY'):
                     from app.services.audio_service import AudioTranscriptionService
-                    
+
                     # Lancer la transcription en arrière-plan
                     audio_service = AudioTranscriptionService()
                     transcription_success, transcription_msg = audio_service.process_session_recording(audio_file, seance.id)
-                    
+
                     if transcription_success:
                         transcription_message = " - Transcription en cours"
                     else:
@@ -125,16 +166,20 @@ def create_seance(patient_id):
                     transcription_message = " - Service de transcription non configuré"
             except Exception as e:
                 transcription_message = f" - Erreur transcription: {str(e)}"
-        
-        # Message final combiné
-        final_message = f"{message}{cotation_message}{transcription_message}"
+
+    # Message final combiné
+        final_message = f"{message}{assign_msg}{cotation_message}{transcription_message}"
         flash(final_message, 'success')
-        return redirect(url_for('seances.edit_seance', seance_id=seance.id))  # Rediriger vers la modification pour continuer le workflow
+        seance_id_new = getattr(seance, 'id', None)
+        if seance_id_new:
+            return redirect(url_for('seances.edit_seance', seance_id=seance_id_new))
+        return redirect(url_for('patients.view_patient', patient_id=patient_id))
     
     # En cas d'erreur, recharger le formulaire avec les données et la grille
     from app.models.cotation import GrilleEvaluation
     grilles_patient = PatientService.get_grilles_patient(patient_id)
     grille_data = None
+    grilles_disponibles = []
     
     if grilles_patient:
         grille_id = grilles_patient[0]['id']
@@ -147,8 +192,19 @@ def create_seance(patient_id):
                 'domaines': grille_obj.domaines
             }
     
+    # Proposer la sélection si toujours aucune grille
+    if not grilles_patient:
+        try:
+            from app.services.cotation_service import CotationService
+            gr_std = CotationService.get_grilles_standards()
+            gr_usr = CotationService.get_grilles_utilisateur()
+            grilles_disponibles = ([{'id': g.id, 'nom': g.nom, 'description': g.description, 'type': 'standard'} for g in gr_std] +
+                                   [{'id': g.id, 'nom': g.nom, 'description': g.description, 'type': 'personnalisee'} for g in gr_usr])
+        except Exception:
+            grilles_disponibles = []
+
     flash(message, 'error')
-    return render_template('seances/form.html', patient=patient, seance=None, mode='create', data=data, grille=grille_data)
+    return render_template('seances/form.html', patient=patient, seance=None, mode='create', data=data, grille=grille_data, grilles_disponibles=grilles_disponibles)
 
 @seances.route('/<int:seance_id>')
 @login_required  # type: ignore
