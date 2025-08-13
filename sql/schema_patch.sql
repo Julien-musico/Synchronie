@@ -151,6 +151,7 @@ CREATE TABLE IF NOT EXISTS objectif_therapeutique (
     id SERIAL PRIMARY KEY,
     patient_id INTEGER NOT NULL,
     grille_id INTEGER NOT NULL,
+    grille_version_id INTEGER,
     domaine_cible VARCHAR(100) NOT NULL,
     indicateur_cible VARCHAR(100) NOT NULL,
     score_initial DOUBLE PRECISION,
@@ -170,6 +171,7 @@ ALTER TABLE objectif_therapeutique
 
 CREATE INDEX IF NOT EXISTS idx_obj_ther_patient ON objectif_therapeutique(patient_id);
 CREATE INDEX IF NOT EXISTS idx_obj_ther_grille ON objectif_therapeutique(grille_id);
+CREATE INDEX IF NOT EXISTS idx_obj_ther_grille_version ON objectif_therapeutique(grille_version_id);
 
 DO $$
 BEGIN
@@ -189,6 +191,15 @@ BEGIN
                 FOREIGN KEY (grille_id) REFERENCES grille_evaluation(id) ON DELETE CASCADE;
         EXCEPTION WHEN undefined_table THEN
             RAISE NOTICE 'Table grille_evaluation manquante, FK ignorée';
+        END;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='objectif_ther_grille_version_fk') THEN
+        BEGIN
+            ALTER TABLE objectif_therapeutique
+                ADD CONSTRAINT objectif_ther_grille_version_fk
+                FOREIGN KEY (grille_version_id) REFERENCES grille_version(id) ON DELETE SET NULL;
+        EXCEPTION WHEN undefined_table THEN
+            RAISE NOTICE 'Table grille_version manquante, FK ignorée';
         END;
     END IF;
 END $$;

@@ -94,6 +94,7 @@ class ObjectifTherapeutique(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
     grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
+    grille_version_id = db.Column(db.Integer, db.ForeignKey('grille_version.id'), nullable=True, index=True)  # version de la grille lors de la définition
     
     # Configuration des objectifs
     domaine_cible = db.Column(db.String(100), nullable=False)
