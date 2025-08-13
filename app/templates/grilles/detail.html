@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}{{ grille.nom }} - Synchronie{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="bi bi-clipboard-data text-primary me-2"></i>
+                    {{ grille.nom }}
+                </h1>
+                <p class="text-muted mb-0">
+                    {% if grille.type_grille == 'standard' %}
+                        Grille standard internationale
+                        {% if grille.reference_scientifique %}
+                            - {{ grille.reference_scientifique }}
+                        {% endif %}
+                    {% else %}
+                        Grille personnalisée
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <div class="btn-group">
+                    <a href="{{ url_for('grilles.list_grilles') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Retour aux grilles
+                    </a>
+                    {% if grille.type_grille == 'personnalisee' %}
+                    <a href="{{ url_for('grilles.edit_grille', grille_id=grille.id) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil me-2"></i>
+                        Modifier
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn btn-outline-primary" onclick="copierGrille({{ grille.id }})">
+                        <i class="bi bi-files me-2"></i>
+                        Copier
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Informations générales -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Informations générales
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Nom de la grille</label>
+                        <p class="fw-bold">{{ grille.nom }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Type</label>
+                        <p>
+                            {% if grille.type_grille == 'standard' %}
+                                <span class="badge bg-success">Standard</span>
+                            {% else %}
+                                <span class="badge bg-warning">Personnalisée</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if grille.reference_scientifique %}
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Référence scientifique</label>
+                        <p><span class="badge bg-info">{{ grille.reference_scientifique }}</span></p>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-muted">Statut</label>
+                        <p>
+                            <span class="badge bg-{{ 'success' if grille.active else 'secondary' }}">
+                                {{ 'Active' if grille.active else 'Inactive' }}
+                            </span>
+                            {% if grille.publique %}
+                                <span class="badge bg-primary ms-1">Publique</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if grille.description %}
+                    <div class="col-12">
+                        <label class="form-label text-muted">Description</label>
+                        <p>{{ grille.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bar-chart me-2"></i>
+                    Statistiques
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <h3 class="text-primary mb-1">{{ grille.domaines|length if grille.domaines else 0 }}</h3>
+                        <small class="text-muted">Domaines</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h3 class="text-success mb-1">
+                            {% set total_indicateurs = 0 %}
+                            {% if grille.domaines %}
+                                {% for domaine in grille.domaines %}
+                                    {% set total_indicateurs = total_indicateurs + (domaine.indicateurs|length if domaine.indicateurs else 0) %}
+                                {% endfor %}
+                            {% endif %}
+                            {{ total_indicateurs }}
+                        </h3>
+                        <small class="text-muted">Indicateurs</small>
+                    </div>
+                    <div class="col-12">
+                        <small class="text-muted">
+                            Créée le {{ grille.date_creation.strftime('%d/%m/%Y à %H:%M') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Domaines et indicateurs -->
+{% if grille.domaines %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-diagram-3 me-2"></i>
+                    Domaines d'évaluation ({{ grille.domaines|length }})
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="accordion" id="domainesAccordion">
+                    {% for domaine in grille.domaines %}
+                    <div class="accordion-item border-0">
+                        <h2 class="accordion-header" id="heading{{ loop.index }}">
+                            <button class="accordion-button {{ 'collapsed' if not loop.first else '' }}" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" 
+                                    aria-expanded="{{ 'true' if loop.first else 'false' }}" 
+                                    aria-controls="collapse{{ loop.index }}">
+                                <div class="d-flex align-items-center w-100">
+                                    <div class="me-3">
+                                        <div class="rounded-circle" 
+                                             style="width: 20px; height: 20px; background-color: {{ domaine.couleur or '#007bff' }};"></div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <strong>{{ domaine.nom }}</strong>
+                                        {% if domaine.description %}
+                                            <br><small class="text-muted">{{ domaine.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                    <div class="me-3">
+                                        <span class="badge bg-secondary">
+                                            {{ domaine.indicateurs|length if domaine.indicateurs else 0 }} indicateurs
+                                        </span>
+                                    </div>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ loop.index }}" 
+                             class="accordion-collapse collapse {{ 'show' if loop.first else '' }}" 
+                             aria-labelledby="heading{{ loop.index }}" 
+                             data-bs-parent="#domainesAccordion">
+                            <div class="accordion-body">
+                                {% if domaine.indicateurs %}
+                                <div class="row">
+                                    {% for indicateur in domaine.indicateurs %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card border-light h-100">
+                                            <div class="card-body p-3">
+                                                <h6 class="card-title mb-2">{{ indicateur.nom }}</h6>
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="text-muted">
+                                                        Échelle: {{ indicateur.min or 0 }} - {{ indicateur.max or 5 }}
+                                                    </small>
+                                                    <span class="badge bg-light text-dark">
+                                                        {{ indicateur.unite or 'points' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="text-center text-muted py-3">
+                                    <i class="bi bi-info-circle"></i>
+                                    Aucun indicateur défini pour ce domaine
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+                <h5 class="text-warning mt-3">Grille incomplète</h5>
+                <p class="text-muted">Cette grille ne contient aucun domaine d'évaluation.</p>
+                {% if grille.type_grille == 'personnalisee' %}
+                <a href="{{ url_for('grilles.edit_grille', grille_id=grille.id) }}" class="btn btn-warning">
+                    <i class="bi bi-pencil me-2"></i>
+                    Ajouter des domaines
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Actions rapides -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-1">Actions rapides</h6>
+                        <small class="text-muted">Utilisez cette grille dans votre pratique clinique</small>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-success" onclick="utiliserPourPatient()">
+                            <i class="bi bi-person-plus me-2"></i>
+                            Assigner à un patient
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="exporterGrille()">
+                            <i class="bi bi-download me-2"></i>
+                            Exporter
+                        </button>
+                        {% if grille.type_grille == 'personnalisee' and grille.active %}
+                        <button type="button" class="btn btn-outline-danger" onclick="desactiverGrille({{ grille.id }}, '{{ grille.nom }}')">
+                            <i class="bi bi-archive me-2"></i>
+                            Désactiver
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts pour les actions -->
+<script>
+async function copierGrille(grilleId) {
+    if (!confirm('Voulez-vous copier cette grille ?')) return;
+    
+    try {
+        const response = await fetch(`/grilles/${grilleId}/copier`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            window.location.href = `/grilles/${result.grille_id}`;
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur lors de la copie: ' + error.message);
+    }
+}
+
+async function desactiverGrille(grilleId, nom) {
+    if (!confirm(`Êtes-vous sûr de vouloir désactiver la grille "${nom}" ?\n\nElle ne sera plus disponible pour de nouvelles assignations.`)) return;
+    
+    try {
+        const response = await fetch(`/grilles/${grilleId}/supprimer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(result.message);
+            window.location.href = '/grilles/';
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur lors de la désactivation: ' + error.message);
+    }
+}
+
+function utiliserPourPatient() {
+    // Rediriger vers la liste des patients avec un paramètre pour pré-sélectionner cette grille
+    window.location.href = `/patients/?grille_suggest={{ grille.id }}`;
+}
+
+function exporterGrille() {
+    // Pour une future fonctionnalité d'export
+    alert('Fonctionnalité d\'export en cours de développement');
+}
+</script>
+{% endblock %}
