@@ -192,3 +192,46 @@ def api_grilles_disponibles():
         })
     except Exception as e:
         return jsonify({'success': False, 'message': f"Erreur: {e}"}), 500
+
+
+@grilles.route('/api/<int:grille_id>/domaines')
+@login_required  # type: ignore
+def api_grille_domaines(grille_id):
+    """API pour récupérer les domaines et indicateurs d'une grille."""
+    try:
+        grille = CotationService.get_grille_by_id(grille_id)
+        if not grille:
+            return jsonify({'success': False, 'message': 'Grille non trouvée'}), 404
+        
+        domaines_data = []
+        for domaine in grille.domaines:
+            indicateurs_data = []
+            for indicateur in domaine.indicateurs:
+                indicateurs_data.append({
+                    'id': indicateur.id,
+                    'nom': indicateur.nom,
+                    'description': indicateur.description,
+                    'poids': indicateur.poids,
+                    'echelle_min': indicateur.echelle_min,
+                    'echelle_max': indicateur.echelle_max
+                })
+            
+            domaines_data.append({
+                'id': domaine.id,
+                'nom': domaine.nom,
+                'description': domaine.description,
+                'poids': domaine.poids,
+                'indicateurs': indicateurs_data
+            })
+        
+        return jsonify({
+            'success': True,
+            'grille': {
+                'id': grille.id,
+                'nom': grille.nom,
+                'description': grille.description
+            },
+            'domaines': domaines_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f"Erreur: {e}"}), 500

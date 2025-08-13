@@ -536,3 +536,86 @@ class CotationService:
                 for g in personnalisees
             ]
         }
+
+    @staticmethod
+    def sauvegarder_cotation_seance(seance_id: int, grille_id: int, scores: Dict, 
+                                   observations: str = "", musicotherapeute_id: Optional[int] = None) -> bool:
+        """Sauvegarde une cotation de séance avec les scores détaillés."""
+        try:
+            # Vérifier si une cotation existe déjà pour cette séance et cette grille
+            cotation_existante = CotationSeance.query.filter_by(
+                seance_id=seance_id,
+                grille_id=grille_id
+            ).first()
+            
+            if cotation_existante:
+                # Mettre à jour la cotation existante
+                cotation = cotation_existante
+            else:
+                # Créer une nouvelle cotation
+                cotation = CotationSeance(
+                    seance_id=seance_id,
+                    grille_id=grille_id
+                )
+                db.session.add(cotation)
+            
+            # Calculer les scores pondérés et le score global
+            grille = GrilleEvaluation.query.get(grille_id)
+            if not grille:
+                return False
+            
+            # Sauvegarder les scores détaillés
+            cotation.scores_detailles = json.dumps(scores)
+            cotation.observations_cotation = observations
+            
+            # Calculer le score global
+            score_global = CotationService._calculer_score_global(scores, grille)
+            cotation.score_global = score_global
+            
+            # Marquer la séance comme cotée
+            from app.models.patient import Seance
+            seance = Seance.query.get(seance_id)
+            if seance and hasattr(seance, 'est_cotee'):
+                seance.est_cotee = True
+            
+            db.session.commit()
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erreur lors de la sauvegarde de la cotation: {e}")
+            return False
+    
+    @staticmethod
+    def _calculer_score_global(scores: Dict, grille: GrilleEvaluation) -> float:
+        """Calcule le score global pondéré d'une cotation."""
+        total_score = 0.0
+        total_weight = 0.0
+        
+        for domaine in grille.domaines:
+            domaine_id = str(domaine.id)
+            if domaine_id in scores:
+                domaine_scores = scores[domaine_id]
+                domaine_total = 0.0
+                domaine_weight = 0.0
+                
+                for indicateur in domaine.indicateurs:
+                    indicateur_id = str(indicateur.id)
+                    if indicateur_id in domaine_scores:
+                        score_data = domaine_scores[indicateur_id]
+                        value = score_data.get('value', 0)
+                        poids = score_data.get('poids', 1.0)
+                        
+                        # Normaliser le score sur 100
+                        max_value = indicateur.echelle_max or 5
+                        normalized_value = (value / max_value) * 100
+                        
+                        domaine_total += normalized_value * poids
+                        domaine_weight += poids
+                
+                if domaine_weight > 0:
+                    domaine_average = domaine_total / domaine_weight
+                    total_score += domaine_average * (domaine.poids or 1.0)
+                    total_weight += (domaine.poids or 1.0)
+        
+        return total_score / total_weight if total_weight > 0 else 0.0

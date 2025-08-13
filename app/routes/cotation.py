@@ -331,3 +331,44 @@ def rapport_mensuel(annee, mois):
     
     rapport = AnalyticsService.rapport_activite_mensuel(current_user.id, annee, mois)
     return jsonify(rapport)
+
+
+@cotation_bp.route('/api/cotation/save', methods=['POST'])
+@login_required
+def api_save_cotation():
+    """API pour sauvegarder une cotation de séance."""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'message': 'Données manquantes'}), 400
+        
+        seance_id = data.get('seance_id')
+        grille_id = data.get('grille_id')
+        scores = data.get('scores', {})
+        observations = data.get('observations', '')
+        
+        if not seance_id or not grille_id:
+            return jsonify({'success': False, 'message': 'Séance et grille requises'}), 400
+        
+        # Vérifier que la séance existe et appartient à l'utilisateur
+        seance = Seance.query.get(seance_id)
+        if not seance or seance.patient.musicotherapeute_id != current_user.id:
+            return jsonify({'success': False, 'message': 'Séance non trouvée ou accès refusé'}), 404
+        
+        # Sauvegarder les scores
+        success = CotationService.sauvegarder_cotation_seance(
+            seance_id=seance_id,
+            grille_id=grille_id,
+            scores=scores,
+            observations=observations,
+            musicotherapeute_id=current_user.id
+        )
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Cotation sauvegardée avec succès'})
+        else:
+            return jsonify({'success': False, 'message': 'Erreur lors de la sauvegarde'}), 500
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Erreur: {str(e)}'}), 500

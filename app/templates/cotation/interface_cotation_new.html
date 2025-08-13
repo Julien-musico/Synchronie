@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+
+{% block title %}Cotation - {{ seance.patient.prenom }} {{ seance.patient.nom }}{% endblock %}
+
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête de la séance -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h4 class="mb-0">
+                                <i class="bi bi-clipboard-check me-2"></i>
+                                Cotation de séance
+                            </h4>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('patients.detail_patient', patient_id=seance.patient.id) }}" 
+                               class="btn btn-light btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i>
+                                Retour au patient
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="text-primary">
+                                <i class="bi bi-person-circle me-2"></i>
+                                {{ seance.patient.prenom }} {{ seance.patient.nom }}
+                            </h5>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-calendar3 me-1"></i>
+                                Séance du {{ seance.date_seance.strftime('%d/%m/%Y à %H:%M') }}
+                                {% if seance.duree %}
+                                    • Durée : {{ seance.duree }} minutes
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if seance.status %}
+                                <span class="badge bg-success fs-6">{{ seance.status }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sélection de grille de cotation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-grid-3x3-gap me-2"></i>
+                        Grille de cotation
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Sélectionnez la grille d'évaluation à utiliser pour cette séance de cotation.
+                    </p>
+                    
+                    {% if grilles %}
+                        <div class="row">
+                            {% for grille in grilles %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input grille-selection" 
+                                           type="radio" 
+                                           name="grille_selection" 
+                                           value="{{ grille.id }}" 
+                                           id="grille_{{ grille.id }}"
+                                           data-grille-id="{{ grille.id }}">
+                                    <label class="form-check-label w-100" for="grille_{{ grille.id }}">
+                                        <div class="card h-100 border-2 grille-card">
+                                            <div class="card-body p-3">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="card-title mb-1">{{ grille.nom }}</h6>
+                                                    {% if grille.reference_scientifique %}
+                                                        <span class="badge bg-primary">{{ grille.reference_scientifique }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">CUSTOM</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if grille.description %}
+                                                    <p class="card-text small text-muted mb-2">
+                                                        {{ grille.description[:100] }}{% if grille.description|length > 100 %}...{% endif %}
+                                                    </p>
+                                                {% endif %}
+                                                <div class="small text-info">
+                                                    <i class="bi bi-grid-3x3-gap me-1"></i>
+                                                    {{ grille.domaines|length if grille.domaines else 0 }} domaines
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Aucune grille d'évaluation disponible. 
+                            <a href="{{ url_for('grilles.new_grille') }}" class="alert-link">Créer une grille</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interface de cotation -->
+    <div class="row" id="cotation-interface" style="display: none;">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-star me-2"></i>
+                        Évaluation par domaines
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="domaines-container">
+                        <!-- Les domaines seront chargés ici via JavaScript -->
+                    </div>
+                    
+                    <!-- Section observations -->
+                    <div class="mt-4">
+                        <h6>
+                            <i class="bi bi-chat-text me-2"></i>
+                            Observations et remarques
+                        </h6>
+                        <textarea class="form-control" 
+                                  id="observations" 
+                                  rows="4"
+                                  placeholder="Notez ici vos observations spécifiques sur cette séance, les moments marquants, les réactions du patient, etc."></textarea>
+                    </div>
+                    
+                    <!-- Résumé des scores -->
+                    <div class="mt-4" id="score-summary" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6>
+                                    <i class="bi bi-graph-up me-2"></i>
+                                    Résumé de l'évaluation
+                                </h6>
+                                <div id="scores-detail"></div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h2 class="card-title" id="score-global">0%</h2>
+                                        <p class="card-text">Score global</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Boutons d'action -->
+                    <div class="mt-4 text-end">
+                        <button type="button" class="btn btn-outline-secondary me-2" onclick="resetCotation()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>
+                            Réinitialiser
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="saveCotation()">
+                            <i class="bi bi-check-lg me-1"></i>
+                            Enregistrer la cotation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.grille-card {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.grille-card:hover {
+    border-color: var(--bs-primary) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.form-check-input:checked + .form-check-label .grille-card {
+    border-color: var(--bs-primary) !important;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+.score-progress {
+    height: 8px;
+    border-radius: 4px;
+}
+
+.domaine-section {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.domaine-section:hover {
+    border-color: var(--bs-primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.domaine-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.indicateur-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.indicateur-item:last-child {
+    border-bottom: none;
+}
+
+.slider-container {
+    margin: 0.5rem 0;
+}
+
+/* Personnalisation des sliders NoUiSlider */
+.noUi-target {
+    background: #e9ecef;
+    border-radius: 8px;
+    border: none;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    height: 12px;
+}
+
+.noUi-connect {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.noUi-handle {
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    width: 24px;
+    height: 24px;
+}
+
+.noUi-handle:before,
+.noUi-handle:after {
+    display: none;
+}
+
+.noUi-tooltip {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.1/dist/nouislider.min.js"></script>
+<script>
+let currentGrilleId = null;
+let currentScores = {};
+
+// Gestion de la sélection de grille
+document.addEventListener('DOMContentLoaded', function() {
+    const grilleRadios = document.querySelectorAll('.grille-selection');
+    const cotationInterface = document.getElementById('cotation-interface');
+    
+    grilleRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                currentGrilleId = parseInt(this.value);
+                loadGrilleData(currentGrilleId);
+                cotationInterface.style.display = 'block';
+                
+                // Scroll vers l'interface
+                cotationInterface.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }
+        });
+    });
+});
+
+function loadGrilleData(grilleId) {
+    // Charger les données de la grille via AJAX
+    fetch(`/api/grille/${grilleId}/domaines`)
+        .then(response => response.json())
+        .then(data => {
+            renderDomaines(data.domaines);
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement de la grille:', error);
+            showAlert('Erreur lors du chargement de la grille', 'error');
+        });
+}
+
+function renderDomaines(domaines) {
+    const container = document.getElementById('domaines-container');
+    container.innerHTML = '';
+    
+    domaines.forEach((domaine, index) => {
+        const domaineElement = createDomaineElement(domaine, index);
+        container.appendChild(domaineElement);
+    });
+    
+    // Initialiser les sliders après avoir créé les éléments
+    initializeSliders();
+}
+
+function createDomaineElement(domaine, index) {
+    const domaineDiv = document.createElement('div');
+    domaineDiv.className = 'domaine-section';
+    domaineDiv.innerHTML = `
+        <div class="domaine-header">
+            <h6 class="mb-0">
+                ${domaine.nom}
+                <span class="badge bg-light text-dark ms-2" id="score-domaine-${domaine.id}">0%</span>
+            </h6>
+        </div>
+        <div class="p-3">
+            ${domaine.indicateurs.map(indicateur => `
+                <div class="indicateur-item">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="fw-semibold mb-0">${indicateur.nom}</label>
+                        <span class="badge bg-primary" id="value-${indicateur.id}">0</span>
+                    </div>
+                    ${indicateur.description ? `<p class="small text-muted mb-2">${indicateur.description}</p>` : ''}
+                    <div class="slider-container">
+                        <div id="slider-${indicateur.id}" class="slider" 
+                             data-indicateur-id="${indicateur.id}"
+                             data-domaine-id="${domaine.id}"
+                             data-poids="${indicateur.poids || 1}"></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    return domaineDiv;
+}
+
+function initializeSliders() {
+    const sliders = document.querySelectorAll('.slider');
+    
+    sliders.forEach(sliderElement => {
+        const indicateurId = sliderElement.dataset.indicateurId;
+        
+        noUiSlider.create(sliderElement, {
+            start: [0],
+            connect: [true, false],
+            range: {
+                'min': 0,
+                'max': 5
+            },
+            step: 1,
+            tooltips: true,
+            format: {
+                to: function(value) {
+                    return Math.round(value);
+                },
+                from: function(value) {
+                    return Number(value);
+                }
+            }
+        });
+        
+        // Écouter les changements
+        sliderElement.noUiSlider.on('update', function(values) {
+            const value = parseInt(values[0]);
+            const domaineId = sliderElement.dataset.domaineId;
+            
+            // Mettre à jour l'affichage de la valeur
+            document.getElementById(`value-${indicateurId}`).textContent = value;
+            
+            // Sauvegarder le score
+            if (!currentScores[domaineId]) {
+                currentScores[domaineId] = {};
+            }
+            currentScores[domaineId][indicateurId] = {
+                value: value,
+                poids: parseFloat(sliderElement.dataset.poids)
+            };
+            
+            // Recalculer les scores
+            updateScores();
+        });
+    });
+}
+
+function updateScores() {
+    let totalScore = 0;
+    let totalWeight = 0;
+    const scoresDetail = document.getElementById('scores-detail');
+    scoresDetail.innerHTML = '';
+    
+    // Calculer les scores par domaine
+    Object.keys(currentScores).forEach(domaineId => {
+        const domaineScores = currentScores[domaineId];
+        let domaineTotal = 0;
+        let domaineWeight = 0;
+        
+        Object.values(domaineScores).forEach(score => {
+            domaineTotal += score.value * score.poids;
+            domaineWeight += score.poids * 5; // 5 = score maximum
+        });
+        
+        const domainePercent = domaineWeight > 0 ? Math.round((domaineTotal / domaineWeight) * 100) : 0;
+        
+        // Mettre à jour l'affichage du domaine
+        const scoreDomaine = document.getElementById(`score-domaine-${domaineId}`);
+        if (scoreDomaine) {
+            scoreDomaine.textContent = `${domainePercent}%`;
+        }
+        
+        // Ajouter au total
+        totalScore += domaineTotal;
+        totalWeight += domaineWeight;
+        
+        // Ajouter au détail
+        const domaineElement = document.querySelector(`[data-domaine-id="${domaineId}"]`);
+        if (domaineElement) {
+            const domaineNom = domaineElement.closest('.domaine-section').querySelector('.domaine-header h6').textContent.split('\n')[0].trim();
+            scoresDetail.innerHTML += `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>${domaineNom}</span>
+                    <div>
+                        <div class="progress" style="width: 100px; height: 6px;">
+                            <div class="progress-bar bg-primary" style="width: ${domainePercent}%"></div>
+                        </div>
+                        <small class="text-muted">${domainePercent}%</small>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    // Score global
+    const globalPercent = totalWeight > 0 ? Math.round((totalScore / totalWeight) * 100) : 0;
+    document.getElementById('score-global').textContent = `${globalPercent}%`;
+    
+    // Afficher le résumé si des scores existent
+    if (Object.keys(currentScores).length > 0) {
+        document.getElementById('score-summary').style.display = 'block';
+    }
+}
+
+function resetCotation() {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser toute la cotation ?')) {
+        currentScores = {};
+        document.querySelectorAll('.slider').forEach(slider => {
+            if (slider.noUiSlider) {
+                slider.noUiSlider.set(0);
+            }
+        });
+        document.getElementById('observations').value = '';
+        document.getElementById('score-summary').style.display = 'none';
+    }
+}
+
+function saveCotation() {
+    const observations = document.getElementById('observations').value;
+    
+    if (Object.keys(currentScores).length === 0) {
+        showAlert('Veuillez évaluer au moins un indicateur avant d\'enregistrer.', 'warning');
+        return;
+    }
+    
+    const cotationData = {
+        seance_id: {{ seance.id }},
+        grille_id: currentGrilleId,
+        scores: currentScores,
+        observations: observations
+    };
+    
+    // Sauvegarder via AJAX
+    fetch('/api/cotation/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify(cotationData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Cotation enregistrée avec succès !', 'success');
+            setTimeout(() => {
+                window.location.href = '{{ url_for("patients.detail_patient", patient_id=seance.patient.id) }}';
+            }, 2000);
+        } else {
+            showAlert(data.message || 'Erreur lors de l\'enregistrement', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showAlert('Erreur lors de l\'enregistrement de la cotation', 'error');
+    });
+}
+
+function showAlert(message, type) {
+    // Utiliser le système d'alertes de Bootstrap
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.container-fluid').firstChild);
+    
+    // Auto-hide après 5 secondes
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+function getCsrfToken() {
+    return document.querySelector('meta[name=csrf-token]').getAttribute('content');
+}
+</script>
+{% endblock %}
