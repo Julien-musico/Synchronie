@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS cotation_seance (
     id SERIAL PRIMARY KEY,
     seance_id INTEGER NOT NULL,
     grille_id INTEGER NOT NULL,
+    grille_version_id INTEGER,
     scores_detailles TEXT NOT NULL,
     score_global DOUBLE PRECISION,
     score_max_possible DOUBLE PRECISION,
@@ -111,6 +112,7 @@ ALTER TABLE cotation_seance
 -- Index
 CREATE INDEX IF NOT EXISTS idx_cotation_seance_seance ON cotation_seance(seance_id);
 CREATE INDEX IF NOT EXISTS idx_cotation_seance_grille ON cotation_seance(grille_id);
+CREATE INDEX IF NOT EXISTS idx_cotation_seance_grille_version ON cotation_seance(grille_version_id);
 
 -- FKs conditionnelles
 DO $$
@@ -131,6 +133,15 @@ BEGIN
                 FOREIGN KEY (grille_id) REFERENCES grille_evaluation(id) ON DELETE CASCADE;
         EXCEPTION WHEN undefined_table THEN
             RAISE NOTICE 'Table grille_evaluation manquante, FK ignorée';
+        END;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='cotation_seance_grille_version_fk') THEN
+        BEGIN
+            ALTER TABLE cotation_seance
+                ADD CONSTRAINT cotation_seance_grille_version_fk
+                FOREIGN KEY (grille_version_id) REFERENCES grille_version(id) ON DELETE SET NULL;
+        EXCEPTION WHEN undefined_table THEN
+            RAISE NOTICE 'Table grille_version manquante, FK ignorée';
         END;
     END IF;
 END $$;
@@ -175,6 +186,31 @@ BEGIN
         BEGIN
             ALTER TABLE objectif_therapeutique
                 ADD CONSTRAINT objectif_ther_grille_fk
+                FOREIGN KEY (grille_id) REFERENCES grille_evaluation(id) ON DELETE CASCADE;
+        EXCEPTION WHEN undefined_table THEN
+            RAISE NOTICE 'Table grille_evaluation manquante, FK ignorée';
+        END;
+    END IF;
+END $$;
+
+-- 4b. Table grille_version (après grille_evaluation)
+CREATE TABLE IF NOT EXISTS grille_version (
+    id SERIAL PRIMARY KEY,
+    grille_id INTEGER NOT NULL,
+    version_num INTEGER NOT NULL,
+    domaines_config TEXT NOT NULL,
+    active BOOLEAN DEFAULT TRUE NOT NULL,
+    date_creation TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    date_modification TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_grille_version_grille ON grille_version(grille_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_grille_version_unique ON grille_version(grille_id, version_num);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='grille_version_grille_fk') THEN
+        BEGIN
+            ALTER TABLE grille_version
+                ADD CONSTRAINT grille_version_grille_fk
                 FOREIGN KEY (grille_id) REFERENCES grille_evaluation(id) ON DELETE CASCADE;
         EXCEPTION WHEN undefined_table THEN
             RAISE NOTICE 'Table grille_evaluation manquante, FK ignorée';

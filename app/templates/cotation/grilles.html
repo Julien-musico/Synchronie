@@ -102,6 +102,17 @@
     font-weight: 500;
 }
 
+.grille-version-badge {
+    background: #20c997;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-left: 6px;
+    letter-spacing: .5px;
+}
+
 .grille-actions {
     display: flex;
     gap: 10px;
@@ -351,14 +362,17 @@
                 {% if grilles_user %}
                 <div class="grille-grid">
                     {% for grille in grilles_user %}
-                    <div class="grille-card" onclick="voirGrille({{ grille.id }})">
+                    <div class="grille-card grille-open" data-grille-id="{{ grille.id }}">
                         <div class="grille-card-header">
-                            <div class="grille-badge">{{ grille.reference_scientifique or 'CUSTOM' }}</div>
+                            <div>
+                                <span class="grille-badge">{{ grille.reference_scientifique or 'CUSTOM' }}</span>
+                                <span class="grille-version-badge" title="Version active">V{{ grille.versions|length or 1 }}</span>
+                            </div>
                             <div class="grille-actions">
-                                <button class="btn-icon" onclick="event.stopPropagation(); editerGrille({{ grille.id }})" title="Éditer">
+                                <button class="btn-icon action-edit" data-grille-id="{{ grille.id }}" title="Éditer">
                                     ✏️
                                 </button>
-                                <button class="btn-icon" onclick="event.stopPropagation(); supprimerGrille({{ grille.id }})" title="Supprimer">
+                                <button class="btn-icon action-delete" data-grille-id="{{ grille.id }}" title="Supprimer">
                                     🗑️
                                 </button>
                             </div>
@@ -368,8 +382,12 @@
                         <div class="grille-description">{{ grille.description }}</div>
                         
                         <div class="grille-stats">
-                            <span>{{ grille.domaines|length }} domaines</span>
+                            <span>{{ grille.domaines|length }} domaine{{ '' if grille.domaines|length < 2 else 's' }}</span>
+                            <span>V{{ grille.versions|length or 1 }} • {{ grille.versions|length }} version{{ '' if (grille.versions|length) < 2 else 's' }}</span>
+                        </div>
+                        <div class="grille-stats" style="border-top:none; margin-top:4px; padding-top:0; font-size:0.7rem; opacity:.8;">
                             <span>Créée le {{ grille.date_creation.strftime('%d/%m/%Y') }}</span>
+                            <span>Maj le {{ grille.date_modification.strftime('%d/%m/%Y') }}</span>
                         </div>
                     </div>
                     {% endfor %}
@@ -391,11 +409,14 @@
                 {% if grilles_publiques %}
                 <div class="grille-grid">
                     {% for grille in grilles_publiques %}
-                    <div class="grille-card" onclick="voirGrille({{ grille.id }})">
+                    <div class="grille-card grille-open" data-grille-id="{{ grille.id }}">
                         <div class="grille-card-header">
-                            <div class="grille-badge">{{ grille.reference_scientifique }}</div>
+                            <div>
+                                <span class="grille-badge">{{ grille.reference_scientifique }}</span>
+                                <span class="grille-version-badge" title="Version active">V{{ grille.versions|length or 1 }}</span>
+                            </div>
                             <div class="grille-actions">
-                                <button class="btn-icon" onclick="event.stopPropagation(); copierGrille({{ grille.id }})" title="Copier dans mes grilles">
+                                <button class="btn-icon action-copy" data-grille-id="{{ grille.id }}" title="Copier dans mes grilles">
                                     📋
                                 </button>
                             </div>
@@ -405,8 +426,8 @@
                         <div class="grille-description">{{ grille.description }}</div>
                         
                         <div class="grille-stats">
-                            <span>{{ grille.domaines|length }} domaines</span>
-                            <span>🔬 Validée scientifiquement</span>
+                            <span>{{ grille.domaines|length }} domaine{{ '' if grille.domaines|length < 2 else 's' }}</span>
+                            <span>V{{ grille.versions|length or 1 }} • 🔬 Validée</span>
                         </div>
                     </div>
                     {% endfor %}
@@ -702,5 +723,23 @@ window.onclick = function(event) {
         modal.style.display = 'none';
     }
 }
+
+// Délégation d'événements (remplace les onclick inline)
+document.addEventListener('click', function(e) {
+    const target = e.target.closest('button, .grille-card');
+    if (!target) return;
+    if (target.classList.contains('action-edit')) {
+        e.stopPropagation();
+        editerGrille(target.dataset.grilleId);
+    } else if (target.classList.contains('action-delete')) {
+        e.stopPropagation();
+        supprimerGrille(target.dataset.grilleId);
+    } else if (target.classList.contains('action-copy')) {
+        e.stopPropagation();
+        copierGrille(target.dataset.grilleId);
+    } else if (target.classList.contains('grille-open')) {
+        voirGrille(target.dataset.grilleId);
+    }
+});
 </script>
 {% endblock %}

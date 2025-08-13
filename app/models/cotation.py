@@ -26,6 +26,7 @@ class GrilleEvaluation(TimestampMixin, db.Model):
     
     # Relations
     cotations = db.relationship('CotationSeance', backref='grille', lazy=True)
+    versions = db.relationship('GrilleVersion', backref='grille', lazy=True, order_by='GrilleVersion.version_num')  # type: ignore
     
     def __repr__(self):
         return f'<GrilleEvaluation {self.nom}>'
@@ -53,6 +54,8 @@ class CotationSeance(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     seance_id = db.Column(db.Integer, db.ForeignKey('seances.id'), nullable=False)
     grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
+    grille_version_id = db.Column(db.Integer, db.ForeignKey('grille_version.id'), nullable=True, index=True)  # version utilisée
+
     
     # Scores par domaine (JSON)
     scores_detailles = db.Column(db.Text, nullable=False)  # JSON des scores par indicateur
@@ -108,3 +111,21 @@ class ObjectifTherapeutique(TimestampMixin, db.Model):
     
     def __repr__(self):
         return f'<ObjectifTherapeutique patient_id={self.patient_id} domaine={self.domaine_cible}>'
+
+
+class GrilleVersion(TimestampMixin, db.Model):
+    """Version historisée d'une grille d'évaluation.
+
+    Permet de conserver l'état des domaines/indicateurs utilisé lors des cotations.
+    """
+    __tablename__ = 'grille_version'
+
+    id = db.Column(db.Integer, primary_key=True)
+    grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False, index=True)
+    version_num = db.Column(db.Integer, nullable=False)
+    domaines_config = db.Column(db.Text, nullable=False)
+    active = db.Column(db.Boolean, default=True, nullable=False)
+    cotations = db.relationship('CotationSeance', backref='grille_version', lazy=True)  # type: ignore
+
+    def __repr__(self):  # type: ignore
+        return f'<GrilleVersion grille_id={self.grille_id} v={self.version_num}>'
