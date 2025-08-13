@@ -82,7 +82,7 @@
                                        value="{% if seance %}{{ seance.duree_minutes or '' }}{% elif data %}{{ data.duree_minutes or '' }}{% endif %}" placeholder="45">
                             </div>
                         </div>
-                        {% if mode == 'create' and (not grille) and grilles_disponibles %}
+            {% if mode == 'create' and (not grille) and grilles_disponibles %}
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="assign_grille_id" class="form-label">Grille de cotation</label>
@@ -92,7 +92,7 @@
                                         <option value="{{ g.id }}">{{ g.nom }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="form-text">Aucune grille n'est assignée à ce patient. Vous pouvez en choisir une ici.</div>
+                <div class="form-text">Aucune grille n'est assignée à ce patient. Choisissez-en une pour afficher immédiatement la cotation.</div>
                             </div>
                         </div>
                         {% endif %}
@@ -364,8 +364,12 @@
                     {% else %}
                     <div class="alert alert-light">
                         <i class="bi bi-info-circle me-2"></i>
-                        <strong>Aucune grille de cotation</strong> - Assignez une grille au patient pour pouvoir coter lors de la création ou modification des séances.
+                        <strong>Aucune grille de cotation</strong> - Sélectionnez une grille dans le menu plus haut pour afficher la cotation ici.
                     </div>
+                    <!-- Dynamic cotation placeholder (create mode) -->
+                    {% if mode == 'create' %}
+                    <div id="dynamic-cotation-root"></div>
+                    {% endif %}
                     {% endif %}
 
                     <hr class="my-4">
@@ -596,6 +600,128 @@ document.addEventListener('DOMContentLoaded', function() {
             if (isCreate && file && validateAudioFile(file, e.target)) {
                 startTempTranscription(file);
             }
+        });
+    }
+
+    // Dynamic cotation rendering when choosing a grille in create mode without pre-assigned grille
+    const assignSelect = document.getElementById('assign_grille_id');
+    const dynamicRoot = document.getElementById('dynamic-cotation-root');
+    if (assignSelect && dynamicRoot) {
+        assignSelect.addEventListener('change', function() {
+            const gid = this.value;
+            dynamicRoot.innerHTML = '';
+            if (!gid) return;
+            // Fetch domaines of selected grille
+            fetch(`/grilles/api/${gid}/domaines`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.message || 'Erreur chargement grille');
+                    const domaines = data.domaines || [];
+                    if (!domaines.length) return;
+                    // Build cotation section with sliders (0..5 like the simplified UI)
+                    const section = document.createElement('div');
+                    section.className = 'cotation-section';
+                    section.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-clipboard-check text-success me-2"></i>
+                                Cotation (optionnelle)
+                            </h5>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="toggle-cotation-dyn">
+                                <i class="bi bi-eye-slash me-1"></i>
+                                Masquer
+                            </button>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Grille : ${data.grille?.nom || 'Sélectionnée'}</strong> - Vous pouvez coter cette séance dès maintenant.
+                        </div>
+                        <div id="cotation-content-dyn"></div>
+                        <div class="mb-3 mt-3">
+                            <label for="cotation_observations" class="form-label">
+                                <i class="bi bi-chat-text me-1"></i>
+                                Observations de cotation
+                            </label>
+                            <textarea class="form-control" id="cotation_observations" name="cotation_observations" rows="3" placeholder="Notes spécifiques sur l'évaluation de cette séance..."></textarea>
+                        </div>
+                    `;
+                    dynamicRoot.appendChild(section);
+                    // Populate domaines -> indicateurs
+                    const container = section.querySelector('#cotation-content-dyn');
+                    domaines.forEach(d => {
+                        const dom = document.createElement('div');
+                        dom.className = 'domaine-section mb-4';
+                        const domName = d.nom || 'Domaine';
+                        const domDesc = d.description || '';
+                        const indicateurs = d.indicateurs || [];
+                        dom.innerHTML = `
+                            <h6 class="text-primary border-bottom pb-2">
+                                <i class="bi bi-folder me-2"></i>${domName}
+                            </h6>
+                            ${domDesc ? `<p class="text-muted small mb-3">${domDesc}</p>` : ''}
+                            <div class="row"></div>
+                        `;
+                        const row = dom.querySelector('.row');
+                        indicateurs.forEach(ind => {
+                            const indName = ind.nom || 'Indicateur';
+                            const indDesc = ind.description || '';
+                            // Normalize names to match server parsing pattern cotation_score_<domaine>_<indicateur>
+                            const nameAttr = `cotation_score_${(domName || 'domaine').replace(/\s+/g,'_')}_${(indName || 'indicateur').replace(/\s+/g,'_')}`;
+                            const col = document.createElement('div');
+                            col.className = 'col-md-6 mb-3';
+                            col.innerHTML = `
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body p-3">
+                                        <label class="form-label fw-bold small">${indName}</label>
+                                        ${indDesc ? `<p class="small text-muted mb-2">${indDesc.length > 60 ? indDesc.slice(0,60)+'...' : indDesc}</p>` : ''}
+                                        <div class="slider-container">
+                                            <input type="range" class="form-range cotation-slider-form" min="0" max="5" step="1" value="0" name="${nameAttr}">
+                                            <div class="d-flex justify-content-between small text-muted mt-1">
+                                                <span>0</span><span>3</span><span>5</span>
+                                            </div>
+                                            <div class="text-center mt-1">
+                                                <span class="badge bg-secondary score-display-form">0 - Non évalué</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            row.appendChild(col);
+                        });
+                        container.appendChild(dom);
+                    });
+                    // Activate slider behaviors on dynamically added inputs
+                    const newSliders = section.querySelectorAll('.cotation-slider-form');
+                    newSliders.forEach(slider => {
+                        const scoreDisplay = slider.closest('.slider-container').querySelector('.score-display-form');
+                        const updateScoreDisplay = (value) => {
+                            const labels = {0:'0 - Non évalué',1:'1 - Très faible',2:'2 - Faible',3:'3 - Modéré',4:'4 - Bon',5:'5 - Excellent'};
+                            const colors = {0:'bg-secondary',1:'bg-danger',2:'bg-warning',3:'bg-info',4:'bg-primary',5:'bg-success'};
+                            scoreDisplay.className = 'badge score-display-form ' + (colors[value] || 'bg-secondary');
+                            scoreDisplay.textContent = labels[value] || '0 - Non évalué';
+                        };
+                        updateScoreDisplay(parseInt(slider.value,10) || 0);
+                        slider.addEventListener('input', function(){
+                            updateScoreDisplay(parseInt(this.value,10) || 0);
+                            this.style.background = `linear-gradient(to right, #007bff 0%, #007bff ${(+this.value/5)*100}%, #e9ecef ${(+this.value/5)*100}%, #e9ecef 100%)`;
+                        });
+                        slider.style.background = 'linear-gradient(to right, #007bff 0%, #007bff 0%, #e9ecef 0%, #e9ecef 100%)';
+                    });
+                    // Toggle behavior
+                    const toggleDyn = document.getElementById('toggle-cotation-dyn');
+                    const contentDyn = document.getElementById('cotation-content-dyn');
+                    if (toggleDyn && contentDyn) {
+                        toggleDyn.addEventListener('click', function(){
+                            const hidden = contentDyn.style.display === 'none';
+                            contentDyn.style.display = hidden ? 'block' : 'none';
+                            this.innerHTML = hidden ? '<i class="bi bi-eye-slash me-1"></i>Masquer' : '<i class="bi bi-eye me-1"></i>Afficher';
+                            this.classList.toggle('btn-outline-primary');
+                            this.classList.toggle('btn-outline-secondary');
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Erreur chargement grille:', err);
+                });
         });
     }
 
