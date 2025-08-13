@@ -67,6 +67,8 @@ def create_seance(patient_id):
         return redirect(url_for('patients.list_patients'))
     
     data = request.form.to_dict()
+    files = request.files
+    
     success, message, seance = SeanceService.create_seance(patient_id, data)
     
     if success and seance:
@@ -85,6 +87,7 @@ def create_seance(patient_id):
                     continue
         
         # Si des scores ont été saisis, sauvegarder la cotation
+        cotation_message = ""
         if cotation_scores or cotation_observations:
             from app.services.cotation_service import CotationService
             grilles_patient = PatientService.get_grilles_patient(patient_id)
@@ -99,15 +102,34 @@ def create_seance(patient_id):
                 )
                 
                 if cotation_success and cotation_scores:
-                    flash(f'{message} - Cotation également sauvegardée', 'success')
+                    cotation_message = " - Cotation également sauvegardée"
+        
+        # Gérer la transcription audio en arrière-plan si un fichier a été uploadé
+        transcription_message = ""
+        if 'fichier_audio' in files and files['fichier_audio'].filename:
+            audio_file = files['fichier_audio']
+            try:
+                import os
+                if os.environ.get('OPENAI_API_KEY'):
+                    from app.services.audio_service import AudioTranscriptionService
+                    
+                    # Lancer la transcription en arrière-plan
+                    audio_service = AudioTranscriptionService()
+                    transcription_success, transcription_msg = audio_service.process_session_recording(audio_file, seance.id)
+                    
+                    if transcription_success:
+                        transcription_message = " - Transcription en cours"
+                    else:
+                        transcription_message = f" - Erreur transcription: {transcription_msg}"
                 else:
-                    flash(message, 'success')
-            else:
-                flash(message, 'success')
-        else:
-            flash(message, 'success')
-            
-        return redirect(url_for('patients.view_patient', patient_id=patient_id))
+                    transcription_message = " - Service de transcription non configuré"
+            except Exception as e:
+                transcription_message = f" - Erreur transcription: {str(e)}"
+        
+        # Message final combiné
+        final_message = f"{message}{cotation_message}{transcription_message}"
+        flash(final_message, 'success')
+        return redirect(url_for('seances.edit_seance', seance_id=seance.id))  # Rediriger vers la modification pour continuer le workflow
     
     # En cas d'erreur, recharger le formulaire avec les données et la grille
     from app.models.cotation import GrilleEvaluation
@@ -148,7 +170,30 @@ def edit_seance(seance_id):
         flash('Séance non trouvée', 'error')
         return redirect(url_for('main.dashboard'))
     
-    return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit')  # type: ignore[attr-defined]
+    # Récupérer le patient de la séance
+    patient = PatientService.get_patient_by_id(seance.patient_id)
+    if not patient:
+        flash('Patient non trouvé', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Récupérer la grille du patient pour la cotation (même interface qu'en création)
+    from app.models.cotation import GrilleEvaluation
+    grilles_patient = PatientService.get_grilles_patient(seance.patient_id)
+    grille_data = None
+    
+    if grilles_patient:
+        # Récupérer l'objet GrilleEvaluation complet avec les domaines
+        grille_id = grilles_patient[0]['id']
+        grille_obj = GrilleEvaluation.query.get(grille_id)
+        if grille_obj:
+            grille_data = {
+                'id': grille_obj.id,
+                'nom': grille_obj.nom,
+                'description': grille_obj.description,
+                'domaines': grille_obj.domaines
+            }
+    
+    return render_template('seances/form.html', patient=patient, seance=seance, mode='edit', grille=grille_data)
 
 @seances.route('/<int:seance_id>/update', methods=['POST'])
 @login_required  # type: ignore
@@ -159,14 +204,94 @@ def update_seance(seance_id):
         flash('Séance non trouvée', 'error')
         return redirect(url_for('main.dashboard'))
     
+    patient = PatientService.get_patient_by_id(seance.patient_id)
+    if not patient:
+        flash('Patient non trouvé', 'error')
+        return redirect(url_for('main.dashboard'))
+    
     data = request.form.to_dict()
+    files = request.files
+    
     success, message, updated_seance = SeanceService.update_seance(seance_id, data)
     
     if success:
-        flash(message, 'success')
-        return redirect(url_for('seances.view_seance', seance_id=seance_id))
+        # Vérifier si des scores de cotation ont été soumis (même logique qu'en création)
+        cotation_scores = {}
+        cotation_observations = request.form.get('cotation_observations', '')
+        
+        for key, value in request.form.items():
+            if key.startswith('cotation_score_'):
+                try:
+                    indicator_name = key.replace('cotation_score_', '').replace('_', ' ')
+                    score_value = int(value)
+                    if score_value > 0:  # Ne sauvegarder que les scores non-zéro
+                        cotation_scores[indicator_name] = score_value
+                except (ValueError, TypeError):
+                    continue
+        
+        # Si des scores ont été saisis, sauvegarder la cotation
+        cotation_message = ""
+        if cotation_scores or cotation_observations:
+            from app.services.cotation_service import CotationService
+            grilles_patient = PatientService.get_grilles_patient(seance.patient_id)
+            
+            if grilles_patient:
+                grille_id = grilles_patient[0]['id']
+                cotation_success = CotationService.sauvegarder_cotation_simple(
+                    seance_id=seance_id,
+                    grille_id=grille_id,
+                    scores=cotation_scores,
+                    observations=cotation_observations
+                )
+                
+                if cotation_success and cotation_scores:
+                    cotation_message = " - Cotation mise à jour"
+        
+        # Gérer la transcription audio en arrière-plan si un nouveau fichier a été uploadé
+        transcription_message = ""
+        if 'fichier_audio' in files and files['fichier_audio'].filename:
+            audio_file = files['fichier_audio']
+            try:
+                import os
+                if os.environ.get('OPENAI_API_KEY'):
+                    from app.services.audio_service import AudioTranscriptionService
+                    
+                    # Lancer la transcription en arrière-plan
+                    audio_service = AudioTranscriptionService()
+                    transcription_success, transcription_msg = audio_service.process_session_recording(audio_file, seance_id)
+                    
+                    if transcription_success:
+                        transcription_message = " - Nouvelle transcription en cours"
+                    else:
+                        transcription_message = f" - Erreur transcription: {transcription_msg}"
+                else:
+                    transcription_message = " - Service de transcription non configuré"
+            except Exception as e:
+                transcription_message = f" - Erreur transcription: {str(e)}"
+        
+        # Message final combiné
+        final_message = f"{message}{cotation_message}{transcription_message}"
+        flash(final_message, 'success')
+        return redirect(url_for('seances.edit_seance', seance_id=seance_id))  # Rester sur la même page
+    
+    # En cas d'erreur, recharger le formulaire avec les données et la grille
+    from app.models.cotation import GrilleEvaluation
+    grilles_patient = PatientService.get_grilles_patient(seance.patient_id)
+    grille_data = None
+    
+    if grilles_patient:
+        grille_id = grilles_patient[0]['id']
+        grille_obj = GrilleEvaluation.query.get(grille_id)
+        if grille_obj:
+            grille_data = {
+                'id': grille_obj.id,
+                'nom': grille_obj.nom,
+                'description': grille_obj.description,
+                'domaines': grille_obj.domaines
+            }
+    
     flash(message, 'error')
-    return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit', data=data)  # type: ignore[attr-defined]
+    return render_template('seances/form.html', patient=patient, seance=seance, mode='edit', data=data, grille=grille_data)
 
 @seances.route('/<int:seance_id>/coter')
 @login_required  # type: ignore

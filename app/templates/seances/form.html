@@ -117,15 +117,22 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="fichier_audio" class="form-label">Enregistrement audio (optionnel)</label>
-                                <input type="file" class="form-control" id="fichier_audio" name="fichier_audio" accept="audio/*">
-                                {% if seance and seance.fichier_audio %}
-                                    <div class="form-text">
-                                        <i class="bi bi-file-earmark-music text-success me-1"></i>
-                                        Fichier actuel : {{ seance.fichier_audio }}
+                                <label for="fichier_audio" class="form-label">
+                                    <i class="bi bi-mic me-1"></i>
+                                    Enregistrement audio
+                                </label>
+                                <input type="file" class="form-control" id="fichier_audio" name="fichier_audio" 
+                                       accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg">
+                                {% if seance and seance.transcription_audio %}
+                                    <div class="form-text text-success">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Séance déjà transcrite
                                     </div>
                                 {% else %}
-                                    <div class="form-text">Formats acceptés : MP3, WAV, OGG</div>
+                                    <div class="form-text">
+                                        Formats supportés : MP3, WAV, M4A, FLAC, OGG (max 25 MB)
+                                        <br><small class="text-muted">La transcription se fera automatiquement en arrière-plan</small>
+                                    </div>
                                 {% endif %}
                             </div>
                         </div>
@@ -145,15 +152,71 @@
                         </div>
                     </div>
 
+                    <!-- Statut de transcription -->
+                    <div id="transcription-status" class="alert alert-info" style="display: none;">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm text-info me-2" role="status">
+                                <span class="visually-hidden">Transcription...</span>
+                            </div>
+                            <span id="transcription-text">Transcription en cours en arrière-plan...</span>
+                        </div>
+                    </div>
+
+                    <!-- Zone de transcription (si disponible) -->
+                    {% if seance and seance.transcription_audio %}
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-file-text me-1"></i>
+                            Transcription audio
+                        </label>
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <div class="transcription-text" style="max-height: 200px; overflow-y: auto;">
+                                    {{ seance.transcription_audio }}
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="expandTranscription()">
+                                        <i class="bi bi-arrows-fullscreen me-1"></i>
+                                        Voir en plein écran
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Zone de synthèse IA (si disponible) -->
+                    {% if seance and seance.synthese_ia %}
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-robot me-1"></i>
+                            Synthèse thérapeutique IA
+                        </label>
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <div class="synthese-text" style="max-height: 200px; overflow-y: auto;">
+                                    {{ seance.synthese_ia|safe|replace('\n', '<br>')|replace('**', '<strong>')|replace('**', '</strong>') }}
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="expandSynthese()">
+                                        <i class="bi bi-arrows-fullscreen me-1"></i>
+                                        Voir en plein écran
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <hr class="my-4">
 
-                    <!-- Section de cotation optionnelle (uniquement en création) -->
-                    {% if mode == 'create' and grille %}
+                    <!-- Section de cotation optionnelle (création ET modification) -->
+                    {% if grille %}
                     <div class="cotation-section">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-clipboard-check text-success me-2"></i>
-                                Cotation (optionnelle)
+                                Cotation {% if mode == 'edit' %}(mise à jour){% else %}(optionnelle){% endif %}
                             </h5>
                             <button type="button" class="btn btn-outline-secondary btn-sm" id="toggle-cotation">
                                 <i class="bi bi-eye-slash me-1"></i>
@@ -163,7 +226,7 @@
                         
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>Grille : {{ grille.nom }}</strong> - Vous pouvez coter cette séance directement lors de sa création.
+                            <strong>Grille : {{ grille.nom }}</strong> - {% if mode == 'edit' %}Vous pouvez mettre à jour la cotation de cette séance.{% else %}Vous pouvez coter cette séance directement lors de sa création.{% endif %}
                         </div>
 
                         <div id="cotation-content">
@@ -237,10 +300,10 @@
                             {% endif %}
                         </div>
                     </div>
-                    {% elif mode == 'create' and not grille %}
+                    {% else %}
                     <div class="alert alert-light">
                         <i class="bi bi-info-circle me-2"></i>
-                        <strong>Aucune grille de cotation</strong> - Assignez une grille au patient pour pouvoir coter directement lors de la création des séances.
+                        <strong>Aucune grille de cotation</strong> - Assignez une grille au patient pour pouvoir coter lors de la création ou modification des séances.
                     </div>
                     {% endif %}
 
@@ -423,7 +486,131 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Gestion de l'upload audio avec transcription en arrière-plan
+    const audioInput = document.getElementById('fichier_audio');
+    const transcriptionStatus = document.getElementById('transcription-status');
+    const transcriptionText = document.getElementById('transcription-text');
+    
+    if (audioInput) {
+        audioInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Vérifier la taille du fichier (25 MB max)
+                if (file.size > 25 * 1024 * 1024) {
+                    alert('Fichier trop volumineux. Taille maximale : 25 MB');
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Vérifier le format
+                const allowedTypes = ['audio/mp3', 'audio/wav', 'audio/m4a', 'audio/flac', 'audio/ogg', 'audio/webm'];
+                const isValidType = allowedTypes.some(type => file.type.includes(type.split('/')[1]));
+                
+                if (!isValidType && !file.name.match(/\.(mp3|wav|m4a|flac|ogg|webm)$/i)) {
+                    alert('Format de fichier non supporté. Utilisez : MP3, WAV, M4A, FLAC, OGG');
+                    e.target.value = '';
+                    return;
+                }
+                
+                console.log('Fichier audio sélectionné:', file.name, 'Taille:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+            }
+        });
+    }
 });
+
+// Fonctions pour l'affichage en plein écran
+function expandTranscription() {
+    const transcription = document.querySelector('.transcription-text').textContent;
+    showModal('Transcription complète', transcription);
+}
+
+function expandSynthese() {
+    const synthese = document.querySelector('.synthese-text').innerHTML;
+    showModal('Synthèse thérapeutique IA', synthese);
+}
+
+function showModal(title, content) {
+    // Créer une modal Bootstrap dynamiquement
+    const modalHtml = `
+        <div class="modal fade" id="contentModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${title}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6;">
+                            ${content}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Supprimer l'ancienne modal si elle existe
+    const existingModal = document.getElementById('contentModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Ajouter la nouvelle modal
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Afficher la modal
+    const modal = new bootstrap.Modal(document.getElementById('contentModal'));
+    modal.show();
+}
+
+// Fonction pour démarrer la transcription en arrière-plan après sauvegarde
+function startBackgroundTranscription(seanceId, audioFile) {
+    const transcriptionStatus = document.getElementById('transcription-status');
+    const transcriptionText = document.getElementById('transcription-text');
+    
+    if (!transcriptionStatus || !audioFile) return;
+    
+    // Afficher le statut de transcription
+    transcriptionStatus.style.display = 'block';
+    transcriptionText.textContent = 'Transcription en cours en arrière-plan...';
+    
+    // Préparer les données pour l'upload
+    const formData = new FormData();
+    formData.append('audio_file', audioFile);
+    
+    // Lancer la transcription en AJAX
+    fetch(`/audio/transcribe-only/${seanceId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            transcriptionText.textContent = 'Transcription terminée ! Rechargez la page pour voir le résultat.';
+            transcriptionStatus.classList.remove('alert-info');
+            transcriptionStatus.classList.add('alert-success');
+            
+            // Optionnel : recharger automatiquement après quelques secondes
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+        } else {
+            transcriptionText.textContent = `Erreur de transcription: ${data.message}`;
+            transcriptionStatus.classList.remove('alert-info');
+            transcriptionStatus.classList.add('alert-warning');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        transcriptionText.textContent = 'Erreur de connexion lors de la transcription';
+        transcriptionStatus.classList.remove('alert-info');
+        transcriptionStatus.classList.add('alert-danger');
+    });
+}
 </script>
 
 <style>
