@@ -74,26 +74,43 @@ def index():
 @login_required  # type: ignore
 def dashboard():
     """Tableau de bord principal"""
-    # Récupérer les statistiques pour le dashboard
-    patients = PatientService.get_all_patients()
-    patients_actifs = [p for p in patients if p.actif]
-    
-    # Statistiques des séances
-    seances_stats = SeanceService.get_seances_statistics()
-    
-    stats = {
-        'total_patients': len(patients),
-        'patients_actifs': len(patients_actifs),
-        'total_seances': seances_stats['total_seances'],
-        'seances_ce_mois': seances_stats['seances_ce_mois'],
-        'duree_moyenne': seances_stats['duree_moyenne'],
-        'engagement_moyen': seances_stats['engagement_moyen']
-    }
-    
-    # Séances récentes
-    seances_recentes = SeanceService.get_recent_seances(5)
-    
-    return render_template('dashboard.html', 
-                         stats=stats, 
-                         patients_recents=patients[:5],
-                         seances_recentes=seances_recentes)
+    try:
+        # Récupérer les statistiques pour le dashboard
+        patients = PatientService.get_all_patients()
+        patients_actifs = [p for p in patients if p.actif]
+        
+        # Statistiques des séances
+        seances_stats = SeanceService.get_seances_statistics()
+        
+        stats = {
+            'total_patients': len(patients),
+            'patients_actifs': len(patients_actifs),
+            'total_seances': seances_stats['total_seances'],
+            'seances_ce_mois': seances_stats['seances_ce_mois'],
+            'duree_moyenne': seances_stats['duree_moyenne'],
+            'engagement_moyen': seances_stats['engagement_moyen']
+        }
+        
+        # Séances récentes
+        seances_recentes = SeanceService.get_recent_seances(5)
+        
+        return render_template('dashboard.html', 
+                             stats=stats, 
+                             patients_recents=patients[:5],
+                             seances_recentes=seances_recentes)
+    except Exception as e:
+        # Log l'erreur pour debugging
+        print(f"Erreur dashboard: {e}")
+        # Retourner un dashboard minimal en cas d'erreur
+        stats = {
+            'total_patients': 0,
+            'patients_actifs': 0,
+            'total_seances': 0,
+            'seances_ce_mois': 0,
+            'duree_moyenne': 0,
+            'engagement_moyen': 0
+        }
+        return render_template('dashboard.html', 
+                             stats=stats, 
+                             patients_recents=[],
+                             seances_recentes=[])
