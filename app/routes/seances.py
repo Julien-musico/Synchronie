@@ -1,19 +1,22 @@
 """
 Routes pour la gestion des séances
 """
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask_login import login_required  # type: ignore
 from app.services.patient_service import PatientService
 from app.services.seance_service import SeanceService
 
 seances = Blueprint('seances', __name__)
 
 @seances.route('/')
+@login_required  # type: ignore
 def list_seances():
     """Liste de toutes les séances"""
     seances_list = SeanceService.get_all_seances()
     return render_template('seances/list.html', seances=seances_list)
 
 @seances.route('/patient/<int:patient_id>')
+@login_required  # type: ignore
 def list_seances_patient(patient_id):
     """Liste des séances d'un patient spécifique"""
     patient = PatientService.get_patient_by_id(patient_id)
@@ -25,6 +28,7 @@ def list_seances_patient(patient_id):
     return render_template('seances/list.html', seances=seances_list, patient=patient)
 
 @seances.route('/patient/<int:patient_id>/nouvelle')
+@login_required  # type: ignore
 def new_seance(patient_id):
     """Formulaire de création d'une nouvelle séance"""
     patient = PatientService.get_patient_by_id(patient_id)
@@ -35,6 +39,7 @@ def new_seance(patient_id):
     return render_template('seances/form.html', patient=patient, seance=None, mode='create')
 
 @seances.route('/patient/<int:patient_id>/create', methods=['POST'])
+@login_required  # type: ignore
 def create_seance(patient_id):
     """Traitement de la création d'une séance"""
     
@@ -54,6 +59,7 @@ def create_seance(patient_id):
         return render_template('seances/form.html', patient=patient, seance=None, mode='create', data=data)
 
 @seances.route('/<int:seance_id>')
+@login_required  # type: ignore
 def view_seance(seance_id):
     """Affichage d'une séance"""
     seance = SeanceService.get_seance_by_id(seance_id)
@@ -64,6 +70,7 @@ def view_seance(seance_id):
     return render_template('seances/detail.html', seance=seance)
 
 @seances.route('/<int:seance_id>/modifier')
+@login_required  # type: ignore
 def edit_seance(seance_id):
     """Formulaire de modification d'une séance"""
     seance = SeanceService.get_seance_by_id(seance_id)
@@ -71,9 +78,10 @@ def edit_seance(seance_id):
         flash('Séance non trouvée', 'error')
         return redirect(url_for('main.dashboard'))
     
-    return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit')
+    return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit')  # type: ignore[attr-defined]
 
 @seances.route('/<int:seance_id>/update', methods=['POST'])
+@login_required  # type: ignore
 def update_seance(seance_id):
     """Traitement de la modification d'une séance"""
     seance = SeanceService.get_seance_by_id(seance_id)
@@ -89,9 +97,10 @@ def update_seance(seance_id):
         return redirect(url_for('seances.view_seance', seance_id=seance_id))
     else:
         flash(message, 'error')
-        return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit', data=data)
+    return render_template('seances/form.html', patient=seance.patient, seance=seance, mode='edit', data=data)  # type: ignore[attr-defined]
 
 @seances.route('/<int:seance_id>/delete', methods=['POST'])
+@login_required  # type: ignore
 def delete_seance(seance_id):
     """Suppression d'une séance"""
     seance = SeanceService.get_seance_by_id(seance_id)

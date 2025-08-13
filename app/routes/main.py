@@ -1,7 +1,8 @@
 """
 Routes principales de l'application
 """
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, redirect, url_for
+from flask_login import login_required, current_user  # type: ignore
 from app.services.patient_service import PatientService
 from app.services.seance_service import SeanceService
 
@@ -14,10 +15,13 @@ def health_check():
 
 @main.route('/')
 def index():
-    """Page d'accueil"""
-    return render_template('index.html')
+    """Redirige vers login si non authentifié, sinon dashboard."""
+    if not current_user.is_authenticated:  # type: ignore
+        return redirect(url_for('auth.login'))
+    return redirect(url_for('main.dashboard'))
 
 @main.route('/dashboard')
+@login_required  # type: ignore
 def dashboard():
     """Tableau de bord principal"""
     # Récupérer les statistiques pour le dashboard
