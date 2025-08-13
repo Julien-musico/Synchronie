@@ -83,6 +83,12 @@ CREATE TABLE IF NOT EXISTS cotation_seance (
     date_modification TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
+-- Assurer présence des colonnes timestamp si table préexistante sans celles-ci
+ALTER TABLE cotation_seance
+    ADD COLUMN IF NOT EXISTS date_creation TIMESTAMPTZ DEFAULT NOW() NOT NULL;
+ALTER TABLE cotation_seance
+    ADD COLUMN IF NOT EXISTS date_modification TIMESTAMPTZ DEFAULT NOW() NOT NULL;
+
 -- Index
 CREATE INDEX IF NOT EXISTS idx_cotation_seance_seance ON cotation_seance(seance_id);
 CREATE INDEX IF NOT EXISTS idx_cotation_seance_grille ON cotation_seance(grille_id);
@@ -127,6 +133,11 @@ CREATE TABLE IF NOT EXISTS objectif_therapeutique (
     date_modification TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
+ALTER TABLE objectif_therapeutique
+    ADD COLUMN IF NOT EXISTS date_creation TIMESTAMPTZ DEFAULT NOW() NOT NULL;
+ALTER TABLE objectif_therapeutique
+    ADD COLUMN IF NOT EXISTS date_modification TIMESTAMPTZ DEFAULT NOW() NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_obj_ther_patient ON objectif_therapeutique(patient_id);
 CREATE INDEX IF NOT EXISTS idx_obj_ther_grille ON objectif_therapeutique(grille_id);
 
@@ -156,15 +167,17 @@ END $$;
 -- (Désactivé ici; laisser SQLAlchemy gérer) 
 
 -- 6. Vue synthèse évolution (optionnel)
-CREATE OR REPLACE VIEW vue_cotation_evolution AS
-SELECT 
+-- Vue: supprimer d'abord pour éviter échec si structure ancienne
+DROP VIEW IF EXISTS vue_cotation_evolution;
+CREATE VIEW vue_cotation_evolution AS
+SELECT
     cs.id,
     cs.seance_id,
     s.patient_id,
     cs.grille_id,
     cs.score_global,
     cs.pourcentage_reussite,
-    cs.date_creation
+    COALESCE(cs.date_creation, NOW()) AS date_creation
 FROM cotation_seance cs
 JOIN seances s ON s.id = cs.seance_id;
 
