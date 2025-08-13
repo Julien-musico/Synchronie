@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import List, Optional, Tuple, Dict, Any
 from sqlalchemy.exc import SQLAlchemyError
 from app.models import db, Patient, Seance
+from flask_login import current_user  # type: ignore
 
 
 class SeanceService:
@@ -24,7 +25,11 @@ class SeanceService:
         """
         try:
             # Vérifier que le patient existe
-            patient = Patient.query.get(patient_id)
+            try:
+                uid = current_user.id  # type: ignore[attr-defined]
+                patient = Patient.query.filter_by(id=patient_id, musicotherapeute_id=uid).first()
+            except Exception:
+                patient = Patient.query.get(patient_id)
             if not patient:
                 return False, "Patient non trouvé", None
             
@@ -72,7 +77,13 @@ class SeanceService:
     def get_seance_by_id(seance_id: int) -> Optional[Seance]:
         """Récupérer une séance par son ID avec la relation patient"""
         try:
-            return Seance.query.join(Patient).filter(Seance.id == seance_id).first()  # type: ignore
+            try:
+                uid = current_user.id  # type: ignore[attr-defined]
+                return (Seance.query.join(Patient)
+                        .filter(Seance.id == seance_id, Patient.musicotherapeute_id == uid)
+                        .first())  # type: ignore
+            except Exception:
+                return Seance.query.join(Patient).filter(Seance.id == seance_id).first()  # type: ignore
         except Exception:
             return None
     
@@ -80,7 +91,13 @@ class SeanceService:
     def get_seances_by_patient(patient_id: int) -> List[Seance]:
         """Récupérer toutes les séances d'un patient"""
         try:
-            return Seance.query.filter_by(patient_id=patient_id).order_by(Seance.date_seance.desc()).all()  # type: ignore
+            try:
+                uid = current_user.id  # type: ignore[attr-defined]
+                return (Seance.query.join(Patient)
+                        .filter(Seance.patient_id == patient_id, Patient.musicotherapeute_id == uid)
+                        .order_by(Seance.date_seance.desc()).all())  # type: ignore
+            except Exception:
+                return Seance.query.filter_by(patient_id=patient_id).order_by(Seance.date_seance.desc()).all()  # type: ignore
         except Exception:
             return []
     
@@ -97,7 +114,13 @@ class SeanceService:
             Tuple[bool, str, Optional[Seance]]: (success, message, seance)
         """
         try:
-            seance = Seance.query.get(seance_id)
+            try:
+                uid = current_user.id  # type: ignore[attr-defined]
+                seance = (Seance.query.join(Patient)
+                          .filter(Seance.id == seance_id, Patient.musicotherapeute_id == uid)
+                          .first())
+            except Exception:
+                seance = Seance.query.get(seance_id)
             if not seance:
                 return False, "Séance non trouvée", None
             
@@ -158,7 +181,13 @@ class SeanceService:
             Tuple[bool, str]: (success, message)
         """
         try:
-            seance = Seance.query.get(seance_id)
+            try:
+                uid = current_user.id  # type: ignore[attr-defined]
+                seance = (Seance.query.join(Patient)
+                          .filter(Seance.id == seance_id, Patient.musicotherapeute_id == uid)
+                          .first())
+            except Exception:
+                seance = Seance.query.get(seance_id)
             if not seance:
                 return False, "Séance non trouvée"
             
@@ -178,7 +207,13 @@ class SeanceService:
     def get_all_seances() -> List[Seance]:
         """Récupérer toutes les séances"""
         try:
-            return Seance.query.order_by(Seance.date_seance.desc()).all()  # type: ignore
+            try:
+                uid = current_user.id  # type: ignore[attr-defined]
+                return (Seance.query.join(Patient)
+                        .filter(Patient.musicotherapeute_id == uid)
+                        .order_by(Seance.date_seance.desc()).all())  # type: ignore
+            except Exception:
+                return Seance.query.order_by(Seance.date_seance.desc()).all()  # type: ignore
         except Exception:
             return []
     

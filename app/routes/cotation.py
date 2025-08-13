@@ -49,7 +49,7 @@ def creer_grille_predefinee():
     type_grille = request.json.get('type_grille')
     
     try:
-        grille = CotationService.creer_grille_predefinee(type_grille)
+        grille = CotationService.creer_grille_predefinie(type_grille)
         if grille:
             # Assigner à l'utilisateur actuel
             grille.musicotherapeute_id = current_user.id
@@ -113,6 +113,67 @@ def preview_grille(grille_id):
         'domaines': grille.domaines,
         'couleur_theme': grille.domaines[0].get('couleur', '#3498db') if grille.domaines else '#3498db'
     })
+
+@cotation_bp.route('/grille/<int:grille_id>/editer-domaines')
+@login_required
+def editer_domaines_page(grille_id):  # type: ignore[no-untyped-def]
+    grille = GrilleEvaluation.query.get_or_404(grille_id)
+    if grille.musicotherapeute_id != current_user.id:
+        flash('Accès non autorisé', 'error')
+        return redirect(url_for('cotation.grilles'))
+    # Passer domaines JSON pour initialisation
+    return render_template('cotation/editer_domaines.html', grille=grille, domaines_json=json.dumps(grille.domaines))
+
+# ---------------------- CRUD additionnel pour les grilles ---------------------- #
+@cotation_bp.route('/grilles/personnalisee', methods=['POST'])
+@login_required
+def creer_grille_personnalisee_route():  # type: ignore[no-untyped-def]
+    data = request.json or {}
+    try:
+        grille = CotationService.creer_grille_personnalisee(
+            nom=data.get('nom', 'Nouvelle grille'),
+            description=data.get('description', ''),
+            domaines=data.get('domaines', [])
+        )
+        return jsonify({'success': True, 'grille_id': grille.id})
+    except Exception as e:  # pragma: no cover
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@cotation_bp.route('/grille/<int:grille_id>/copier', methods=['POST'])
+@login_required
+def copier_grille_route(grille_id):  # type: ignore[no-untyped-def]
+    copie = CotationService.copier_grille(grille_id)
+    if not copie:
+        return jsonify({'success': False, 'error': 'Impossible de copier la grille'}), 400
+    return jsonify({'success': True, 'grille_id': copie.id})
+
+@cotation_bp.route('/grille/<int:grille_id>', methods=['PATCH'])
+@login_required
+def editer_grille_route(grille_id):  # type: ignore[no-untyped-def]
+    data = request.json or {}
+    grille = CotationService.editer_grille(grille_id, data.get('nom'), data.get('description'))
+    if not grille:
+        return jsonify({'success': False, 'error': 'Modification non autorisée'}), 403
+    return jsonify({'success': True})
+
+@cotation_bp.route('/grille/<int:grille_id>/domaines', methods=['PUT'])
+@login_required
+def update_domaines_route(grille_id):  # type: ignore[no-untyped-def]
+    data = request.json or {}
+    domaines = data.get('domaines', [])
+    grille = CotationService.update_grille_domaines(grille_id, domaines)
+    if not grille:
+        return jsonify({'success': False, 'error': 'Mise à jour non autorisée'}), 403
+    return jsonify({'success': True})
+
+@cotation_bp.route('/grille/<int:grille_id>', methods=['DELETE'])
+@login_required
+def supprimer_grille_route(grille_id):  # type: ignore[no-untyped-def]
+    ok = CotationService.supprimer_grille(grille_id)
+    if not ok:
+        return jsonify({'success': False, 'error': 'Suppression non autorisée'}), 403
+    return jsonify({'success': True})
 
 @cotation_bp.route('/seance/<int:seance_id>/sauvegarder', methods=['POST'])
 @login_required

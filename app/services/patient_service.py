@@ -4,6 +4,7 @@ Services pour la gestion des patients
 from typing import List, Optional
 from sqlalchemy.exc import SQLAlchemyError
 from app.models import db, Patient
+from flask_login import current_user  # type: ignore
 
 class PatientService:
     """Service pour la gestion des patients"""
@@ -20,6 +21,11 @@ class PatientService:
             Liste des patients
         """
         query = Patient.query
+        try:
+            user_id = current_user.id  # type: ignore[attr-defined]
+            query = query.filter_by(musicotherapeute_id=user_id)
+        except Exception:
+            pass
         if actifs_seulement:
             query = query.filter_by(actif=True)
         
@@ -36,7 +42,11 @@ class PatientService:
         Returns:
             Patient ou None si non trouvé
         """
-        return Patient.query.get(patient_id)
+        try:
+            user_id = current_user.id  # type: ignore[attr-defined]
+            return Patient.query.filter_by(id=patient_id, musicotherapeute_id=user_id).first()
+        except Exception:
+            return Patient.query.get(patient_id)
     
     @staticmethod
     def create_patient(data: dict) -> tuple[bool, str, Optional[Patient]]:
@@ -72,20 +82,27 @@ class PatientService:
                     # Continuer sans date plutôt que d'échouer
                     pass
             
-            patient = Patient(
-                nom=nom,
-                prenom=prenom,
-                date_naissance=date_naissance,
-                telephone=data.get('telephone', '').strip() or None,
-                email=data.get('email', '').strip() or None,
-                adresse=data.get('adresse', '').strip() or None,
-                pathologie=data.get('pathologie', '').strip() or None,
-                objectifs_therapeutiques=data.get('objectifs_therapeutiques', '').strip() or None,
-                commentaires=data.get('commentaires', '').strip() or None,
-                actif=True  # Par défaut actif
+            # Associer au thérapeute courant
+            owner_id = None
+            try:
+                owner_id = current_user.id  # type: ignore[attr-defined]
+            except Exception:
+                pass
+            patient = Patient(  # type: ignore[call-arg]
+                nom=nom,  # type: ignore[arg-type]
+                prenom=prenom,  # type: ignore[arg-type]
+                date_naissance=date_naissance,  # type: ignore[arg-type]
+                telephone=data.get('telephone', '').strip() or None,  # type: ignore[arg-type]
+                email=data.get('email', '').strip() or None,  # type: ignore[arg-type]
+                adresse=data.get('adresse', '').strip() or None,  # type: ignore[arg-type]
+                pathologie=data.get('pathologie', '').strip() or None,  # type: ignore[arg-type]
+                objectifs_therapeutiques=data.get('objectifs_therapeutiques', '').strip() or None,  # type: ignore[arg-type]
+                commentaires=data.get('commentaires', '').strip() or None,  # type: ignore[arg-type]
+                actif=True,  # type: ignore[arg-type]
+                musicotherapeute_id=owner_id  # type: ignore[arg-type]
             )
             
-            print(f"DEBUG: Tentative d'ajout en base...")
+            print("DEBUG: Tentative d'ajout en base...")
             db.session.add(patient)
             db.session.commit()
             print(f"DEBUG: Patient créé avec ID: {patient.id}")
@@ -114,7 +131,11 @@ class PatientService:
             Tuple (succès, message, patient)
         """
         try:
-            patient = Patient.query.get(patient_id)
+            try:
+                user_id = current_user.id  # type: ignore[attr-defined]
+                patient = Patient.query.filter_by(id=patient_id, musicotherapeute_id=user_id).first()
+            except Exception:
+                patient = Patient.query.get(patient_id)
             if not patient:
                 return False, "Patient non trouvé", None
             
@@ -159,7 +180,11 @@ class PatientService:
             Tuple (succès, message)
         """
         try:
-            patient = Patient.query.get(patient_id)
+            try:
+                user_id = current_user.id  # type: ignore[attr-defined]
+                patient = Patient.query.filter_by(id=patient_id, musicotherapeute_id=user_id).first()
+            except Exception:
+                patient = Patient.query.get(patient_id)
             if not patient:
                 return False, "Patient non trouvé"
             

@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Éditeur de domaines - {{ grille.nom }}{% endblock %}
+{% block head %}
+<style>
+.editor-container {background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:25px 0;}
+.editor-card {background:#fff;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.1);padding:30px;max-width:1100px;margin:0 auto;}
+.domains-list {list-style:none;padding:0;margin:0;}
+.domain-item {border:2px solid #f1f3f4;border-radius:15px;padding:18px 20px;margin-bottom:18px;background:#fafbff;position:relative;transition:.25s;}
+.domain-item.dragging {opacity:.5;}
+.domain-handle {cursor:grab;font-size:1.2rem;margin-right:8px;}
+.domain-header {display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.domain-header input[type=text]{border:1px solid #d9dde4;border-radius:8px;padding:6px 10px;min-width:220px;font-weight:600;}
+.domain-header input[type=color]{width:42px;height:42px;border:none;background:transparent;}
+.domain-actions {margin-left:auto;display:flex;gap:6px;}
+.btn-small {border:none;border-radius:8px;padding:6px 12px;font-size:.8rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:#eef1f7;color:#495057;}
+.btn-small.danger{background:#ffe8e6;color:#c0392b;}
+.btn-small:hover{filter:brightness(.95);} 
+.indicators {background:#fff;border:1px solid #e4e7ed;border-radius:10px;padding:12px;margin-top:8px;}
+.indicator-row {display:grid;grid-template-columns:1fr 70px 70px 90px 40px;gap:8px;align-items:center;margin-bottom:8px;}
+.indicator-row input, .indicator-row select {width:100%;padding:4px 6px;border:1px solid #d9dde4;border-radius:6px;font-size:.8rem;}
+.remove-indicator {background:none;border:none;color:#c0392b;font-size:1.1rem;cursor:pointer;}
+.add-indicator {background:#667eea;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:.75rem;font-weight:600;cursor:pointer;margin-top:4px;}
+.add-indicator:hover{filter:brightness(1.05);} 
+.editor-toolbar {display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.editor-toolbar button {border:none;border-radius:25px;padding:10px 20px;font-weight:600;cursor:pointer;background:linear-gradient(45deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 12px rgba(0,0,0,0.15);} 
+.editor-toolbar button.secondary{background:#eef1f7;color:#495057;box-shadow:none;}
+.save-bar {position:sticky;bottom:0;margin-top:25px;padding:15px 10px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-top:2px solid #eef1f7;display:flex;gap:15px;justify-content:flex-end;border-bottom-left-radius:18px;border-bottom-right-radius:18px;}
+.status-msg {font-size:.8rem;color:#6c757d;margin-right:auto;display:flex;align-items:center;gap:6px;}
+.empty-note {text-align:center;padding:50px 20px;color:#6c757d;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="editor-container" id="editorRoot" data-grille-id="{{ grille.id }}" data-domaines='{{ domaines_json|tojson|safe }}'>
+  <div class="editor-card">
+    <h2 style="margin-top:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">🧩 Éditeur de domaines <span style="font-size:1rem;font-weight:500;color:#6c757d;">{{ grille.nom }}</span></h2>
+    <div class="editor-toolbar">
+      <button onclick="ajouterDomaine()">➕ Ajouter un domaine</button>
+      <button class="secondary" onclick="window.location='{{ url_for('cotation.grilles') }}'">⬅️ Retour</button>
+      <button class="secondary" onclick="previsualiser()">👁️ Prévisualiser</button>
+    </div>
+    <ul id="domainsList" class="domains-list"></ul>
+    <div id="emptyState" class="empty-note" style="display:none;">Aucun domaine. Cliquez sur "Ajouter un domaine".</div>
+    <div class="save-bar">
+      <div class="status-msg" id="statusMsg">Aucune modification.</div>
+      <button class="secondary" onclick="recharger()">↩️ Annuler</button>
+      <button onclick="sauvegarder()" id="saveBtn">💾 Sauvegarder</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const rootEl = document.getElementById('editorRoot');
+const GRILLE_ID = parseInt(rootEl.dataset.grilleId);
+let domaines = [];
+try { domaines = JSON.parse(rootEl.dataset.domaines || '[]'); } catch(e){ domaines = []; }
+let dirty = false;
+
+function markDirty(){dirty=true;document.getElementById('statusMsg').textContent='Modifications non sauvegardées';}
+function render(){const list=document.getElementById('domainsList');list.innerHTML='';if(!domaines.length){document.getElementById('emptyState').style.display='block';}else{document.getElementById('emptyState').style.display='none';}
+ domaineLoop: for(let i=0;i<domaines.length;i++){const d=domaines[i];const li=document.createElement('li');li.className='domain-item';li.draggable=true;li.dataset.index=i;li.innerHTML=`<div class="domain-header"><span class="domain-handle" title="Glisser pour réorganiser">🟰</span><input type="text" value="${d.nom}" placeholder="Nom du domaine" oninput="updateDomaine(${i},'nom',this.value)"><input type="color" value="${d.couleur||'#667eea'}" onchange="updateDomaine(${i},'couleur',this.value)"><input type="text" style="flex:1;min-width:260px;" value="${d.description||''}" placeholder="Description" oninput="updateDomaine(${i},'description',this.value)"><div class="domain-actions"><button class="btn-small" onclick="dupliquerDomaine(${i})">🗂️</button><button class="btn-small danger" onclick="supprimerDomaine(${i})">🗑️</button></div></div>`;
+ const indicators=document.createElement('div');indicators.className='indicators';indicators.innerHTML='<div style="font-weight:600;font-size:.75rem;margin-bottom:6px;color:#495057;">Indicateurs</div>';
+ d.indicateurs=d.indicateurs||[];d.indicateurs.forEach((ind,idx)=>{const row=document.createElement('div');row.className='indicator-row';row.innerHTML=`<input type="text" value="${ind.nom}" placeholder="Nom" oninput="updateInd(${i},${idx},'nom',this.value)"><input type="number" value="${ind.min}" oninput="updateInd(${i},${idx},'min',this.value)"><input type="number" value="${ind.max}" oninput="updateInd(${i},${idx},'max',this.value)"><select onchange="updateInd(${i},${idx},'unite',this.value)"><option ${ind.unite==='points'?'selected':''}>points</option><option ${ind.unite==='niveau'?'selected':''}>niveau</option><option ${ind.unite==='minutes'?'selected':''}>minutes</option><option ${ind.unite==='%'?'selected':''}>%</option><option ${ind.unite==='autre'?'selected':''}>autre</option></select><button class="remove-indicator" title="Retirer" onclick="removeInd(${i},${idx})">✖</button>`;indicators.appendChild(row);});
+ const addBtn=document.createElement('button');addBtn.className='add-indicator';addBtn.type='button';addBtn.textContent='Ajouter indicateur';addBtn.onclick=()=>{d.indicateurs.push({nom:'Nouvel indicateur',min:0,max:5,unite:'points'});markDirty();render();};indicators.appendChild(addBtn);li.appendChild(indicators);list.appendChild(li);}attachDrag();}
+
+function ajouterDomaine(){domaines.push({nom:'Nouveau domaine',couleur:'#667eea',description:'',indicateurs:[{nom:'Indicateur 1',min:0,max:5,unite:'points'}]});markDirty();render();}
+function supprimerDomaine(i){if(!confirm('Supprimer ce domaine ?'))return;domaines.splice(i,1);markDirty();render();}
+function dupliquerDomaine(i){const clone=JSON.parse(JSON.stringify(domaines[i]));clone.nom+=' (copie)';domaines.splice(i+1,0,clone);markDirty();render();}
+function updateDomaine(i,key,val){domaines[i][key]=val;markDirty();}
+function updateInd(i,j,key,val){if(key==='min'||key==='max'){val=parseFloat(val||0);}domaines[i].indicateurs[j][key]=val;markDirty();}
+function removeInd(i,j){domaines[i].indicateurs.splice(j,1);markDirty();render();}
+function recharger(){window.location.reload();}
+function previsualiser(){alert('Prévisualisation simple – future UI graphique.\nDomaines: '+domaines.length);}
+
+async function sauvegarder(){document.getElementById('saveBtn').disabled=true;try{const resp=await fetch(`/cotation/grille/${GRILLE_ID}/domaines`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({domaines})});const data=await resp.json();if(data.success){dirty=false;document.getElementById('statusMsg').textContent='Sauvegardé.';}else{alert(data.error||'Erreur');}}catch(e){alert('Erreur: '+e.message);}finally{document.getElementById('saveBtn').disabled=false;}}
+
+function attachDrag(){const items=document.querySelectorAll('.domain-item');let dragSrc=null;items.forEach(it=>{it.addEventListener('dragstart',e=>{dragSrc=it;it.classList.add('dragging');e.dataTransfer.effectAllowed='move';});it.addEventListener('dragend',()=>it.classList.remove('dragging'));it.addEventListener('dragover',e=>{e.preventDefault();});it.addEventListener('drop',e=>{e.preventDefault();if(dragSrc===it)return;const srcIndex=parseInt(dragSrc.dataset.index);const tgtIndex=parseInt(it.dataset.index);const moved=domaines.splice(srcIndex,1)[0];domaines.splice(tgtIndex,0,moved);markDirty();render();});});}
+
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+render();
+</script>
+{% endblock %}

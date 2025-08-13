@@ -369,7 +369,7 @@
                         
                         <div class="grille-stats">
                             <span>{{ grille.domaines|length }} domaines</span>
-                            <span>Créée le {{ grille.created_at.strftime('%d/%m/%Y') }}</span>
+                            <span>Créée le {{ grille.date_creation.strftime('%d/%m/%Y') }}</span>
                         </div>
                     </div>
                     {% endfor %}
@@ -657,25 +657,38 @@ async function previewGrille(grilleId) {
 }
 
 function editerGrille(grilleId) {
-    // TODO: Implémenter l'édition de grille
-    alert('Fonction d\'édition en développement');
+    window.location = `/cotation/grille/${grilleId}/editer-domaines`;
 }
 
-function supprimerGrille(grilleId) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette grille ?')) {
-        // TODO: Implémenter la suppression
-        alert('Fonction de suppression en développement');
-    }
+async function supprimerGrille(grilleId) {
+    if (!confirm('Supprimer cette grille ?')) return;
+    try {
+        const resp = await fetch(`/cotation/grille/${grilleId}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) location.reload(); else alert(data.error || 'Erreur');
+    } catch(e){ alert('Erreur: ' + e.message); }
 }
 
-function copierGrille(grilleId) {
-    // TODO: Implémenter la copie de grille
-    alert('Fonction de copie en développement');
+async function copierGrille(grilleId) {
+    try {
+        const resp = await fetch(`/cotation/grille/${grilleId}/copier`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) location.reload(); else alert(data.error || 'Erreur');
+    } catch(e){ alert('Erreur: ' + e.message); }
 }
 
-function creerGrillePersonnalisee() {
-    // TODO: Ouvrir l'éditeur de grille personnalisée
-    alert('Créateur de grille personnalisée en développement');
+async function creerGrillePersonnalisee() {
+    const nom = prompt('Nom de la nouvelle grille :');
+    if (!nom) return;
+    try {
+        const resp = await fetch('/cotation/grilles/personnalisee', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ nom: nom, description: '' , domaines: [] })
+        });
+        const data = await resp.json();
+        if (data.success) location.reload(); else alert(data.error || 'Erreur');
+    } catch(e){ alert('Erreur: ' + e.message); }
 }
 
 function closeModal() {

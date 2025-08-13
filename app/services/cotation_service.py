@@ -4,6 +4,12 @@ Service pour la gestion des grilles d'évaluation et cotations
 from typing import List, Dict, Any, Optional, Tuple
 from app.models import db
 from app.models.cotation import GrilleEvaluation, CotationSeance
+try:  # Accès utilisateur courant pour scoping propriétaire
+    from flask_login import current_user  # type: ignore
+except Exception:  # pragma: no cover - fallback analyse statique
+    class _U:  # type: ignore
+        id = 0
+    current_user = _U()  # type: ignore
 import json
 
 class CotationService:
@@ -167,7 +173,7 @@ class CotationService:
         }
     
     @staticmethod
-    def creer_grille_predefinee(type_grille: str) -> Optional[GrilleEvaluation]:
+    def creer_grille_predefinie(type_grille: str) -> Optional[GrilleEvaluation]:
         """Crée une grille prédéfinie en base de données"""
         grilles = CotationService.get_grilles_predefinies()
         
@@ -175,7 +181,6 @@ class CotationService:
             return None
         
         config = grilles[type_grille]
-        
         grille = GrilleEvaluation(
             nom=config["nom"],
             description=config["description"],
@@ -185,10 +190,125 @@ class CotationService:
             active=True,
             publique=True
         )
-        
         db.session.add(grille)
         db.session.commit()
-        
+        return grille
+
+    # ------------------- Grilles personnalisées & gestion ------------------- #
+    @staticmethod
+    def creer_grille_personnalisee(nom: str, description: str, domaines: List[Dict[str, Any]]) -> GrilleEvaluation:
+        """Crée une grille personnalisée pour l'utilisateur courant."""
+        grille = GrilleEvaluation(
+            nom=nom,
+            description=description,
+            type_grille="personnalisee",
+            reference_scientifique=None,
+            domaines_config=json.dumps(domaines),
+            active=True,
+            publique=False,
+            musicotherapeute_id=current_user.id  # type: ignore[attr-defined]
+        )
+        db.session.add(grille)
+        db.session.commit()
+        return grille
+
+    @staticmethod
+    def copier_grille(grille_id: int) -> Optional[GrilleEvaluation]:
+        """Copie une grille (publique ou appartenant à un autre utilisateur) dans l'espace courant."""
+        origine = GrilleEvaluation.query.get(grille_id)
+        if not origine:
+            return None
+        # Autorisé si publique ou déjà propriétaire
+        if not origine.publique and origine.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
+            return None
+        copie = GrilleEvaluation(
+            nom=f"{origine.nom} (copie)",
+            description=origine.description,
+            type_grille=origine.type_grille,
+            reference_scientifique=origine.reference_scientifique,
+            domaines_config=origine.domaines_config,
+            active=True,
+            publique=False,
+            musicotherapeute_id=current_user.id  # type: ignore[attr-defined]
+        )
+        db.session.add(copie)
+        db.session.commit()
+        return copie
+
+    @staticmethod
+    def editer_grille(grille_id: int, nom: Optional[str], description: Optional[str]) -> Optional[GrilleEvaluation]:
+        """Modifie nom / description d'une grille appartenant à l'utilisateur."""
+        grille = GrilleEvaluation.query.get(grille_id)
+        if not grille:
+            return None
+        if grille.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
+            return None
+        if nom:
+            grille.nom = nom
+        if description is not None:
+            grille.description = description
+        db.session.commit()
+        return grille
+
+    @staticmethod
+    def supprimer_grille(grille_id: int) -> bool:
+        """Désactive (soft delete) une grille appartenant à l'utilisateur."""
+        grille = GrilleEvaluation.query.get(grille_id)
+        if not grille:
+            return False
+        if grille.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
+            return False
+        grille.active = False
+        db.session.commit()
+        return True
+
+    @staticmethod
+    def update_grille_domaines(grille_id: int, domaines: List[Dict[str, Any]]) -> Optional[GrilleEvaluation]:
+        """Remplace la configuration des domaines d'une grille (avec vérification de propriété).
+
+        Validation minimale: chaque domaine doit avoir nom, couleur, description, indicateurs (liste).
+        """
+        grille = GrilleEvaluation.query.get(grille_id)
+        if not grille:
+            return None
+        if grille.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
+            return None
+        # Nettoyage léger
+        cleaned: List[Dict[str, Any]] = []
+        for d in domaines:
+            if not isinstance(d, dict):
+                continue
+            nom = str(d.get('nom', '')).strip()
+            if not nom:
+                continue
+            indicateurs = d.get('indicateurs', []) or []
+            indicateurs_clean = []
+            for ind in indicateurs:
+                if not isinstance(ind, dict):
+                    continue
+                nom_ind = str(ind.get('nom', '')).strip()
+                if not nom_ind:
+                    continue
+                try:
+                    min_v = float(ind.get('min', 0))
+                    max_v = float(ind.get('max', 0))
+                except Exception:
+                    min_v, max_v = 0, 0
+                unite = str(ind.get('unite', 'points'))
+                indicateurs_clean.append({
+                    'nom': nom_ind,
+                    'min': min_v,
+                    'max': max_v,
+                    'unite': unite
+                })
+            cleaned.append({
+                'nom': nom,
+                'couleur': d.get('couleur', '#667eea'),
+                'description': d.get('description', ''),
+                'indicateurs': indicateurs_clean
+            })
+        grille.domaines = cleaned
+        db.session.commit()
         return grille
     
     @staticmethod
