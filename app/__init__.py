@@ -35,37 +35,41 @@ def create_app(config_name: str = 'default') -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
     
-    # Enregistrement des blueprints (routes)
+    # Enregistrement des blueprints (routes) avec robustesse
+    from importlib import import_module
+    def safe_register(import_path: str, attr: str, url_prefix: str | None = None) -> bool:
+        try:
+            module = import_module(import_path)
+            bp = getattr(module, attr)
+            if url_prefix:
+                app.register_blueprint(bp, url_prefix=url_prefix)
+            else:
+                app.register_blueprint(bp)
+            return True
+        except Exception as e:  # noqa
+            app.logger.warning(f"Blueprint '{import_path}.{attr}' non chargé: {e}")
+            return False
+
+    safe_register('app.routes.main', 'main')
+    safe_register('app.routes.api', 'api', '/api')
+    safe_register('app.routes.patients', 'patients', '/patients')
+    safe_register('app.routes.seances', 'seances', '/seances')
+    safe_register('app.routes.audio', 'audio', '/audio')
+    cotation_ok = safe_register('app.routes.cotation', 'cotation_bp')
+
+    if not cotation_ok:
+        @app.route('/cotation/grilles')  # type: ignore
+        def cotation_placeholder():  # type: ignore
+            return '<h2>Cotation indisponible (initialisation en cours)</h2>'
+
+    # Commande CLI utilitaire pour debug
     try:
-        from app.routes.main import main as main_blueprint
-        app.register_blueprint(main_blueprint)
-        
-        from app.routes.api import api as api_blueprint
-        app.register_blueprint(api_blueprint, url_prefix='/api')
-        
-        from app.routes.patients import patients as patients_blueprint
-        app.register_blueprint(patients_blueprint, url_prefix='/patients')
-        
-        from app.routes.seances import seances as seances_blueprint
-        app.register_blueprint(seances_blueprint, url_prefix='/seances')
-        
-        from app.routes.audio import audio as audio_blueprint
-        app.register_blueprint(audio_blueprint, url_prefix='/audio')
-        
-        # Système de cotation complet - Tables créées ✅
-        from app.routes.cotation import cotation_bp as cotation_blueprint
-        app.register_blueprint(cotation_blueprint)
-    except ImportError as e:
-        # En cas d'erreur d'import, créer des routes de base
-        print(f"Warning: Could not import blueprints: {e}")
-        
-        @app.route('/')
-        def index():  # type: ignore
-            return '<h1>Synchronie - Application en cours de démarrage...</h1>'
-        
-        @app.route('/api/health')
-        def health():  # type: ignore
-            return {'status': 'ok', 'message': 'Application running'}
+        @app.cli.command('list-endpoints')  # type: ignore
+        def list_endpoints():  # type: ignore
+            for rule in sorted(app.url_map.iter_rules(), key=lambda r: r.rule):
+                print(f"{rule.endpoint:30s} -> {rule.rule}")
+    except Exception:
+        pass
     
     # Création des tables si elles n'existent pas
     with app.app_context():

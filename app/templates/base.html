@@ -62,12 +62,14 @@
                             <li><a class="dropdown-item" href="#"><i class="bi bi-file-text me-2"></i>Rapports</a></li>
                         </ul>
                     </li>
+                    {% if 'cotation.grilles' in current_app.view_functions %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('cotation.grilles') }}">
                             <i class="bi bi-clipboard-check me-1"></i>
                             🎯 Cotation
                         </a>
                     </li>
+                    {% endif %}
                 </ul>
                 
                 <ul class="navbar-nav">
