@@ -538,6 +538,83 @@ class CotationService:
         }
 
     @staticmethod
+    def sauvegarder_cotation_simple(seance_id: int, grille_id: int, scores: Dict[str, int], 
+                                   observations: str = "") -> bool:
+        """
+        Sauvegarde simplifiée d'une cotation avec scores par nom d'indicateur.
+        
+        Args:
+            seance_id: ID de la séance
+            grille_id: ID de la grille
+            scores: Dict avec noms d'indicateurs -> scores (ex: {"Communication verbale": 3})
+            observations: Observations textuelles
+            
+        Returns:
+            True si sauvegarde réussie
+        """
+        try:
+            import json
+            from datetime import datetime, timezone
+            
+            # Vérifier si une cotation existe déjà
+            cotation_existante = CotationSeance.query.filter_by(
+                seance_id=seance_id,
+                grille_id=grille_id
+            ).first()
+            
+            if cotation_existante:
+                cotation = cotation_existante
+            else:
+                cotation = CotationSeance(
+                    seance_id=seance_id,
+                    grille_id=grille_id
+                )
+                db.session.add(cotation)
+            
+            # Sauvegarder les scores détaillés en JSON
+            scores_json = json.dumps(scores) if scores else "{}"
+            cotation.scores_detailles = scores_json
+            cotation.observations_cotation = observations or ""
+            
+            # Calculer le score global simple (moyenne des scores)
+            if scores:
+                total_score = sum(scores.values())
+                nb_indicateurs = len(scores)
+                score_global = total_score / nb_indicateurs if nb_indicateurs > 0 else 0
+                score_max_possible = nb_indicateurs * 5  # Échelle de 0 à 5
+                pourcentage = (total_score / score_max_possible) * 100 if score_max_possible > 0 else 0
+            else:
+                score_global = 0
+                score_max_possible = 0
+                pourcentage = 0
+            
+            cotation.score_global = score_global
+            cotation.score_max_possible = float(score_max_possible)
+            cotation.pourcentage_reussite = pourcentage
+            
+            # Mettre à jour les timestamps
+            now = datetime.now(timezone.utc)
+            if not cotation.id:  # Nouvelle cotation
+                cotation.date_creation = now
+            cotation.date_modification = now
+            
+            # Marquer la séance comme cotée si le champ existe
+            from app.models import Seance
+            seance = Seance.query.get(seance_id)
+            if seance and hasattr(seance, 'est_cotee'):
+                seance.est_cotee = True
+            
+            db.session.commit()
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erreur sauvegarde cotation simple: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    @staticmethod
     def sauvegarder_cotation_seance(seance_id: int, grille_id: int, scores: Dict, 
                                    observations: str = "", musicotherapeute_id: Optional[int] = None) -> bool:
         """Sauvegarde une cotation de séance avec les scores détaillés."""
@@ -573,7 +650,7 @@ class CotationService:
             cotation.score_global = score_global
             
             # Marquer la séance comme cotée
-            from app.models.patient import Seance
+            from app.models import Seance
             seance = Seance.query.get(seance_id)
             if seance and hasattr(seance, 'est_cotee'):
                 seance.est_cotee = True

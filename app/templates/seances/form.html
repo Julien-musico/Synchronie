@@ -147,6 +147,105 @@
 
                     <hr class="my-4">
 
+                    <!-- Section de cotation optionnelle (uniquement en création) -->
+                    {% if mode == 'create' and grille %}
+                    <div class="cotation-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-clipboard-check text-success me-2"></i>
+                                Cotation (optionnelle)
+                            </h5>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="toggle-cotation">
+                                <i class="bi bi-eye-slash me-1"></i>
+                                Masquer
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Grille : {{ grille.nom }}</strong> - Vous pouvez coter cette séance directement lors de sa création.
+                        </div>
+
+                        <div id="cotation-content">
+                            {% if grille.domaines %}
+                                {% for domaine in grille.domaines %}
+                                    <div class="domaine-section mb-4">
+                                        <h6 class="text-primary border-bottom pb-2">
+                                            <i class="bi bi-folder me-2"></i>{{ domaine.get('nom', 'Domaine') }}
+                                        </h6>
+                                        {% if domaine.get('description') %}
+                                            <p class="text-muted small mb-3">{{ domaine.description }}</p>
+                                        {% endif %}
+                                        
+                                        {% if domaine.get('indicateurs') %}
+                                            <div class="row">
+                                                {% for indicateur in domaine.indicateurs %}
+                                                    <div class="col-md-6 mb-3">
+                                                        <div class="card border-0 bg-light">
+                                                            <div class="card-body p-3">
+                                                                <label class="form-label fw-bold small">
+                                                                    {{ indicateur.get('nom', 'Indicateur') }}
+                                                                </label>
+                                                                {% if indicateur.get('description') %}
+                                                                    <p class="small text-muted mb-2">{{ indicateur.description[:60] }}{% if indicateur.description|length > 60 %}...{% endif %}</p>
+                                                                {% endif %}
+                                                                
+                                                                <div class="slider-container">
+                                                                    <input type="range" 
+                                                                           class="form-range cotation-slider-form" 
+                                                                           min="0" 
+                                                                           max="5" 
+                                                                           step="1" 
+                                                                           value="0"
+                                                                           name="cotation_score_{{ domaine.get('nom', 'domaine')|replace(' ', '_') }}_{{ indicateur.get('nom', 'indicateur')|replace(' ', '_') }}"
+                                                                           data-indicator="{{ indicateur.get('nom', 'indicateur') }}">
+                                                                    <div class="d-flex justify-content-between small text-muted mt-1">
+                                                                        <span>0</span>
+                                                                        <span>3</span>
+                                                                        <span>5</span>
+                                                                    </div>
+                                                                    <div class="text-center mt-1">
+                                                                        <span class="badge bg-secondary score-display-form">0 - Non évalué</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                                
+                                <!-- Zone observations de cotation -->
+                                <div class="mb-3">
+                                    <label for="cotation_observations" class="form-label">
+                                        <i class="bi bi-chat-text me-1"></i>
+                                        Observations de cotation
+                                    </label>
+                                    <textarea class="form-control" 
+                                              id="cotation_observations" 
+                                              name="cotation_observations" 
+                                              rows="3"
+                                              placeholder="Notes spécifiques sur l'évaluation de cette séance..."></textarea>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    La grille assignée n'a pas de domaines configurés.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% elif mode == 'create' and not grille %}
+                    <div class="alert alert-light">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Aucune grille de cotation</strong> - Assignez une grille au patient pour pouvoir coter directement lors de la création des séances.
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
                     <div class="d-flex justify-content-end gap-2">
                         <a href="{{ url_for('patients.view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle me-2"></i>
@@ -236,6 +335,155 @@ document.addEventListener('DOMContentLoaded', function() {
                          String(now.getHours()).padStart(2, '0') + ':' + 
                          String(now.getMinutes()).padStart(2, '0');
     document.getElementById('date_seance').value = dateTimeLocal;
+    
+    // Gestion de l'affichage/masquage de la section de cotation
+    const toggleButton = document.getElementById('toggle-cotation');
+    const cotationContent = document.getElementById('cotation-content');
+    
+    if (toggleButton && cotationContent) {
+        toggleButton.addEventListener('click', function() {
+            const isVisible = cotationContent.style.display !== 'none';
+            
+            if (isVisible) {
+                cotationContent.style.display = 'none';
+                toggleButton.innerHTML = '<i class="bi bi-eye me-1"></i>Afficher';
+                toggleButton.classList.remove('btn-outline-secondary');
+                toggleButton.classList.add('btn-outline-primary');
+            } else {
+                cotationContent.style.display = 'block';
+                toggleButton.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Masquer';
+                toggleButton.classList.remove('btn-outline-primary');
+                toggleButton.classList.add('btn-outline-secondary');
+            }
+        });
+    }
+    
+    // Gestion des curseurs de cotation
+    const cotationSliders = document.querySelectorAll('.cotation-slider-form');
+    
+    cotationSliders.forEach(slider => {
+        const scoreDisplay = slider.closest('.slider-container').querySelector('.score-display-form');
+        
+        function updateScoreDisplay(value) {
+            const labels = {
+                0: '0 - Non évalué',
+                1: '1 - Très faible',
+                2: '2 - Faible', 
+                3: '3 - Modéré',
+                4: '4 - Bon',
+                5: '5 - Excellent'
+            };
+            
+            const colors = {
+                0: 'bg-secondary',
+                1: 'bg-danger',
+                2: 'bg-warning',
+                3: 'bg-info',
+                4: 'bg-primary',
+                5: 'bg-success'
+            };
+            
+            // Retirer toutes les classes de couleur
+            scoreDisplay.className = 'badge score-display-form';
+            scoreDisplay.classList.add(colors[value]);
+            scoreDisplay.textContent = labels[value];
+        }
+        
+        // Initialiser l'affichage
+        updateScoreDisplay(slider.value);
+        
+        // Mettre à jour en temps réel
+        slider.addEventListener('input', function() {
+            updateScoreDisplay(this.value);
+        });
+    });
+    
+    // Animation des curseurs
+    cotationSliders.forEach(slider => {
+        slider.addEventListener('input', function() {
+            this.style.background = `linear-gradient(to right, #007bff 0%, #007bff ${(this.value/5)*100}%, #e9ecef ${(this.value/5)*100}%, #e9ecef 100%)`;
+        });
+        
+        // Initialiser l'apparence
+        slider.style.background = `linear-gradient(to right, #007bff 0%, #007bff 0%, #e9ecef 0%, #e9ecef 100%)`;
+    });
+    
+    // Validation du formulaire avec information sur la cotation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const hasCotation = Array.from(cotationSliders).some(slider => parseInt(slider.value) > 0);
+            
+            if (hasCotation) {
+                const confirmSubmit = confirm('Vous avez commencé une cotation. Voulez-vous créer la séance avec cette cotation ?');
+                if (!confirmSubmit) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+    }
 });
 </script>
+
+<style>
+.cotation-section {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.domaine-section {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.slider-container {
+    margin-top: 10px;
+}
+
+.cotation-slider-form {
+    width: 100%;
+    height: 6px;
+    border-radius: 5px;
+    outline: none;
+    transition: background 0.3s ease;
+}
+
+.cotation-slider-form::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.cotation-slider-form::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.score-display-form {
+    min-width: 120px;
+    font-size: 0.8em;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+}
+</style>
 {% endblock %}
