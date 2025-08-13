@@ -30,6 +30,11 @@ def grilles_predefinies():
     }
     return jsonify(grilles)
 
+@cotation_bp.route('/seance/<int:seance_id>/coter')
+def interface_cotation(seance_id):
+    """Interface de cotation temporaire"""
+    return render_template('cotation/interface_temp.html', seance_id=seance_id)
+
 @cotation_bp.route('/test')
 def test():
     """Route de test pour vérifier que le blueprint fonctionne"""
