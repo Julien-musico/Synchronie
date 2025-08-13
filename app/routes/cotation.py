@@ -200,7 +200,7 @@ def cotations_seance(seance_id):
             'pourcentage': round(cotation.pourcentage_reussite, 1),
             'scores_detailles': cotation.scores,
             'observations': cotation.observations_cotation,
-            'date_cotation': cotation.created_at.isoformat()
+            'date_cotation': cotation.date_creation.isoformat()
         })
     
     return jsonify(result)

@@ -1,18 +1,21 @@
-"""
-Modèles pour le système de cotation thérapeutique
-"""
-from app.models import db, TimestampMixin
+"""Modèles pour le système de cotation thérapeutique."""
 import json
+from typing import Any, Dict, List
+from . import db, TimestampMixin
 
 class GrilleEvaluation(TimestampMixin, db.Model):
-    """Grilles d'évaluation thérapeutique (prédéfinies ou personnalisées)"""
-    __tablename__ = 'grilles_evaluation'
+    """Grilles d'évaluation thérapeutique (prédéfinies ou personnalisées).
+
+    NOTE: Nom de table aligné sur le script SQL déployé (grille_evaluation).
+    """
+    __tablename__ = 'grille_evaluation'
     
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     type_grille = db.Column(db.String(50), nullable=False)  # 'standard', 'personnalisee'
     reference_scientifique = db.Column(db.String(100))  # Ex: 'AMTA', 'IMCAP-ND'
+    musicotherapeute_id = db.Column(db.Integer, nullable=True, index=True)  # Propriétaire de la grille
     
     # Configuration JSON de la grille
     domaines_config = db.Column(db.Text, nullable=False)  # JSON des domaines et indicateurs
@@ -31,22 +34,25 @@ class GrilleEvaluation(TimestampMixin, db.Model):
     def domaines(self):
         """Retourne les domaines de la grille décodés depuis JSON"""
         try:
-            return json.loads(self.domaines_config)
+            return json.loads(self.domaines_config)  # type: ignore
         except Exception:
             return []
     
     @domaines.setter
-    def domaines(self, value):  # type: ignore
+    def domaines(self, value: List[Dict[str, Any]]) -> None:  # liste de domaines
         """Encode les domaines en JSON"""
         self.domaines_config = json.dumps(value)
 
 class CotationSeance(TimestampMixin, db.Model):
-    """Cotation d'une séance selon une grille d'évaluation"""
-    __tablename__ = 'cotations_seances'
+    """Cotation d'une séance selon une grille d'évaluation.
+
+    NOTE: Nom de table aligné sur le script SQL déployé (cotation_seance).
+    """
+    __tablename__ = 'cotation_seance'
     
     id = db.Column(db.Integer, primary_key=True)
     seance_id = db.Column(db.Integer, db.ForeignKey('seances.id'), nullable=False)
-    grille_id = db.Column(db.Integer, db.ForeignKey('grilles_evaluation.id'), nullable=False)
+    grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
     
     # Scores par domaine (JSON)
     scores_detailles = db.Column(db.Text, nullable=False)  # JSON des scores par indicateur
@@ -66,22 +72,25 @@ class CotationSeance(TimestampMixin, db.Model):
     def scores(self):
         """Retourne les scores décodés depuis JSON"""
         try:
-            return json.loads(self.scores_detailles)
+            return json.loads(self.scores_detailles)  # type: ignore
         except Exception:
             return {}
     
     @scores.setter
-    def scores(self, value):  # type: ignore
+    def scores(self, value: Dict[str, Any]) -> None:  # mapping indicateur -> valeur
         """Encode les scores en JSON"""
         self.scores_detailles = json.dumps(value)
 
 class ObjectifTherapeutique(TimestampMixin, db.Model):
-    """Objectifs thérapeutiques personnalisés par patient"""
-    __tablename__ = 'objectifs_therapeutiques'
+    """Objectifs thérapeutiques personnalisés par patient.
+
+    NOTE: Nom de table aligné sur le script SQL déployé (objectif_therapeutique).
+    """
+    __tablename__ = 'objectif_therapeutique'
     
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
-    grille_id = db.Column(db.Integer, db.ForeignKey('grilles_evaluation.id'), nullable=False)
+    grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
     
     # Configuration des objectifs
     domaine_cible = db.Column(db.String(100), nullable=False)
