@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import json
 from app.models import db
 from app.services.calcul_cotation_service import CalculCotationService
+from app.services.validation_service import CotationValidator, ValidationError
 from app.models.cotation import GrilleEvaluation, CotationSeance, GrilleVersion
 
 try:
@@ -55,12 +56,25 @@ class CotationService:
 
     @staticmethod
     def creer_grille_personnalisee(nom: str, description: str, domaines: List[Dict[str, Any]]) -> GrilleEvaluation:
+        # Validation du nom
+        nom = nom.strip()
+        if not nom or len(nom) < 3:
+            raise ValueError("Nom de grille requis (min 3 caractères)")
+        if len(nom) > 100:
+            raise ValueError("Nom trop long (max 100 caractères)")
+        
+        # Validation des domaines
+        try:
+            domaines_valides = CotationValidator.valider_grille_complete(domaines) if domaines else []
+        except ValidationError as e:
+            raise ValueError(f"Domaines invalides: {e}")
+        
         g = GrilleEvaluation()
         g.nom = nom
-        g.description = description
+        g.description = description.strip()[:500]
         g.type_grille = "personnalisee"
         g.reference_scientifique = None
-        g.domaines_config = json.dumps(domaines)
+        g.domaines_config = json.dumps(domaines_valides)
         g.active = True
         g.publique = False
         g.musicotherapeute_id = current_user.id  # type: ignore[attr-defined]
@@ -136,37 +150,13 @@ class CotationService:
             return None
         if g.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
             return None
-        cleaned: List[Dict[str, Any]] = []
-        for dom in domaines:
-            if not isinstance(dom, dict):
-                continue
-            nom = str(dom.get('nom', '')).strip()
-            if not nom:
-                continue
-            indicateurs_clean = []
-            for ind in dom.get('indicateurs', []) or []:
-                if not isinstance(ind, dict):
-                    continue
-                nom_ind = str(ind.get('nom', '')).strip()
-                if not nom_ind:
-                    continue
-                try:
-                    min_v = float(ind.get('min', 0))
-                    max_v = float(ind.get('max', 0))
-                except Exception:
-                    min_v, max_v = 0, 0
-                indicateurs_clean.append({
-                    'nom': nom_ind,
-                    'min': min_v,
-                    'max': max_v,
-                    'unite': str(ind.get('unite', 'points'))
-                })
-            cleaned.append({
-                'nom': nom,
-                'couleur': dom.get('couleur', '#667eea'),
-                'description': dom.get('description', ''),
-                'indicateurs': indicateurs_clean
-            })
+        
+        # Validation stricte des domaines
+        try:
+            cleaned = CotationValidator.valider_grille_complete(domaines)
+        except ValidationError as e:
+            raise ValueError(f"Validation échouée: {e}")
+        
         last_v = GrilleVersion.query.filter_by(grille_id=g.id).order_by(GrilleVersion.version_num.desc()).first()
         if last_v and last_v.active:
             last_v.active = False
@@ -190,13 +180,22 @@ class CotationService:
         g = GrilleEvaluation.query.get(grille_id)
         if not g:
             raise ValueError("Grille d'évaluation introuvable")
-        score, max_score, pct = CotationService.calculer_score_global(scores, g)
+        
+        # Validation des scores
+        try:
+            scores_valides, erreurs = CotationValidator.valider_scores_cotation(scores, g.domaines)
+            if erreurs:
+                raise ValueError(f"Scores invalides: {', '.join(erreurs)}")
+        except ValidationError as e:
+            raise ValueError(f"Validation scores échouée: {e}")
+        
+        score, max_score, pct = CotationService.calculer_score_global(scores_valides, g)
         v = GrilleVersion.query.filter_by(grille_id=grille_id, active=True).order_by(GrilleVersion.version_num.desc()).first()
         cot = CotationSeance()
         cot.seance_id = seance_id
         cot.grille_id = grille_id
         cot.grille_version_id = v.id if v else None
-        cot.scores_detailles = json.dumps(scores)
+        cot.scores_detailles = json.dumps(scores_valides)
         cot.score_global = score
         cot.score_max_possible = max_score
         cot.pourcentage_reussite = pct

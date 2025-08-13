@@ -13,6 +13,7 @@ except ImportError:  # fallback pour analyse statique si non installé
 from app.models import db, Seance, Patient
 from app.models.cotation import GrilleEvaluation, CotationSeance
 from app.services.cotation_service import CotationService
+from app.services.analytics_service import AnalyticsService
 import json
 
 cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
@@ -276,3 +277,41 @@ def cotations_seance(seance_id):
         })
     
     return jsonify(result)
+
+# ---------------------- ANALYTICS & REPORTING ---------------------- #
+@cotation_bp.route('/analytics/dashboard')
+@login_required
+def dashboard_analytics():
+    """API: Statistiques globales pour le dashboard"""
+    stats = AnalyticsService.statistiques_globales(current_user.id)
+    return jsonify(stats)
+
+@cotation_bp.route('/analytics/patient/<int:patient_id>/grille/<int:grille_id>/evolution')
+@login_required
+def evolution_detaillee(patient_id, grille_id):
+    """API: Évolution détaillée d'un patient pour une grille"""
+    # Vérifier ownership du patient
+    patient = Patient.query.get_or_404(patient_id)
+    if patient.musicotherapeute_id != current_user.id:
+        return jsonify({'error': 'Accès non autorisé'}), 403
+    
+    evolution = AnalyticsService.evolution_patient_detaillee(patient_id, grille_id)
+    return jsonify(evolution)
+
+@cotation_bp.route('/analytics/patients-risque')
+@login_required 
+def patients_risque():
+    """API: Patients nécessitant une attention particulière"""
+    seuil = request.args.get('seuil', 40.0, type=float)
+    patients = AnalyticsService.patients_a_risque(current_user.id, seuil)
+    return jsonify({'patients_risque': patients, 'seuil_utilise': seuil})
+
+@cotation_bp.route('/analytics/rapport-mensuel/<int:annee>/<int:mois>')
+@login_required
+def rapport_mensuel(annee, mois):
+    """API: Rapport d'activité mensuel"""
+    if not (1 <= mois <= 12) or not (2020 <= annee <= 2030):
+        return jsonify({'error': 'Période invalide'}), 400
+    
+    rapport = AnalyticsService.rapport_activite_mensuel(current_user.id, annee, mois)
+    return jsonify(rapport)
