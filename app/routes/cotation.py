@@ -98,29 +98,42 @@ def seances_a_coter():
 @login_required
 def interface_cotation(seance_id):
     """Interface visuelle de cotation d'une séance"""
-    seance = Seance.query.get_or_404(seance_id)
-    
-    # Vérifier que l'utilisateur a accès à cette séance
-    if seance.patient.musicotherapeute_id != current_user.id:
-        flash('Accès non autorisé', 'error')
-        return redirect(url_for('dashboard'))
-    
-    # Grilles disponibles pour l'utilisateur
-    grilles = GrilleEvaluation.query.filter(
-        db.or_(
-            GrilleEvaluation.musicotherapeute_id == current_user.id,
-            GrilleEvaluation.publique.is_(True)
-        ),
-        GrilleEvaluation.active.is_(True)
-    ).all()
-    
-    # Cotations existantes pour cette séance
-    cotations_existantes = CotationSeance.query.filter_by(seance_id=seance_id).all()
-    
-    return render_template('cotation/interface_cotation.html',
-                         seance=seance,
-                         grilles=grilles,
-                         cotations_existantes=cotations_existantes)
+    try:
+        seance = Seance.query.get_or_404(seance_id)
+        
+        # Vérifier que l'utilisateur a accès à cette séance
+        if seance.patient.musicotherapeute_id != current_user.id:
+            flash('Accès non autorisé', 'error')
+            return redirect(url_for('main.dashboard'))
+        
+        # Grilles disponibles pour l'utilisateur - version robuste
+        try:
+            grilles = GrilleEvaluation.query.filter(
+                db.or_(
+                    GrilleEvaluation.musicotherapeute_id == current_user.id,
+                    GrilleEvaluation.publique.is_(True)
+                ),
+                GrilleEvaluation.active.is_(True)
+            ).all()
+        except Exception:
+            # Fallback si les colonnes publique/active n'existent pas encore
+            grilles = GrilleEvaluation.query.filter(
+                db.or_(
+                    GrilleEvaluation.musicotherapeute_id == current_user.id,
+                    GrilleEvaluation.musicotherapeute_id.is_(None)
+                )
+            ).all()
+        
+        # Cotations existantes pour cette séance
+        cotations_existantes = CotationSeance.query.filter_by(seance_id=seance_id).all()
+        
+        return render_template('cotation/interface_cotation_simple.html',
+                             seance=seance,
+                             grilles=grilles,
+                             cotations_existantes=cotations_existantes)
+    except Exception as e:
+        flash(f'Erreur lors du chargement de l\'interface de cotation: {str(e)}', 'error')
+        return redirect(url_for('main.dashboard'))
 
 @cotation_bp.route('/grille/<int:grille_id>/preview')
 @login_required
