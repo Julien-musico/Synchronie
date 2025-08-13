@@ -44,7 +44,8 @@ def create_app(config_name: str = 'default') -> Flask:
     # Auth réelle : LoginManager + User loader
     if _LOGIN_AVAILABLE and LoginManager:  # type: ignore
         login_manager = LoginManager()  # type: ignore[call-arg]
-        login_manager.login_view = 'login'  # type: ignore[attr-defined]
+        # Endpoint complet du formulaire de connexion
+        login_manager.login_view = 'auth.login'  # type: ignore[attr-defined]
         login_manager.init_app(app)  # type: ignore[attr-defined]
 
         @login_manager.user_loader  # type: ignore[attr-defined]
