@@ -1,6 +1,7 @@
 -- ================================
 -- Synchronie Cotation Schema Patch
 -- Idempotent: sûr à relancer
+-- Version: 2025-08-13-02 (ajout correctif patients.musicotherapeute_id manquante en prod)
 -- ================================
 
 -- 1. Table patients: ajouter colonne musicotherapeute_id si absente
@@ -21,6 +22,9 @@ BEGIN
         CREATE INDEX IF NOT EXISTS idx_patients_musicotherapeute ON patients(musicotherapeute_id);
     END IF;
 END $$;
+
+-- 1b. Correction si l'index n'a pas été créé (exécution précédente interrompue)
+CREATE INDEX IF NOT EXISTS idx_patients_musicotherapeute ON patients(musicotherapeute_id);
 
 -- 2. Table grille_evaluation
 CREATE TABLE IF NOT EXISTS grille_evaluation (

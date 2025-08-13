@@ -40,8 +40,9 @@ class Patient(TimestampMixin, db.Model):
     def __repr__(self):
         return f'<Patient {self.prenom} {self.nom}>'
     
-    def to_dict(self):
+    def to_dict(self) -> dict[str, object]:
         """Convertit l'objet en dictionnaire pour l'API"""
+        nb_seances = self.seances and len(list(self.seances)) if isinstance(self.seances, list) else 0  # type: ignore
         return {
             'id': self.id,
             'nom': self.nom,
@@ -52,7 +53,7 @@ class Patient(TimestampMixin, db.Model):
             'pathologie': self.pathologie,
             'actif': self.actif,
             'date_creation': self.date_creation.isoformat(),
-            'nb_seances': len(self.seances)
+            'nb_seances': nb_seances
         }
 
 class Seance(TimestampMixin, db.Model):
@@ -63,7 +64,7 @@ class Seance(TimestampMixin, db.Model):
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
     
     # Informations de la séance
-    date_seance = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    date_seance = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     duree_minutes = db.Column(db.Integer)  # Durée en minutes
     type_seance = db.Column(db.String(50))  # individuelle, groupe, etc.
     
@@ -91,12 +92,12 @@ class Seance(TimestampMixin, db.Model):
     def __repr__(self):
         return f'<Seance {self.date_seance} - Patient {self.patient_id}>'
     
-    def to_dict(self):
+    def to_dict(self) -> dict[str, object]:
         """Convertit l'objet en dictionnaire pour l'API"""
         return {
             'id': self.id,
             'patient_id': self.patient_id,
-            'date_seance': self.date_seance.isoformat(),
+            'date_seance': self.date_seance.isoformat() if self.date_seance else None,
             'duree_minutes': self.duree_minutes,
             'type_seance': self.type_seance,
             'objectifs_seance': self.objectifs_seance,
