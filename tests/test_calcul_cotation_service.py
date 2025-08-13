@@ -1,4 +1,4 @@
-from app.services.calcul_cotation_service import CalculCotationService
+from app.services.calcul_cotation_service import CalculCotationService  # type: ignore
 
 def test_calculer_score_global_simple():
     domaines = [

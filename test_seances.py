@@ -2,10 +2,9 @@
 """
 Script de test pour la gestion des séances
 """
-from app import create_app
-from app.models import db, Patient
-from app.services.seance_service import SeanceService
-from datetime import datetime
+from app import create_app  # type: ignore
+from app.models import Patient  # type: ignore
+from app.services.seance_service import SeanceService  # type: ignore
 
 def test_seances():
     app = create_app()
@@ -36,12 +35,13 @@ def test_seances():
         print("\n📝 Création d'une séance de test...")
         success, message, seance = SeanceService.create_seance(patient.id, test_data)
         
-        if success:
-            print(f"✅ Séance créée avec succès!")
+        if success and seance is not None:
+            print("✅ Séance créée avec succès!")
             print(f"   📅 Date: {seance.date_seance}")
             print(f"   ⏱️ Durée: {seance.duree_minutes} minutes")
             print(f"   🎯 Type: {seance.type_seance}")
-            print(f"   ⭐ Score engagement: {seance.score_engagement}/10")
+            if hasattr(seance, 'score_engagement'):
+                print(f"   ⭐ Score engagement: {seance.score_engagement}/10")
             print(f"   📋 Message: {message}")
         else:
             print(f"❌ Erreur lors de la création: {message}")

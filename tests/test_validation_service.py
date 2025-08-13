@@ -1,5 +1,6 @@
 import pytest
-from app.services.validation_service import CotationValidator, ValidationError
+
+from app.services.validation_service import CotationValidator, ValidationError  # type: ignore
 
 def test_valider_domaine_valide():
     domaine = {

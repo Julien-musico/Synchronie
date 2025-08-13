@@ -1,6 +1,7 @@
-from app import create_app
-from app.services.seance_service import SeanceService
 from datetime import datetime
+
+from app import create_app  # type: ignore
+from app.services.seance_service import SeanceService  # type: ignore
 
 app = create_app()
 
@@ -24,7 +25,7 @@ with app.app_context():
     
     try:
         success, message, seance = service.create_seance(1, donnees)
-        if success:
+        if success and seance is not None:
             print(f'✅ SUCCÈS: Séance créée avec ID: {seance.id}')
         else:
             print(f'❌ ÉCHEC: {message}')

@@ -1,8 +1,9 @@
 import pytest
-from app import create_app, db
-from app.models import User
-from app.services.cotation_service import CotationService
-from app.services.objectif_service import ObjectifService
+
+from app import create_app, db  # type: ignore
+from app.models import User  # type: ignore
+from app.services.cotation_service import CotationService  # type: ignore
+from app.services.objectif_service import ObjectifService  # type: ignore
 
 @pytest.fixture(scope='module')
 def app():
@@ -39,4 +40,5 @@ def test_objectif_links_active_version(client, app):
         # Créer un second objectif
         obj2 = ObjectifService.creer_objectif(patient_id=1, grille_id=g.id, domaine_cible='DY', indicateur_cible='IY', score_cible=8)
         # Vérifier simplement que les objectifs référencent la bonne grille
-        assert obj.grille_id == g.id and obj2.grille_id == g.id
+    assert obj.grille_id == g.id
+    assert obj2.grille_id == g.id

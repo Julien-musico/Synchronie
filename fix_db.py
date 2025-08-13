@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """
-Script de correction de la base de données pour la production
-Corrige le problème de la colonne activites_realisees manquante
+Script de correction de la base de données pour la production (DEPRECIÉ)
+---------------------------------------------------------------------
+Contexte: remplacé progressivement par les migrations Alembic.
+Objectif initial: corriger/renommer la colonne activites_musicales → activites_realisees.
+À supprimer une fois que le déploiement s'appuie exclusivement sur `flask db upgrade`.
 """
+from contextlib import suppress
 import os
 import sys
-from app import create_app
-from app.models import db
-from sqlalchemy import text
+
+from sqlalchemy import text  # type: ignore
+
+from app import create_app  # type: ignore
+from app.models import db  # type: ignore
 
 def fix_database():
     """Corrige la structure de la base de données"""
@@ -96,19 +102,16 @@ def fix_database():
                 print("🎉 Base de données corrigée avec succès!")
                 print("✅ Colonne 'activites_realisees' confirmée dans la table 'seances'")
                 return True
-            else:
-                print("❌ La colonne activites_realisees est toujours manquante")
-                return False
+            print("❌ La colonne activites_realisees est toujours manquante")
+            return False
                 
         except Exception as e:
             print(f"❌ Erreur lors de la correction: {e}")
             print(f"🔍 Type d'erreur: {type(e).__name__}")
             import traceback
             traceback.print_exc()
-            try:
+            with suppress(Exception):
                 db.session.rollback()
-            except Exception:
-                pass
             return False
 
 if __name__ == "__main__":

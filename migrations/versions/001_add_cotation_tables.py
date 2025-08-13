@@ -10,7 +10,8 @@ import sqlalchemy as sa
 
 # revision identifiers
 revision = 'add_cotation_tables'
-down_revision = None
+# Chaînage correct: cette migration dépend maintenant de la correction de colonne
+down_revision = '001_fix_activites_column'
 depends_on = None
 
 

@@ -3,12 +3,15 @@ Routes pour la gestion des enregistrements audio et transcriptions
 """
 import os
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+from flask_login import login_required  # type: ignore
+
 from app.services.audio_service import AudioTranscriptionService
 from app.services.seance_service import SeanceService
 
 audio = Blueprint('audio', __name__, url_prefix='/audio')
 
 @audio.route('/upload/<int:seance_id>')
+@login_required  # type: ignore
 def upload_form(seance_id: int):
     """Formulaire d'upload d'enregistrement audio pour une séance"""
     seance = SeanceService.get_seance_by_id(seance_id)
@@ -19,6 +22,7 @@ def upload_form(seance_id: int):
     return render_template('audio/upload.html', seance=seance)
 
 @audio.route('/upload/<int:seance_id>', methods=['POST'])
+@login_required  # type: ignore
 def upload_audio(seance_id: int):
     """Traitement de l'upload et transcription d'un fichier audio"""
     seance = SeanceService.get_seance_by_id(seance_id)
@@ -51,15 +55,15 @@ def upload_audio(seance_id: int):
         if success:
             flash('Enregistrement traité avec succès ! Transcription et analyse générées.', 'success')
             return redirect(url_for('seances.view_seance', seance_id=seance_id))
-        else:
-            flash(f'Erreur lors du traitement: {message}', 'error')
-            return redirect(url_for('audio.upload_form', seance_id=seance_id))
+        flash(f'Erreur lors du traitement: {message}', 'error')
+        return redirect(url_for('audio.upload_form', seance_id=seance_id))
             
     except Exception as e:
         flash(f'Erreur inattendue: {str(e)}', 'error')
         return redirect(url_for('audio.upload_form', seance_id=seance_id))
 
 @audio.route('/transcribe-only/<int:seance_id>', methods=['POST'])
+@login_required  # type: ignore
 def transcribe_only(seance_id: int):
     """Transcription seule sans analyse IA (plus rapide)"""
     seance = SeanceService.get_seance_by_id(seance_id)
@@ -81,23 +85,20 @@ def transcribe_only(seance_id: int):
         if success:
             # Mettre à jour seulement la transcription
             seance.transcription_audio = transcription
-            # Ne pas sauvegarder le fichier audio physiquement
-            
             from app.models import db
             db.session.commit()
-            
             return jsonify({
-                'success': True, 
+                'success': True,
                 'message': 'Transcription réussie',
                 'transcription': transcription
             })
-        else:
-            return jsonify({'success': False, 'message': message}), 400
+        return jsonify({'success': False, 'message': message}), 400
             
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @audio.route('/analyze/<int:seance_id>', methods=['POST'])
+@login_required  # type: ignore
 def generate_analysis(seance_id: int):
     """Génère une analyse IA à partir d'une transcription existante"""
     seance = SeanceService.get_seance_by_id(seance_id)
@@ -126,24 +127,21 @@ def generate_analysis(seance_id: int):
         )
         
         if success:
-            # Mettre à jour l'analyse
             seance.synthese_ia = analysis
-            
             from app.models import db
             db.session.commit()
-            
             return jsonify({
                 'success': True,
                 'message': 'Analyse générée avec succès',
                 'analysis': analysis
             })
-        else:
-            return jsonify({'success': False, 'message': message}), 500
+        return jsonify({'success': False, 'message': message}), 500
             
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @audio.route('/info', methods=['POST'])
+@login_required  # type: ignore
 def get_audio_info():
     """Récupère les informations d'un fichier audio sans le traiter"""
     if 'audio_file' not in request.files:
@@ -169,6 +167,7 @@ def get_audio_info():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @audio.route('/formats')
+@login_required  # type: ignore
 def supported_formats():
     """Retourne les formats audio supportés"""
     return jsonify({

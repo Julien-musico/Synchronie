@@ -1,8 +1,9 @@
 import pytest
-from app import create_app, db
-from app.models import User
-from app.models.cotation import GrilleEvaluation, GrilleVersion
-from app.services.cotation_service import CotationService
+
+from app import create_app, db  # type: ignore
+from app.models import User  # type: ignore
+from app.models.cotation import GrilleEvaluation, GrilleVersion  # type: ignore
+from app.services.cotation_service import CotationService  # type: ignore
 
 @pytest.fixture(scope='module')
 def app():
@@ -19,7 +20,7 @@ def app():
         yield app
 
 @pytest.fixture()
-def app_ctx(app):
+def _app_ctx(app):
     with app.app_context():
         yield
 
@@ -36,7 +37,8 @@ def test_version_creation_and_increment(user_client, app_ctx):
         {'nom':'D1','couleur':'#111','description':'','indicateurs':[{'nom':'I1','min':0,'max':5,'unite':'pts'}]}
     ])
     versions = GrilleVersion.query.filter_by(grille_id=g.id).order_by(GrilleVersion.version_num).all()  # type: ignore
-    assert len(versions) == 1 and versions[0].version_num == 1
+    assert len(versions) == 1
+    assert versions[0].version_num == 1
 
     # Mise à jour domaines -> nouvelle version
     CotationService.update_grille_domaines(g.id, [
@@ -44,8 +46,10 @@ def test_version_creation_and_increment(user_client, app_ctx):
         {'nom':'D2','couleur':'#222','description':'','indicateurs':[{'nom':'I2','min':0,'max':10,'unite':'pts'}]}
     ])
     versions2 = GrilleVersion.query.filter_by(grille_id=g.id).order_by(GrilleVersion.version_num).all()  # type: ignore
-    assert len(versions2) == 2 and versions2[-1].version_num == 2
-    assert versions2[0].active is False and versions2[-1].active is True
+    assert len(versions2) == 2
+    assert versions2[-1].version_num == 2
+    assert versions2[0].active is False
+    assert versions2[-1].active is True
 
 
 def test_cotation_uses_active_version(user_client, app_ctx):

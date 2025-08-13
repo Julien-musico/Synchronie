@@ -1,6 +1,7 @@
 import pytest
-from app import create_app, db
-from app.models import User
+
+from app import create_app, db  # type: ignore
+from app.models import User  # type: ignore
 
 @pytest.fixture(scope="module")
 def app():

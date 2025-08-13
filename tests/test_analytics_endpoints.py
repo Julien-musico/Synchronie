@@ -1,7 +1,8 @@
 import pytest
-from app import create_app, db
-from app.models import User
-from app.services.cotation_service import CotationService
+
+from app import create_app, db  # type: ignore
+from app.models import User  # type: ignore
+from app.services.cotation_service import CotationService  # type: ignore
 
 @pytest.fixture(scope='module')
 def app():

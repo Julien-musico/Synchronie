@@ -1,0 +1,6 @@
+line-length = 120
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "C4", "PT", "RET", "SIM"]
+# Ignore long lines and (temp) import sort rule until auto-fix integration
+ignore = ["E501", "I001"]
