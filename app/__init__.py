@@ -62,6 +62,13 @@ def create_app(config_name: str = 'default') -> Flask:
         def cotation_placeholder():  # type: ignore
             return '<h2>Cotation indisponible (initialisation en cours)</h2>'
 
+    # Contexte global pour les templates
+    @app.context_processor  # type: ignore
+    def inject_flags():  # type: ignore
+        return {
+            'has_cotation': cotation_ok
+        }
+
     # Commande CLI utilitaire pour debug
     try:
         @app.cli.command('list-endpoints')  # type: ignore
