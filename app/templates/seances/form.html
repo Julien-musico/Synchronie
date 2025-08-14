@@ -21,9 +21,20 @@
                         Nouvelle séance
                     {% endif %}
                 </h1>
-                <p class="text-muted mb-0">
-                    Patient : {{ patient.prenom }} {{ patient.nom }}
-                </p>
+                <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                    <span class="fw-semibold text-dark">{{ patient.prenom }} {{ patient.nom }}</span>
+                    {% if patient.pathologie %}
+                    <span class="badge rounded-pill bg-warning text-dark"><i class="bi bi-activity me-1"></i>{{ patient.pathologie }}</span>
+                    {% endif %}
+                    {% if patient.objectifs_therapeutiques %}
+                    <span class="badge rounded-pill bg-secondary" title="{{ patient.objectifs_therapeutiques|truncate(120) }}"><i class="bi bi-bullseye me-1"></i>Objectifs</span>
+                    {% endif %}
+                    <span class="badge rounded-pill bg-info text-dark"><i class="bi bi-collection-play me-1"></i>{{ patient.seances|length }} séances</span>
+                    {% if patient.seances %}
+                        {% set derniere_seance = patient.seances|sort(attribute='date_seance', reverse=true)|first %}
+                        <span class="badge rounded-pill bg-success bg-opacity-75 text-dark"><i class="bi bi-calendar3 me-1"></i>Dernière: {{ derniere_seance.date_seance.strftime('%d/%m/%Y') }}</span>
+                    {% endif %}
+                </div>
             </div>
             <a href="{{ url_for('patients.view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-2"></i>
@@ -34,7 +45,7 @@
 </div>
 
 <div class="row">
-    <div class="col-lg-8">
+    <div class="col-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-primary text-white">
                 <h5 class="card-title mb-0">
@@ -355,55 +366,6 @@
         </div>
     </div>
 
-    <!-- Informations du patient -->
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 pb-0">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-person text-primary me-2"></i>
-                    Informations patient
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center mb-3">
-                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
-                        <i class="bi bi-person fs-2 text-primary"></i>
-                    </div>
-                    <h6 class="mb-1">{{ patient.prenom }} {{ patient.nom }}</h6>
-                    {% if patient.pathologie %}
-                        <span class="badge bg-warning text-dark">{{ patient.pathologie }}</span>
-                    {% endif %}
-                </div>
-
-                {% if patient.objectifs_therapeutiques %}
-                <div class="mb-3">
-                    <h6 class="text-muted mb-2">Objectifs thérapeutiques</h6>
-                    <p class="small mb-0">{{ patient.objectifs_therapeutiques|truncate(150) }}</p>
-                </div>
-                {% endif %}
-
-                <div class="mb-3">
-                    <h6 class="text-muted mb-2">Statistiques</h6>
-                    <div class="d-flex justify-content-between mb-2">
-                        <small>Séances réalisées :</small>
-                        <small class="fw-bold">{{ patient.seances|length }}</small>
-                    </div>
-                    {% if patient.seances %}
-                        {% set derniere_seance = patient.seances|sort(attribute='date_seance', reverse=true)|first %}
-                        <div class="d-flex justify-content-between">
-                            <small>Dernière séance :</small>
-                            <small class="fw-bold">{{ derniere_seance.date_seance.strftime('%d/%m/%Y') }}</small>
-                        </div>
-                    {% endif %}
-                </div>
-
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle me-2"></i>
-                    <small>Cette séance sera automatiquement associée à ce patient.</small>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script>
