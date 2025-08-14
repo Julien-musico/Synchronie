@@ -20,6 +20,120 @@ class CotationService:
     @staticmethod
     def get_grilles_predefinies() -> Dict[str, Dict[str, Any]]:
         return {
+            "musicotherapie_active": {
+                "nom": "Musicothérapie Active - Improvisation & Interaction",
+                "description": "Grille centrée sur le jeu, l’improvisation, l’engagement corporel et la co-création.",
+                "reference_scientifique": "Spécifique Active",
+                "domaines": [
+                    {
+                        "nom": "Engagement & Initiative",
+                        "couleur": "#3b82f6",
+                        "description": "Niveau d’implication dans le jeu musical et capacité à initier des propositions.",
+                        "indicateurs": [
+                            {"nom": "Participation active", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Initiatives musicales", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Persévérance dans la tâche", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Interaction Rythmique & Motrice",
+                        "couleur": "#f59e0b",
+                        "description": "Synchronisation, coordination et réponse motrice au rythme.",
+                        "indicateurs": [
+                            {"nom": "Stabilité du tempo", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Coordination geste/son", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Réponse aux variations", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Improvisation & Créativité",
+                        "couleur": "#a855f7",
+                        "description": "Qualité des propositions musicales, exploration et variété.",
+                        "indicateurs": [
+                            {"nom": "Variété des idées", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Exploration sonore", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Adaptation musicale", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Interaction Sociale & Co-création",
+                        "couleur": "#10b981",
+                        "description": "Tours de rôle, écoute mutuelle et réciprocité dans le jeu.",
+                        "indicateurs": [
+                            {"nom": "Écoute et ajustement", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Tours de rôle", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Réponses contingentes", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Autorégulation Émotionnelle par le Jeu",
+                        "couleur": "#ef4444",
+                        "description": "Capacité à moduler son activation émotionnelle via l’activité musicale.",
+                        "indicateurs": [
+                            {"nom": "Tolérance à l’intensité", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Retour au calme", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Expression adaptée", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    }
+                ]
+            },
+            "musicotherapie_receptive": {
+                "nom": "Musicothérapie Réceptive - Relaxation & Réceptivité",
+                "description": "Grille axée sur l’écoute, la détente, l’attention et l’intégration émotionnelle.",
+                "reference_scientifique": "Spécifique Réceptive",
+                "domaines": [
+                    {
+                        "nom": "Relaxation & Tonicité",
+                        "couleur": "#60a5fa",
+                        "description": "Niveau de détente corporelle et baisse des tensions observables.",
+                        "indicateurs": [
+                            {"nom": "Détente musculaire", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Posture relâchée", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Diminution agitation", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Attention & Présence",
+                        "couleur": "#34d399",
+                        "description": "Qualité d’attention, ancrage et continuité de l’écoute.",
+                        "indicateurs": [
+                            {"nom": "Attention soutenue", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Présence au stimulus", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Moins de distractibilité", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Apaisement Émotionnel",
+                        "couleur": "#f87171",
+                        "description": "Réduction de l’anxiété et régulation émotionnelle au cours de l’écoute.",
+                        "indicateurs": [
+                            {"nom": "Baisse anxiété perçue", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Affect plus stable", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Signe d’apaisement", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Imagerie & Intégration",
+                        "couleur": "#f59e0b",
+                        "description": "Capacité d’évocation, de visualisation et de mise en sens.",
+                        "indicateurs": [
+                            {"nom": "Imagerie/visualisation", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Contenu symbolique", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Intégration verbale", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    },
+                    {
+                        "nom": "Humeur & Bien-être",
+                        "couleur": "#10b981",
+                        "description": "Impact global sur l’humeur et le sentiment de bien-être.",
+                        "indicateurs": [
+                            {"nom": "Amélioration de l’humeur", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Apaisement durable", "min": 0, "max": 5, "unite": "points"},
+                            {"nom": "Confort subjectif", "min": 0, "max": 5, "unite": "points"}
+                        ]
+                    }
+                ]
+            },
             "amta_standard": {
                 "nom": "AMTA - Grille Standard",
                 "description": "Grille de l'Association Américaine de Musicothérapie (7 domaines, 28 indicateurs)",
@@ -565,10 +679,9 @@ class CotationService:
             if cotation_existante:
                 cotation = cotation_existante
             else:
-                cotation = CotationSeance(
-                    seance_id=seance_id,
-                    grille_id=grille_id
-                )
+                cotation = CotationSeance()
+                cotation.seance_id = seance_id
+                cotation.grille_id = grille_id
                 db.session.add(cotation)
             
             # Sauvegarder les scores détaillés en JSON
@@ -630,10 +743,9 @@ class CotationService:
                 cotation = cotation_existante
             else:
                 # Créer une nouvelle cotation
-                cotation = CotationSeance(
-                    seance_id=seance_id,
-                    grille_id=grille_id
-                )
+                cotation = CotationSeance()
+                cotation.seance_id = seance_id
+                cotation.grille_id = grille_id
                 db.session.add(cotation)
             
             # Calculer les scores pondérés et le score global

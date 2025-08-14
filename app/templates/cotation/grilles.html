@@ -359,6 +359,11 @@
             
             <!-- Onglet: Mes grilles -->
             <div id="mes-grilles" class="tab-content active">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                    <input id="searchUserGrids" type="text" placeholder="Rechercher une grille…" 
+                           oninput="filtrerGrilles('#mes-grilles .grille-card', this.value)"
+                           style="flex:1; padding:10px 14px; border:1px solid #e9ecef; border-radius:10px;">
+                </div>
                 {% if grilles_user %}
                 <div class="grille-grid">
                     {% for grille in grilles_user %}
@@ -406,6 +411,11 @@
             
             <!-- Onglet: Grilles standards -->
             <div id="grilles-standard" class="tab-content">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                    <input id="searchStdGrids" type="text" placeholder="Rechercher une grille standard…" 
+                           oninput="filtrerGrilles('#grilles-standard .grille-card', this.value)"
+                           style="flex:1; padding:10px 14px; border:1px solid #e9ecef; border-radius:10px;">
+                </div>
                 {% if grilles_publiques %}
                 <div class="grille-grid">
                     {% for grille in grilles_publiques %}
@@ -741,5 +751,17 @@ document.addEventListener('click', function(e) {
         voirGrille(target.dataset.grilleId);
     }
 });
+
+// Filtrer les grilles par texte (nom/description)
+function filtrerGrilles(selector, texte) {
+    const cards = document.querySelectorAll(selector);
+    const q = (texte || '').toLowerCase().trim();
+    cards.forEach(card => {
+        const title = (card.querySelector('.grille-title')?.textContent || '').toLowerCase();
+        const desc = (card.querySelector('.grille-description')?.textContent || '').toLowerCase();
+        const visible = !q || title.includes(q) || desc.includes(q);
+        card.style.display = visible ? '' : 'none';
+    });
+}
 </script>
 {% endblock %}
