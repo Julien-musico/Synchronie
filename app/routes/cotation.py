@@ -162,6 +162,52 @@ def preview_grille(grille_id):
         'couleur_theme': grille.domaines[0].get('couleur', '#3498db') if grille.domaines else '#3498db'
     })
 
+@cotation_bp.route('/grille/<int:grille_id>/domaines')
+@login_required
+def api_grille_domaines(grille_id):  # type: ignore[no-untyped-def]
+    """API: Domaines et indicateurs d'une grille (remplace l'ancienne route /grilles/api/<id>/domaines)."""
+    grille = GrilleEvaluation.query.get_or_404(grille_id)
+    # Vérifier l'accès: publique ou appartenant à l'utilisateur
+    if not grille.publique and grille.musicotherapeute_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Accès non autorisé'}), 403
+
+    # Normaliser les domaines/indicateurs et injecter des IDs si absents
+    domaines_data = []
+    try:
+        raw_domaines = grille.domaines or []
+        for d_idx, domaine in enumerate(raw_domaines):
+            dom_id = domaine.get('id') or f"d{d_idx+1}"
+            indicateurs_data = []
+            for i_idx, indicateur in enumerate(domaine.get('indicateurs', [])):
+                ind_id = indicateur.get('id') or f"{dom_id}_i{i_idx+1}"
+                indicateurs_data.append({
+                    'id': ind_id,
+                    'nom': indicateur.get('nom', f'Indicateur {i_idx+1}'),
+                    'description': indicateur.get('description', ''),
+                    'poids': indicateur.get('poids', 1),
+                    'echelle_min': indicateur.get('min', 0),
+                    'echelle_max': indicateur.get('max', 5)
+                })
+            domaines_data.append({
+                'id': dom_id,
+                'nom': domaine.get('nom', f'Domaine {d_idx+1}'),
+                'description': domaine.get('description', ''),
+                'poids': domaine.get('poids', 1),
+                'indicateurs': indicateurs_data
+            })
+    except Exception as e:  # pragma: no cover
+        return jsonify({'success': False, 'message': f'Erreur parsing domaines: {e}'}), 500
+
+    return jsonify({
+        'success': True,
+        'grille': {
+            'id': grille.id,
+            'nom': grille.nom,
+            'description': grille.description
+        },
+        'domaines': domaines_data
+    })
+
 @cotation_bp.route('/grille/<int:grille_id>')
 @login_required
 def grille_detail(grille_id):  # type: ignore[no-untyped-def]

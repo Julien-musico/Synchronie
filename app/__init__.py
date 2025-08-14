@@ -78,7 +78,7 @@ def create_app(config_name: str = 'default') -> Flask:
     safe_register('app.routes.patients', 'patients', '/patients')
     safe_register('app.routes.seances', 'seances', '/seances')
     safe_register('app.routes.audio', 'audio', '/audio')
-    safe_register('app.routes.grilles', 'grilles', '/grilles')
+    # Legacy grilles blueprint removed in favor of cotation routes
     cotation_ok = safe_register('app.routes.cotation', 'cotation_bp')
 
     if not cotation_ok:

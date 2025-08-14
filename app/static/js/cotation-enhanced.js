@@ -104,7 +104,7 @@ class CotationInterface {
         this.showLoading(true);
         
         try {
-            const response = await fetch(`/grilles/api/${grilleId}/domaines`);
+            const response = await fetch(`/cotation/grille/${grilleId}/domaines`);
             const data = await response.json();
             
             if (data.success) {

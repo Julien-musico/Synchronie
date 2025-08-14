@@ -11,7 +11,7 @@ L'interface de cotation `/cotation/seance/7/coter` génère une erreur sur Rende
 - Template simple de test créé
 
 ### 2. **Template de diagnostic**
-- `interface_cotation_simple.html` : Version simplifiée pour debug
+Les anciennes variantes d'interface (simple/enhanced/new) ont été retirées au profit de `interface_cotation_clean.html`.
 - Affiche les informations de base sans JavaScript complexe
 
 ### 3. **Route corrigée**

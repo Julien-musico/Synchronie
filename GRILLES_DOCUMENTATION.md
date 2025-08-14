@@ -30,8 +30,7 @@ Le système de grilles de cotation de Synchronie permet aux musicothérapeutes d
 
 #### **Interface utilisateur**
 - `/grilles` : Gestion de la bibliothèque de grilles
-- `/grilles/nouvelle` : Création de grilles avec templates
-- `/grilles/<id>` : Détail et édition de grilles
+- Nouvelle interface: `/cotation/grilles` pour gérer et consulter les grilles
 - Intégration dans le formulaire de création patient
 - Navbar "Cotations" pour accès rapide
 
@@ -40,9 +39,8 @@ Le système de grilles de cotation de Synchronie permet aux musicothérapeutes d
 #### **Nouveaux fichiers**
 ```
 app/routes/grilles.py              # Routes CRUD grilles (195 lignes)
-app/templates/grilles/list.html    # Liste grilles standards/personnalisées
-app/templates/grilles/form.html    # Formulaire création avec templates
-app/templates/grilles/detail.html  # Détail grille avec visualisation
+app/templates/cotation/grilles.html       # Liste et ajout (prédéfinies/personnalisées)
+app/templates/cotation/grille_detail.html # Détail d'une grille
 app/templates/patients/manage_grilles.html  # Gestion grilles patient
 app/static/js/grille-form.js       # JavaScript dynamique
 deploy_grilles_system.py           # Script de déploiement
