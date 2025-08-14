@@ -215,3 +215,78 @@ class AnalyticsService:
                 for prenom, nom, nb_seances in patients_actifs
             ]
         }
+
+    # ================== Nouveaux indicateurs pour le tableau d'analyses ==================
+    @staticmethod
+    def activite_hebdomadaire(musicotherapeute_id: int, semaines: int = 8) -> dict[str, Any]:
+        """Nombre de séances par semaine sur N dernières semaines (calcul côté Python pour compatibilité)."""
+        maintenant = datetime.now()
+        # Début de la semaine en cours (lundi)
+        debut_semaine = (maintenant - timedelta(days=maintenant.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        debut_periode = debut_semaine - timedelta(weeks=semaines - 1)
+
+        seances = db.session.query(Seance).join(Patient).filter(
+            Patient.musicotherapeute_id == musicotherapeute_id,
+            Seance.date_seance >= debut_periode
+        ).all()
+
+        # Construire les semaines et compteurs
+        semaines_labels: list[str] = []
+        semaines_compte: list[int] = []
+        semaine_index = {}
+        for i in range(semaines):
+            debut = debut_periode + timedelta(weeks=i)
+            fin = debut + timedelta(weeks=1)
+            label = f"S{(debut.isocalendar().week):02d}"
+            semaines_labels.append(label)
+            semaines_compte.append(0)
+            semaine_index[(debut, fin)] = i
+
+        for s in seances:
+            for (debut, fin), idx in semaine_index.items():
+                if debut <= s.date_seance < fin:
+                    semaines_compte[idx] += 1
+                    break
+
+        return {
+            'labels': semaines_labels,
+            'values': semaines_compte
+        }
+
+    @staticmethod
+    def scores_moyens_par_grille(musicotherapeute_id: int, limit: int = 8) -> list[dict[str, Any]]:
+        """Scores moyens par grille (toutes périodes), classés par utilisation."""
+        resultats = db.session.query(
+            GrilleEvaluation.nom,
+            func.count(CotationSeance.id).label('nb_utilisations'),
+            func.avg(CotationSeance.pourcentage_reussite).label('score_moyen')
+        ).join(CotationSeance).join(Seance).join(Patient).filter(
+            Patient.musicotherapeute_id == musicotherapeute_id
+        ).group_by(GrilleEvaluation.id, GrilleEvaluation.nom).order_by(
+            desc('nb_utilisations')
+        ).limit(limit).all()
+
+        return [
+            {
+                'grille': nom,
+                'utilisations': int(nb_util or 0),
+                'score_moyen': round(float(score_moy or 0.0), 1)
+            }
+            for nom, nb_util, score_moy in resultats
+        ]
+
+    @staticmethod
+    def taux_couverture_cotation(musicotherapeute_id: int, jours: int = 30) -> float:
+        """Part des séances cotées dans la période (en %)."""
+        debut = datetime.now() - timedelta(days=jours)
+        total_seances = db.session.query(Seance).join(Patient).filter(
+            Patient.musicotherapeute_id == musicotherapeute_id,
+            Seance.date_seance >= debut
+        ).count()
+
+        seances_cotees = db.session.query(func.count(func.distinct(Seance.id))).join(CotationSeance, CotationSeance.seance_id == Seance.id).join(Patient).filter(
+            Patient.musicotherapeute_id == musicotherapeute_id,
+            Seance.date_seance >= debut
+        ).scalar() or 0
+
+        return round((seances_cotees / total_seances) * 100, 1) if total_seances > 0 else 0.0

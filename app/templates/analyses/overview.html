@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Analyses - Synchronie{% endblock %}
+
+{% block extra_css %}
+<style>
+.kpi-card { border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+.kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; }
+.chart-card { border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h2 class="mb-0">Analyses</h2>
+    <p class="text-muted mb-0">Vue synthétique de votre activité et de l'évolution thérapeutique</p>
+  </div>
+  <div>
+    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</a>
+  </div>
+  </div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4" id="kpis">
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-people"></i></div>
+        <div>
+          <div class="h4 mb-0" id="kpi-patients">0</div>
+          <div class="text-muted small">Patients actifs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-clipboard-check"></i></div>
+        <div>
+          <div class="h4 mb-0" id="kpi-cotations">0</div>
+          <div class="text-muted small">Cotations totales</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="kpi-icon bg-info-subtle text-info"><i class="bi bi-calendar3"></i></div>
+        <div>
+          <div class="h4 mb-0" id="kpi-seances-mois">0</div>
+          <div class="text-muted small">Séances ce mois</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card kpi-card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-percent"></i></div>
+        <div>
+          <div class="h4 mb-0" id="kpi-couverture">0%</div>
+          <div class="text-muted small">Couverture cotation (30j)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-7">
+    <div class="card chart-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Activité hebdomadaire</span>
+      </div>
+      <div class="card-body">
+        <canvas id="chartActivite" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <div class="card chart-card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Grilles les plus utilisées</span>
+      </div>
+      <div class="card-body">
+        <canvas id="chartGrilles" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+async function loadAnalyses() {
+  // 1) KPIs
+  const resStats = await fetch('/cotation/analytics/dashboard');
+  const stats = await resStats.json();
+  document.getElementById('kpi-patients').textContent = stats.nb_patients || 0;
+  document.getElementById('kpi-cotations').textContent = stats.nb_cotations || 0;
+  document.getElementById('kpi-seances-mois').textContent = stats.nb_seances_mois || 0;
+
+  // Couverture via endpoint dédié
+  try {
+    const resCouverture = await fetch('/cotation/analytics/couverture');
+    const s2 = await resCouverture.json();
+    document.getElementById('kpi-couverture').textContent = (s2.taux_couverture || 0) + '%';
+  } catch {}
+
+  // 2) Graph activité hebdo
+  let labels = [];
+  let values = [];
+  try {
+    const r = await fetch('/cotation/analytics/activite-hebdo');
+    const d = await r.json();
+    labels = d.labels || [];
+    values = d.values || [];
+  } catch {
+    // fallback vide
+    labels = []; values = [];
+  }
+
+  new Chart(document.getElementById('chartActivite'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Séances', data: values, backgroundColor: '#0d6efd55', borderColor: '#0d6efd', borderWidth: 1 }]},
+    options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+  });
+
+  // 3) Grilles les plus utilisées
+  try {
+    const g = await fetch('/cotation/analytics/scores-grilles');
+    const gj = await g.json();
+    const labelsG = (gj.items || []).map(x => x.grille);
+    const valuesG = (gj.items || []).map(x => x.utilisations);
+    new Chart(document.getElementById('chartGrilles'), {
+      type: 'doughnut',
+      data: { labels: labelsG.length? labelsG : ['—'], datasets: [{ data: valuesG.length? valuesG : [1], backgroundColor: ['#20c99755','#0dcaf055','#ffc10755','#6f42c155','#19875455','#0d6efd55','#6610f255','#fd7e1455'] }]},
+      options: { plugins: { legend: { position: 'bottom' } } }
+    });
+  } catch {
+    new Chart(document.getElementById('chartGrilles'), {
+      type: 'doughnut',
+      data: { labels: ['—'], datasets: [{ data: [1], backgroundColor: ['#20c99755'] }]},
+      options: { plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+}
+
+// utilitaire: plus nécessaire si l'API renvoie labels prêts
+
+document.addEventListener('DOMContentLoaded', loadAnalyses);
+</script>
+{% endblock %}

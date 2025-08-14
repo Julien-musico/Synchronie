@@ -20,6 +20,12 @@ from app.services.cotation_service import CotationService
 
 cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 
+@cotation_bp.route('/analyses')
+@login_required
+def analyses_overview():  # type: ignore[no-untyped-def]
+    """Page d'analyse (vue globale)."""
+    return render_template('analyses/overview.html')
+
 @cotation_bp.route('/grilles')
 @login_required
 def grilles():  # type: ignore[no-untyped-def]
@@ -313,7 +319,30 @@ def cotations_seance(seance_id):
 def dashboard_analytics():
     """API: Statistiques globales pour le dashboard"""
     stats = AnalyticsService.statistiques_globales(current_user.id)
+    # Ajouter taux_couverture pour usage générique
+    stats['taux_couverture'] = AnalyticsService.taux_couverture_cotation(current_user.id, 30)
     return jsonify(stats)
+
+@cotation_bp.route('/analytics/couverture')
+@login_required
+def analytics_couverture():
+    """API: Taux de couverture des cotations (30 jours)."""
+    taux = AnalyticsService.taux_couverture_cotation(current_user.id, 30)
+    return jsonify({'taux_couverture': taux})
+
+@cotation_bp.route('/analytics/activite-hebdo')
+@login_required
+def analytics_activite_hebdo():
+    """API: Activité hebdomadaire (8 dernières semaines)."""
+    data = AnalyticsService.activite_hebdomadaire(current_user.id, 8)
+    return jsonify(data)
+
+@cotation_bp.route('/analytics/scores-grilles')
+@login_required
+def analytics_scores_grilles():
+    """API: Scores moyens par grille (Top 8)."""
+    data = AnalyticsService.scores_moyens_par_grille(current_user.id, 8)
+    return jsonify({'items': data})
 
 @cotation_bp.route('/analytics/patient/<int:patient_id>/grille/<int:grille_id>/evolution')
 @login_required
