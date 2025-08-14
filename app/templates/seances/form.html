@@ -49,209 +49,175 @@
             </div>
             <div class="card-body">
                 <form action="{% if mode == 'edit' %}{{ url_for('seances.update_seance', seance_id=seance.id) }}{% else %}{{ url_for('seances.create_seance', patient_id=patient.id) }}{% endif %}" method="post" enctype="multipart/form-data">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="date_seance" class="form-label">Date et heure de la séance</label>
-                                <input type="datetime-local" class="form-control" id="date_seance" name="date_seance" 
-                                       value="{% if seance %}{{ seance.date_seance.strftime('%Y-%m-%dT%H:%M') }}{% elif data %}{{ data.date_seance }}{% endif %}" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="type_seance" class="form-label">Type de séance</label>
-                                <select class="form-select" id="type_seance" name="type_seance">
-                                    <option value="">Sélectionner...</option>
-                                    {% set current_type = seance.type_seance if seance else (data.type_seance if data else '') %}
-                                    <option value="musicothérapie" {{ 'selected' if current_type == 'musicothérapie' else '' }}>Musicothérapie</option>
-                                    <option value="improvisation" {{ 'selected' if current_type == 'improvisation' else '' }}>Improvisation</option>
-                                    <option value="écoute" {{ 'selected' if current_type == 'écoute' else '' }}>Écoute musicale</option>
-                                    <option value="chant" {{ 'selected' if current_type == 'chant' else '' }}>Chant</option>
-                                    <option value="instrument" {{ 'selected' if current_type == 'instrument' else '' }}>Pratique instrumentale</option>
-                                    <option value="autre" {{ 'selected' if current_type == 'autre' else '' }}>Autre</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Tabs navigation -->
+                    <ul class="nav nav-pills mb-3" id="seance-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tab-infos" data-bs-toggle="tab" data-bs-target="#pane-infos" type="button" role="tab" aria-controls="pane-infos" aria-selected="true">
+                                <i class="bi bi-info-circle me-1"></i> Informations
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-transcription" data-bs-toggle="tab" data-bs-target="#pane-transcription" type="button" role="tab" aria-controls="pane-transcription" aria-selected="false">
+                                <i class="bi bi-mic me-1"></i> Transcription & Synthèse
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-cotation" data-bs-toggle="tab" data-bs-target="#pane-cotation" type="button" role="tab" aria-controls="pane-cotation" aria-selected="false">
+                                <i class="bi bi-clipboard-check me-1"></i> Cotation
+                            </button>
+                        </li>
+                    </ul>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="duree_minutes" class="form-label">Durée (minutes)</label>
-                                <input type="number" class="form-control" id="duree_minutes" name="duree_minutes" min="1" max="180" 
-                                       value="{% if seance %}{{ seance.duree_minutes or '' }}{% elif data %}{{ data.duree_minutes or '' }}{% endif %}" placeholder="45">
-                            </div>
-                        </div>
-            {% if mode == 'create' and (not grille) and grilles_disponibles %}
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="assign_grille_id" class="form-label">Grille de cotation</label>
-                                <select class="form-select" id="assign_grille_id" name="assign_grille_id">
-                                    <option value="">Aucune (vous pourrez en ajouter plus tard)</option>
-                                    {% for g in grilles_disponibles %}
-                                        <option value="{{ g.id }}">{{ g.nom }}</option>
-                                    {% endfor %}
-                                </select>
-                <div class="form-text">Aucune grille n'est assignée à ce patient. Choisissez-en une pour afficher immédiatement la cotation.</div>
-                            </div>
-                        </div>
-                        {% endif %}
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="score_engagement" class="form-label">Score d'engagement (1-10)</label>
-                                {% set current_score = seance.score_engagement if seance else (data.score_engagement if data else 5) %}
-                                <input type="range" class="form-range" id="score_engagement" name="score_engagement" min="1" max="10" step="1" value="{{ current_score }}">
-                                <div class="d-flex justify-content-between">
-                                    <small class="text-muted">1</small>
-                                    <small id="score_value" class="fw-bold">{{ current_score }}</small>
-                                    <small class="text-muted">10</small>
+                    <div class="tab-content" id="seance-tabs-content">
+                        <!-- Pane: Informations -->
+                        <div class="tab-pane fade show active" id="pane-infos" role="tabpanel" aria-labelledby="tab-infos">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="date_seance" class="form-label">Date et heure de la séance</label>
+                                        <input type="datetime-local" class="form-control" id="date_seance" name="date_seance" value="{% if seance %}{{ seance.date_seance.strftime('%Y-%m-%dT%H:%M') }}{% elif data %}{{ data.date_seance }}{% endif %}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="type_seance" class="form-label">Type de séance</label>
+                                        <select class="form-select" id="type_seance" name="type_seance">
+                                            <option value="">Sélectionner...</option>
+                                            {% set current_type = seance.type_seance if seance else (data.type_seance if data else '') %}
+                                            <option value="musicothérapie" {{ 'selected' if current_type == 'musicothérapie' else '' }}>Musicothérapie</option>
+                                            <option value="improvisation" {{ 'selected' if current_type == 'improvisation' else '' }}>Improvisation</option>
+                                            <option value="écoute" {{ 'selected' if current_type == 'écoute' else '' }}>Écoute musicale</option>
+                                            <option value="chant" {{ 'selected' if current_type == 'chant' else '' }}>Chant</option>
+                                            <option value="instrument" {{ 'selected' if current_type == 'instrument' else '' }}>Pratique instrumentale</option>
+                                            <option value="autre" {{ 'selected' if current_type == 'autre' else '' }}>Autre</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="objectifs_seance" class="form-label">Objectifs de la séance</label>
-                        <textarea class="form-control" id="objectifs_seance" name="objectifs_seance" rows="3" 
-                                  placeholder="Décrire les objectifs spécifiques de cette séance...">{% if seance %}{{ seance.objectifs_seance or '' }}{% elif data %}{{ data.objectifs_seance or '' }}{% endif %}</textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="activites_realisees" class="form-label">Activités réalisées</label>
-                        <textarea class="form-control" id="activites_realisees" name="activites_realisees" rows="4" 
-                                  placeholder="Décrire les activités qui ont été réalisées pendant la séance...">{% if seance %}{{ seance.activites_realisees or '' }}{% elif data %}{{ data.activites_realisees or '' }}{% endif %}</textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="observations" class="form-label">Observations et notes</label>
-                        <textarea class="form-control" id="observations" name="observations" rows="4" 
-                                  placeholder="Observations comportementales, réactions du patient, points d'attention...">{% if seance %}{{ seance.observations or '' }}{% elif data %}{{ data.observations or '' }}{% endif %}</textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="fichier_audio" class="form-label">
-                                    <i class="bi bi-mic me-1"></i>
-                                    Enregistrement audio
-                                </label>
-                                <div class="d-flex gap-2">
-                                    <input type="file" class="form-control" id="fichier_audio" name="fichier_audio" 
-                                           accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg">
-                                    {% if mode == 'edit' and seance %}
-                                    <button type="button" class="btn btn-success" id="inline-upload-btn" disabled>
-                                        <i class="bi bi-upload me-1"></i> Transcrire
-                                    </button>
-                                    {% endif %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="duree_minutes" class="form-label">Durée (minutes)</label>
+                                        <input type="number" class="form-control" id="duree_minutes" name="duree_minutes" min="1" max="180" value="{% if seance %}{{ seance.duree_minutes or '' }}{% elif data %}{{ data.duree_minutes or '' }}{% endif %}" placeholder="45">
+                                    </div>
                                 </div>
-                                {% if seance and seance.transcription_audio %}
-                                    <div class="form-text text-success mt-1">
-                                        <i class="bi bi-check-circle me-1"></i>
-                                        Séance déjà transcrite
+                                {% if mode == 'create' and (not grille) and grilles_disponibles %}
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="assign_grille_id" class="form-label">Grille de cotation</label>
+                                        <select class="form-select" id="assign_grille_id" name="assign_grille_id">
+                                            <option value="">Aucune (vous pourrez en ajouter plus tard)</option>
+                                            {% for g in grilles_disponibles %}
+                                                <option value="{{ g.id }}">{{ g.nom }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="form-text">Aucune grille n'est assignée à ce patient. Choisissez-en une pour afficher immédiatement la cotation.</div>
                                     </div>
-                                {% else %}
-                                    <div class="form-text mt-1">
-                                        Formats supportés : MP3, WAV, M4A, FLAC, OGG (max 25 MB)
-                                        <br><small class="text-muted">{% if mode == 'edit' %}Sélectionnez un fichier puis cliquez sur Transcrire{% else %}La transcription pourra être lancée après la création{% endif %}</small>
-                                    </div>
+                                </div>
                                 {% endif %}
-                            </div>
-                        </div>
-                        <!-- Vidéo supprimée -->
-                    </div>
-
-                    <!-- Statut de transcription -->
-                    <div id="transcription-status" class="alert alert-info" style="display: none;">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="spinner-border spinner-border-sm text-info me-2" role="status">
-                                <span class="visually-hidden">Transcription...</span>
-                            </div>
-                            <span id="transcription-text">Transcription en cours...</span>
-                        </div>
-                        <div class="progress" style="height: 6px;">
-                            <div id="transcription-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-                        </div>
-                        <div class="text-end small mt-1"><span id="transcription-percent">0%</span></div>
-                    </div>
-
-                    <!-- Hidden fields to carry temp results in create mode -->
-                    {% if mode == 'create' %}
-                    <input type="hidden" id="transcription_temp_text" name="transcription_temp_text" />
-                    <input type="hidden" id="synthese_temp_text" name="synthese_temp_text" />
-                    {% endif %}
-
-                    <!-- Zone de transcription (déployable) -->
-                    <div class="accordion mb-3" id="accordionTranscription">
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingTranscription">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTranscription" aria-expanded="false" aria-controls="collapseTranscription">
-                                    <i class="bi bi-file-text me-2"></i> Transcription audio
-                                </button>
-                            </h2>
-                            <div id="collapseTranscription" class="accordion-collapse collapse" aria-labelledby="headingTranscription" data-bs-parent="#accordionTranscription">
-                                <div class="accordion-body">
-                                    {% if seance and seance.transcription_audio %}
-                                        <div class="transcription-text" style="white-space: pre-wrap;">
-                                            {{ seance.transcription_audio }}
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="score_engagement" class="form-label">Score d'engagement (1-10)</label>
+                                        {% set current_score = seance.score_engagement if seance else (data.score_engagement if data else 5) %}
+                                        <input type="range" class="form-range" id="score_engagement" name="score_engagement" min="1" max="10" step="1" value="{{ current_score }}">
+                                        <div class="d-flex justify-content-between">
+                                            <small class="text-muted">1</small>
+                                            <small id="score_value" class="fw-bold">{{ current_score }}</small>
+                                            <small class="text-muted">10</small>
                                         </div>
-                                        <div class="mt-2">
-                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="expandTranscription()">
-                                                <i class="bi bi-arrows-fullscreen me-1"></i>
-                                                Voir en plein écran
-                                            </button>
-                                        </div>
-                                    {% else %}
-                                        <div class="text-muted">Aucune transcription disponible pour le moment.</div>
-                                    {% endif %}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Preview zone for temp transcription in create mode -->
-                    {% if mode == 'create' %}
-                    <div id="transcription-preview" class="mb-3" style="display:none;">
-                        <label class="form-label">
-                            <i class="bi bi-file-text me-1"></i>
-                            Transcription (prévisualisation)
-                        </label>
-                        <div class="card border-0 bg-light">
-                            <div class="card-body">
-                                <div id="transcription-preview-text" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></div>
+                            <div class="mb-3">
+                                <label for="objectifs_seance" class="form-label">Objectifs de la séance</label>
+                                <textarea class="form-control" id="objectifs_seance" name="objectifs_seance" rows="3" placeholder="Décrire les objectifs spécifiques de cette séance...">{% if seance %}{{ seance.objectifs_seance or '' }}{% elif data %}{{ data.objectifs_seance or '' }}{% endif %}</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="activites_realisees" class="form-label">Activités réalisées</label>
+                                <textarea class="form-control" id="activites_realisees" name="activites_realisees" rows="3" placeholder="Décrire les activités réalisées pendant la séance...">{% if seance %}{{ seance.activites_realisees or '' }}{% elif data %}{{ data.activites_realisees or '' }}{% endif %}</textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="observations" class="form-label">Observations et notes</label>
+                                <textarea class="form-control" id="observations" name="observations" rows="4" placeholder="Observations comportementales, réactions, points d'attention...">{% if seance %}{{ seance.observations or '' }}{% elif data %}{{ data.observations or '' }}{% endif %}</textarea>
                             </div>
                         </div>
-                    </div>
-                    {% endif %}
 
-                    <!-- Zone de synthèse IA (déployable) -->
-                    <div class="accordion mb-3" id="accordionSynthese">
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="headingSynthese">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSynthese" aria-expanded="false" aria-controls="collapseSynthese">
-                                    <i class="bi bi-robot me-2"></i> Synthèse thérapeutique IA
-                                </button>
-                            </h2>
-                            <div id="collapseSynthese" class="accordion-collapse collapse" aria-labelledby="headingSynthese" data-bs-parent="#accordionSynthese">
-                                <div class="accordion-body">
+                        <!-- Pane: Transcription & Synthèse -->
+                        <div class="tab-pane fade" id="pane-transcription" role="tabpanel" aria-labelledby="tab-transcription">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="mb-3">
+                                        <label for="fichier_audio" class="form-label"><i class="bi bi-mic me-1"></i> Enregistrement audio</label>
+                                        <div class="d-flex gap-2">
+                                            <input type="file" class="form-control" id="fichier_audio" name="fichier_audio" accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg">
+                                            {% if mode == 'edit' and seance %}
+                                            <button type="button" class="btn btn-success" id="inline-upload-btn" disabled>
+                                                <i class="bi bi-upload me-1"></i> Transcrire
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        {% if seance and seance.transcription_audio %}
+                                            <div class="form-text text-success mt-1"><i class="bi bi-check-circle me-1"></i> Séance déjà transcrite</div>
+                                        {% else %}
+                                            <div class="form-text mt-1">Formats supportés : MP3, WAV, M4A, FLAC, OGG (max 25 MB)</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Statut de transcription -->
+                                    <div id="transcription-status" class="alert alert-info" style="display: none;">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="spinner-border spinner-border-sm text-info me-2" role="status"><span class="visually-hidden">Transcription...</span></div>
+                                            <span id="transcription-text">Transcription en cours...</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;"><div id="transcription-progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div></div>
+                                        <div class="text-end small mt-1"><span id="transcription-percent">0%</span></div>
+                                    </div>
+
+                                    <!-- Hidden fields to carry temp results in create mode -->
+                                    {% if mode == 'create' %}
+                                    <input type="hidden" id="transcription_temp_text" name="transcription_temp_text" />
+                                    <input type="hidden" id="synthese_temp_text" name="synthese_temp_text" />
+                                    {% endif %}
+
+                                    <!-- Preview zone for temp transcription in create mode -->
+                                    {% if mode == 'create' %}
+                                    <div id="transcription-preview" class="mb-3" style="display:none;">
+                                        <label class="form-label"><i class="bi bi-file-text me-1"></i> Transcription (prévisualisation)</label>
+                                        <div class="card border-0 bg-light"><div class="card-body"><div id="transcription-preview-text" style="max-height: 220px; overflow-y: auto; white-space: pre-wrap;"></div></div></div>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Synthèse IA -->
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0"><i class="bi bi-robot me-2"></i> Synthèse thérapeutique IA</h6>
+                                        <button type="button" class="btn btn-outline-success btn-sm" id="btn-generate-synthese"><i class="bi bi-magic me-1"></i> Générer synthèse</button>
+                                    </div>
                                     {% if seance and seance.synthese_ia %}
-                                        <div class="synthese-text" style="white-space: pre-wrap;">
-                                            {{ seance.synthese_ia }}
-                                        </div>
-                                        <div class="mt-2">
-                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="expandSynthese()">
-                                                <i class="bi bi-arrows-fullscreen me-1"></i>
-                                                Voir en plein écran
-                                            </button>
-                                        </div>
+                                    <div class="card border-0 bg-light mb-3"><div class="card-body"><div class="synthese-text" style="white-space: pre-wrap;">{{ seance.synthese_ia }}</div></div></div>
                                     {% else %}
-                                        <div class="text-muted">Aucune synthèse générée pour le moment.</div>
+                                    <div id="synthese-preview" class="mb-3" style="display:none;"><div class="card border-0 bg-light"><div class="card-body"><div id="synthese-preview-text" style="white-space: pre-wrap;"></div></div></div></div>
                                     {% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="alert alert-secondary">
+                                        <div class="fw-semibold mb-1"><i class="bi bi-lightbulb me-2"></i>Conseils</div>
+                                        <ul class="small mb-0">
+                                            <li>Ajoutez un audio pour générer une transcription.</li>
+                                            <li>La synthèse tient compte des objectifs, activités et observations.</li>
+                                            <li>Vous pouvez la régénérer après modifications.</li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Preview zone for temp synthesis in create mode -->
+                        <!-- Pane: Cotation -->
+                        <div class="tab-pane fade" id="pane-cotation" role="tabpanel" aria-labelledby="tab-cotation">
+                    
                     {% if mode == 'create' %}
                     <div id="synthese-preview" class="mb-3" style="display:none;">
                         <label class="form-label">
