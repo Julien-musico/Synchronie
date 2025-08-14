@@ -18,11 +18,8 @@
     overflow: hidden;
 }
 
-.grilles-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 24px;
-}
+
+.badge-soft-white { background: rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.25); padding:6px 10px; border-radius: 999px; font-weight:600; font-size:.85rem; }
 
 .grilles-header h2 {
     margin: 0;
@@ -192,9 +189,21 @@
 <div class="grilles-container">
     <div class="container">
         <div class="grilles-card">
-            <div class="grilles-header">
-                <h2>🎼 Mes Grilles d'Évaluation</h2>
-                <p style="margin: 10px 0 0; opacity: 0.9;">Gérez vos outils de cotation thérapeutique</p>
+            <div class="dash-hero gradient-hero rounded-4 p-4 p-md-5">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="hero-icon bg-white bg-opacity-25 rounded-3 p-3">
+                        <i class="bi bi-grid-3x3-gap text-white fs-2"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-white fw-bold mb-1">Mes Grilles d'Évaluation</h2>
+                        <p class="text-white-50 mb-0">Gérez et consultez vos outils de cotation thérapeutique</p>
+                    </div>
+                </div>
+                <div class="mt-3 text-white-50 small">
+                    <i class="bi bi-person-check me-1"></i>{{ grilles_user|length }} personnelles
+                    <span class="mx-2">•</span>
+                    <i class="bi bi-award me-1"></i>{{ grilles_publiques|length }} standards
+                </div>
             </div>
             
             <div class="section-tabs">
@@ -208,10 +217,8 @@
             
             <!-- Onglet: Mes grilles -->
             <div id="mes-grilles" class="tab-content active">
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-                    <input id="searchUserGrids" type="text" placeholder="Rechercher une grille…" 
-                           oninput="filtrerGrilles('#mes-grilles .grille-row', this.value)"
-                           style="flex:1; padding:10px 14px; border:1px solid #e9ecef; border-radius:10px;">
+                <div class="mb-2">
+                    <input id="searchUserGrids" class="form-control form-control-lg rounded-3" type="text" placeholder="Rechercher une grille…" oninput="filtrerGrilles('#mes-grilles .grille-row', this.value)">
                 </div>
                 {% if grilles_user %}
                 <div class="grille-list">
@@ -262,10 +269,8 @@
             
             <!-- Onglet: Grilles standards -->
             <div id="grilles-standard" class="tab-content">
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-                    <input id="searchStdGrids" type="text" placeholder="Rechercher une grille standard…" 
-                           oninput="filtrerGrilles('#grilles-standard .grille-row', this.value)"
-                           style="flex:1; padding:10px 14px; border:1px solid #e9ecef; border-radius:10px;">
+                <div class="mb-2">
+                    <input id="searchStdGrids" class="form-control form-control-lg rounded-3" type="text" placeholder="Rechercher une grille standard…" oninput="filtrerGrilles('#grilles-standard .grille-row', this.value)">
                 </div>
                 {% if grilles_publiques %}
                 <div class="grille-list">
@@ -291,9 +296,6 @@
                             <a class="btn-icon" title="Voir la grille" href="{{ url_for('cotation.grille_detail', grille_id=grille.id) }}">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <button class="btn-icon action-copy" data-grille-id="{{ grille.id }}" title="Copier dans mes grilles">
-                                <i class="bi bi-clipboard"></i>
-                            </button>
                         </div>
                     </div>
                     {% endfor %}
@@ -395,9 +397,6 @@ document.addEventListener('click', function(e) {
     } else if (target.classList.contains('action-delete')) {
         e.stopPropagation();
         supprimerGrille(target.dataset.grilleId);
-    } else if (target.classList.contains('action-copy')) {
-        e.stopPropagation();
-        copierGrille(target.dataset.grilleId);
     } else if (target.classList.contains('grille-row')) {
         const href = target.getAttribute('data-href');
         if (href) window.location = href;
