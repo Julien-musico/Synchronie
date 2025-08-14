@@ -59,9 +59,12 @@ def grilles_predefinies():  # type: ignore[no-untyped-def]
 @login_required
 def creer_grille_predefinee():
     """Crée une grille prédéfinie pour l'utilisateur"""
-    type_grille = request.json.get('type_grille')
+    data = request.get_json(silent=True) or {}
+    type_grille = data.get('type_grille')
     
     try:
+        if not type_grille:
+            return jsonify({'success': False, 'error': 'Type de grille requis'}), 400
         grille = CotationService.creer_grille_predefinie(type_grille)
         if not grille:
             return jsonify({'success': False, 'error': 'Type de grille inconnu'}), 400
@@ -159,6 +162,17 @@ def preview_grille(grille_id):
         'couleur_theme': grille.domaines[0].get('couleur', '#3498db') if grille.domaines else '#3498db'
     })
 
+@cotation_bp.route('/grille/<int:grille_id>')
+@login_required
+def grille_detail(grille_id):  # type: ignore[no-untyped-def]
+    """Vue détaillée d'une grille: domaines et indicateurs."""
+    grille = GrilleEvaluation.query.get_or_404(grille_id)
+    # Vérifier l'accès: publique ou appartenant à l'utilisateur
+    if not grille.publique and grille.musicotherapeute_id != current_user.id:
+        flash('Accès non autorisé', 'error')
+        return redirect(url_for('cotation.grilles'))
+    return render_template('cotation/grille_detail.html', grille=grille)
+
 @cotation_bp.route('/grille/<int:grille_id>/editer-domaines')
 @login_required
 def editer_domaines_page(grille_id):  # type: ignore[no-untyped-def]
@@ -230,7 +244,7 @@ def sauvegarder_cotation(seance_id):
         return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
     
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         grille_id = data.get('grille_id')
         scores = data.get('scores', {})
         observations = data.get('observations', '')
@@ -245,15 +259,19 @@ def sauvegarder_cotation(seance_id):
             cotation_existante.scores_detailles = json.dumps(scores)
             cotation_existante.observations_cotation = observations
             grille = GrilleEvaluation.query.get(grille_id)
+            if not grille:
+                return jsonify({'success': False, 'error': 'Grille introuvable'}), 404
             score_global, score_max, pourcentage = CotationService.calculer_score_global(scores, grille)
             cotation_existante.score_global = score_global
             cotation_existante.score_max_possible = score_max
             cotation_existante.pourcentage_reussite = pourcentage
             cotation = cotation_existante
         else:
+            if grille_id is None:
+                return jsonify({'success': False, 'error': 'Grille requise'}), 400
             cotation = CotationService.creer_cotation(
                 seance_id=seance_id,
-                grille_id=grille_id,
+                grille_id=int(grille_id),
                 scores=scores,
                 observations=observations
             )
@@ -282,9 +300,11 @@ def evolution_patient(patient_id, grille_id):
     
     evolution = CotationService.get_evolution_patient(patient_id, grille_id)
     
+    grille = GrilleEvaluation.query.get(grille_id)
+    grille_nom = grille.nom if grille else 'Grille'
     return jsonify({
         'patient_nom': f"{patient.prenom} {patient.nom}",
-        'grille_nom': GrilleEvaluation.query.get(grille_id).nom,
+        'grille_nom': grille_nom,
         'evolution': evolution
     })
 
@@ -409,8 +429,7 @@ def api_save_cotation():
         
         if success:
             return jsonify({'success': True, 'message': 'Cotation sauvegardée avec succès'})
-        else:
-            return jsonify({'success': False, 'message': 'Erreur lors de la sauvegarde'}), 500
+        return jsonify({'success': False, 'message': 'Erreur lors de la sauvegarde'}), 500
             
     except Exception as e:
         return jsonify({'success': False, 'message': f'Erreur: {str(e)}'}), 500
