@@ -43,6 +43,7 @@ def new_seance(patient_id):
     grilles_patient = PatientService.get_grilles_patient(patient_id)
     grille_data = None
     grilles_disponibles = []
+    grilles_catalog = {}
     
     if grilles_patient:
         # Récupérer l'objet GrilleEvaluation complet avec les domaines
@@ -65,10 +66,42 @@ def new_seance(patient_id):
             # Construire une liste simple pour le select
             grilles_disponibles = ([{'id': g.id, 'nom': g.nom, 'description': g.description, 'type': 'standard'} for g in gr_std] +
                                    [{'id': g.id, 'nom': g.nom, 'description': g.description, 'type': 'personnalisee'} for g in gr_usr])
+
+            # Construire un catalogue sérialisable avec domaines/indicateurs pour rendu dynamique (sans requête réseau)
+            def to_serializable(grille_obj):
+                domaines_data = []
+                try:
+                    for d in grille_obj.domaines or []:
+                        indicateurs_data = []
+                        for ind in getattr(d, 'indicateurs', []) or []:
+                            indicateurs_data.append({
+                                'nom': getattr(ind, 'nom', ''),
+                                'description': getattr(ind, 'description', '')
+                            })
+                        domaines_data.append({
+                            'nom': getattr(d, 'nom', ''),
+                            'description': getattr(d, 'description', ''),
+                            'indicateurs': indicateurs_data
+                        })
+                except Exception:
+                    domaines_data = []
+                return {
+                    'id': grille_obj.id,
+                    'nom': grille_obj.nom,
+                    'description': grille_obj.description,
+                    'domaines': domaines_data
+                }
+
+            for g in (gr_std + gr_usr):
+                try:
+                    grilles_catalog[g.id] = to_serializable(g)
+                except Exception:
+                    continue
         except Exception:
             grilles_disponibles = []
+            grilles_catalog = {}
 
-    return render_template('seances/form.html', patient=patient, seance=None, mode='create', grille=grille_data, grilles_disponibles=grilles_disponibles)
+    return render_template('seances/form.html', patient=patient, seance=None, mode='create', grille=grille_data, grilles_disponibles=grilles_disponibles, grilles_catalog=grilles_catalog)
 
 @seances.route('/patient/<int:patient_id>/create', methods=['POST'])
 @login_required  # type: ignore
@@ -180,6 +213,7 @@ def create_seance(patient_id):
     grilles_patient = PatientService.get_grilles_patient(patient_id)
     grille_data = None
     grilles_disponibles = []
+    grilles_catalog = {}
     
     if grilles_patient:
         grille_id = grilles_patient[0]['id']
@@ -200,11 +234,43 @@ def create_seance(patient_id):
             gr_usr = CotationService.get_grilles_utilisateur()
             grilles_disponibles = ([{'id': g.id, 'nom': g.nom, 'description': g.description, 'type': 'standard'} for g in gr_std] +
                                    [{'id': g.id, 'nom': g.nom, 'description': g.description, 'type': 'personnalisee'} for g in gr_usr])
+
+            # Construire aussi le catalogue sérialisable
+            def to_serializable(grille_obj):
+                domaines_data = []
+                try:
+                    for d in grille_obj.domaines or []:
+                        indicateurs_data = []
+                        for ind in getattr(d, 'indicateurs', []) or []:
+                            indicateurs_data.append({
+                                'nom': getattr(ind, 'nom', ''),
+                                'description': getattr(ind, 'description', '')
+                            })
+                        domaines_data.append({
+                            'nom': getattr(d, 'nom', ''),
+                            'description': getattr(d, 'description', ''),
+                            'indicateurs': indicateurs_data
+                        })
+                except Exception:
+                    domaines_data = []
+                return {
+                    'id': grille_obj.id,
+                    'nom': grille_obj.nom,
+                    'description': grille_obj.description,
+                    'domaines': domaines_data
+                }
+
+            for g in (gr_std + gr_usr):
+                try:
+                    grilles_catalog[g.id] = to_serializable(g)
+                except Exception:
+                    continue
         except Exception:
             grilles_disponibles = []
+            grilles_catalog = {}
 
     flash(message, 'error')
-    return render_template('seances/form.html', patient=patient, seance=None, mode='create', data=data, grille=grille_data, grilles_disponibles=grilles_disponibles)
+    return render_template('seances/form.html', patient=patient, seance=None, mode='create', data=data, grille=grille_data, grilles_disponibles=grilles_disponibles, grilles_catalog=grilles_catalog)
 
 @seances.route('/<int:seance_id>')
 @login_required  # type: ignore

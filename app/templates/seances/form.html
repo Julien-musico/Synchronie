@@ -607,30 +607,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const assignSelect = document.getElementById('assign_grille_id');
     const dynamicRoot = document.getElementById('dynamic-cotation-root');
     if (assignSelect && dynamicRoot) {
-        // Build API URL from Flask to support subpath deployments
+        // Preloaded catalog from server, if provided (avoids network)
+        const catalogEl = document.getElementById('grilles-catalog-json');
+        let grillesCatalog = {};
+        if (catalogEl && catalogEl.textContent) {
+            try { grillesCatalog = JSON.parse(catalogEl.textContent); } catch(e) { grillesCatalog = {}; }
+        }
+        // Build API URL from Flask to support subpath deployments (fallback only)
         const API_GRILLE_DOMAINES_TEMPLATE = "{{ url_for('grilles.api_grille_domaines', grille_id=0) }}"; // e.g., /grilles/api/0/domaines
         assignSelect.addEventListener('change', function() {
             const gid = this.value;
             // Show a small loading indicator
             dynamicRoot.innerHTML = '<div class="alert alert-light"><div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2"></div>Chargement de la grille...</div></div>';
             if (!gid) return;
-            // Fetch domaines of selected grille
-            const url = API_GRILLE_DOMAINES_TEMPLATE.replace('/0/', `/${gid}/`);
-            fetch(url, { credentials: 'same-origin' })
-                .then(r => {
-                    const ct = r.headers.get('content-type') || '';
-                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                    if (ct.indexOf('application/json') === -1) throw new Error('Réponse inattendue');
-                    return r.json();
-                })
-                .then(data => {
-                    if (!data.success) throw new Error(data.message || 'Erreur chargement grille');
-                    const domaines = data.domaines || [];
-                    if (!domaines.length) return;
+            const renderFromData = (data) => {
+                const domaines = (data && data.domaines) || [];
+                if (!domaines.length) {
+                    dynamicRoot.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Cette grille ne contient pas de domaines.</div>';
+                    return;
+                }
                     // Build cotation section with sliders (0..5 like the simplified UI)
                     const section = document.createElement('div');
                     section.className = 'cotation-section';
-            const grilleNom = (data.grille && data.grille.nom) ? data.grille.nom : 'Sélectionnée';
+                    const grilleNom = data.nom || (data.grille && data.grille.nom) || 'Sélectionnée';
             section.innerHTML = `
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title mb-0">
@@ -728,6 +727,29 @@ document.addEventListener('DOMContentLoaded', function() {
                             this.classList.toggle('btn-outline-secondary');
                         });
                     }
+            };
+
+            // Prefer local catalog; fallback to API if not present
+            const fromCatalog = grillesCatalog && grillesCatalog[gid] ? grillesCatalog[gid] : null;
+            if (fromCatalog) {
+                dynamicRoot.innerHTML = '';
+                renderFromData(fromCatalog);
+                return;
+            }
+
+            // Fallback: fetch domaines of selected grille
+            const url = API_GRILLE_DOMAINES_TEMPLATE.replace('/0/', `/${gid}/`);
+            fetch(url, { credentials: 'same-origin' })
+                .then(r => {
+                    const ct = r.headers.get('content-type') || '';
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    if (ct.indexOf('application/json') === -1) throw new Error('Réponse inattendue');
+                    return r.json();
+                })
+                .then(data => {
+                    if (!data.success) throw new Error(data.message || 'Erreur chargement grille');
+                    dynamicRoot.innerHTML = '';
+                    renderFromData({ nom: (data.grille && data.grille.nom) || '', domaines: data.domaines || [] });
                 })
                 .catch(err => {
                     console.error('Erreur chargement grille:', err);
@@ -1044,6 +1066,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Patient info JSON for JS consumption -->
 <script id="patient-info-json" type="application/json">{{ {'prenom': patient.prenom, 'pathologie': patient.pathologie or '', 'objectifs_therapeutiques': patient.objectifs_therapeutiques or ''} | tojson }}</script>
+{% if mode == 'create' %}
+<!-- Grilles catalog JSON (preloaded to avoid network fetch) -->
+<script id="grilles-catalog-json" type="application/json">{{ (grilles_catalog or {}) | tojson }}</script>
+{% endif %}
 
 <style>
 .cotation-section {
