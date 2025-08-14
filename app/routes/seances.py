@@ -76,7 +76,10 @@ def new_seance(patient_id):
                         for ind in getattr(d, 'indicateurs', []) or []:
                             indicateurs_data.append({
                                 'nom': getattr(ind, 'nom', ''),
-                                'description': getattr(ind, 'description', '')
+                                'description': getattr(ind, 'description', ''),
+                                'poids': getattr(ind, 'poids', None),
+                                'echelle_min': getattr(ind, 'echelle_min', 0),
+                                'echelle_max': getattr(ind, 'echelle_max', 5)
                             })
                         domaines_data.append({
                             'nom': getattr(d, 'nom', ''),
@@ -100,6 +103,24 @@ def new_seance(patient_id):
         except Exception:
             grilles_disponibles = []
             grilles_catalog = {}
+
+    # Si un paramètre de prévisualisation de grille est fourni, charger cette grille pour l'afficher sans l'assigner
+    try:
+        preview_gid = request.args.get('preview_grille_id', type=int)
+    except Exception:
+        preview_gid = None
+    if preview_gid:
+        try:
+            grille_obj = GrilleEvaluation.query.get(preview_gid)
+            if grille_obj and getattr(grille_obj, 'active', True):
+                grille_data = {
+                    'id': grille_obj.id,
+                    'nom': grille_obj.nom,
+                    'description': grille_obj.description,
+                    'domaines': grille_obj.domaines
+                }
+        except Exception:
+            pass
 
     return render_template('seances/form.html', patient=patient, seance=None, mode='create', grille=grille_data, grilles_disponibles=grilles_disponibles, grilles_catalog=grilles_catalog)
 
