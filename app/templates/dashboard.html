@@ -16,414 +16,102 @@
             </div>
             <div>
                 <a href="{{ url_for('patients.new_patient') }}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-2"></i>
-                    Nouveau patient
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
+                    {% extends "base.html" %}
 
-<div class="row g-4">
-    <!-- Statistiques rapides -->
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-people text-primary fs-4"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="card-subtitle text-muted mb-1">Patients actifs</h6>
-                        <h3 class="card-title mb-0">{{ stats.patients_actifs if stats else 0 }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    {% block title %}Dashboard - Synchronie{% endblock %}
 
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="bg-success bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-file-music text-success fs-4"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="card-subtitle text-muted mb-1">Séances ce mois</h6>
-                        <h3 class="card-title mb-0">{{ stats.seances_ce_mois if stats else 0 }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    {% block extra_css %}
+                    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+                    {% endblock %}
 
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="bg-info bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-robot text-info fs-4"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="card-subtitle text-muted mb-1">Total séances</h6>
-                        <h3 class="card-title mb-0">{{ stats.total_seances if stats else 0 }}</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-3 col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-                <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                        <div class="bg-warning bg-opacity-10 rounded-3 p-3">
-                            <i class="bi bi-clock text-warning fs-4"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="card-subtitle text-muted mb-1">Temps économisé</h6>
-                        <h3 class="card-title mb-0">12h</h3>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4 mt-4">
-    <!-- Actions rapides -->
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-0 pb-0">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-lightning text-primary me-2"></i>
-                    Actions rapides
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <a href="{{ url_for('patients.new_patient') }}" class="btn btn-outline-primary">
-                                <i class="bi bi-person-plus me-2"></i>
-                                Nouveau patient
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <button class="btn btn-outline-success">
-                                <i class="bi bi-upload me-2"></i>
-                                Traiter enregistrement
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <a href="{{ url_for('cotation.seances_a_coter') }}" class="btn btn-outline-primary">
-                                <i class="bi bi-clipboard-data me-2"></i>
-                                Coter une séance
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <button class="btn btn-outline-info">
-                                <i class="bi bi-file-text me-2"></i>
-                                Générer rapport
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <a href="{{ url_for('cotation.grilles') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-clipboard-check me-2"></i>
-                                Grilles de cotation
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <button class="btn btn-outline-warning" onclick="chargerAnalytics()">
-                                <i class="bi bi-graph-up me-2"></i>
-                                Statistiques globales
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-grid">
-                            <button class="btn btn-outline-danger" onclick="chargerPatientsRisque()">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                Patients à risque
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Patients récents -->
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-0 pb-0">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-clock-history text-primary me-2"></i>
-                        Patients récents
-                    </h5>
-                    <a href="{{ url_for('patients.list_patients') }}" class="btn btn-sm btn-outline-primary">
-                        Voir tout
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div id="recent-patients">
-                    <div class="text-center text-muted">
-                        <div class="spinner-border spinner-border-sm me-2" role="status">
-                            <span class="visually-hidden">Chargement...</span>
-                        </div>
-                        Chargement des patients...
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4 mt-4">
-    <!-- Prochaines fonctionnalités -->
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 pb-0">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-rocket text-primary me-2"></i>
-                    Prochaines fonctionnalités IA
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-lg-4">
-                        <div class="d-flex align-items-start">
-                            <div class="flex-shrink-0">
-                                <div class="bg-primary bg-opacity-10 rounded-2 p-2">
-                                    <i class="bi bi-mic text-primary"></i>
-                                </div>
+                    {% block content %}
+                    <div class="dash-hero gradient-hero rounded-4 p-4 p-md-5 mb-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="hero-icon bg-white bg-opacity-25 rounded-3 p-3">
+                                <i class="bi bi-music-note-beamed text-white fs-2"></i>
                             </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-1">Transcription automatique</h6>
-                                <p class="text-muted small mb-0">Conversion audio en texte avec OpenAI Whisper</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="d-flex align-items-start">
-                            <div class="flex-shrink-0">
-                                <div class="bg-success bg-opacity-10 rounded-2 p-2">
-                                    <i class="bi bi-brain text-success"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-1">Analyse thérapeutique</h6>
-                                <p class="text-muted small mb-0">Synthèse intelligente des séances</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="d-flex align-items-start">
-                            <div class="flex-shrink-0">
-                                <div class="bg-info bg-opacity-10 rounded-2 p-2">
-                                    <i class="bi bi-graph-up text-info"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h6 class="mb-1">Suivi automatisé</h6>
-                                <p class="text-muted small mb-0">Rapports périodiques personnalisés</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-// Charger les statistiques au chargement de la page
-document.addEventListener('DOMContentLoaded', function() {
-    loadDashboardData();
-});
-
-async function loadDashboardData() {
-    try {
-        // Charger le nombre de patients
-        const patientsResponse = await fetch('/api/patients');
-        const patientsData = await patientsResponse.json();
-        
-        if (patientsData.success) {
-            document.getElementById('patients-count').textContent = patientsData.count;
-            
-            // Afficher les patients récents
-            const recentPatientsHtml = patientsData.data.slice(0, 5).map(patient => `
-                <div class="d-flex align-items-center mb-3">
-                    <div class="flex-shrink-0">
-                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                            <i class="bi bi-person text-muted"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="mb-0">${patient.prenom} ${patient.nom}</h6>
-                        <small class="text-muted">${patient.pathologie || 'Pathologie non spécifiée'}</small>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <span class="badge bg-light text-dark">${patient.nb_seances || 0}</span>
-                    </div>
-                </div>
-            `).join('');
-            
-            document.getElementById('recent-patients').innerHTML = recentPatientsHtml || 
-                '<div class="text-center text-muted"><i class="bi bi-inbox me-2"></i>Aucun patient récent</div>';
-        }
-    } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
-        document.getElementById('patients-count').textContent = '0';
-        document.getElementById('recent-patients').innerHTML = 
-            '<div class="text-center text-muted"><i class="bi bi-exclamation-triangle me-2"></i>Erreur de chargement</div>';
-    }
-}
-
-// Fonction pour charger les analytics globaux
-async function chargerAnalytics() {
-    try {
-        const response = await fetch('/cotation/analytics/dashboard');
-        const data = await response.json();
-        
-        if (response.ok) {
-            const analyticsModal = `
-                <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">📊 Statistiques globales</h5>
-                                <button type="button" class="btn-close" onclick="fermerModal()"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="card text-center">
-                                            <div class="card-body">
-                                                <h3 class="text-primary">${data.nb_patients || 0}</h3>
-                                                <p class="mb-0">Patients actifs</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="card text-center">
-                                            <div class="card-body">
-                                                <h3 class="text-success">${data.nb_grilles || 0}</h3>
-                                                <p class="mb-0">Grilles d'évaluation</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="card text-center">
-                                            <div class="card-body">
-                                                <h3 class="text-info">${data.nb_cotations || 0}</h3>
-                                                <p class="mb-0">Cotations réalisées</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6>Score moyen</h6>
-                                        <div class="progress">
-                                            <div class="progress-bar" style="width: ${data.score_moyen || 0}%">${data.score_moyen || 0}%</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6>Évolution générale</h6>
-                                        <p class="text-${data.evolution_positive ? 'success' : 'warning'}">
-                                            <i class="bi bi-${data.evolution_positive ? 'arrow-up' : 'arrow-down'}"></i>
-                                            ${data.evolution_positive ? 'Positive' : 'À surveiller'}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            document.body.insertAdjacentHTML('beforeend', analyticsModal);
-        } else {
-            alert('Erreur lors du chargement des statistiques');
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
-        alert('Erreur de connexion aux analytics');
-    }
-}
-
-// Fonction pour charger les patients à risque
-async function chargerPatientsRisque() {
-    try {
-        const response = await fetch('/cotation/analytics/patients-risque');
-        const data = await response.json();
-        
-        if (response.ok) {
-            const patientsHtml = data.patients.map(patient => `
-                <div class="card mb-2">
-                    <div class="card-body py-2">
-                        <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>${patient.nom} ${patient.prenom}</strong>
-                                <small class="text-muted d-block">Score: ${patient.derniere_cotation.score_total}%</small>
-                            </div>
-                            <span class="badge bg-danger">${patient.niveau_risque}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('') || '<p class="text-center text-muted">Aucun patient à risque détecté</p>';
-            
-            const risqueModal = `
-                <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">⚠️ Patients à risque</h5>
-                                <button type="button" class="btn-close" onclick="fermerModal()"></button>
-                            </div>
-                            <div class="modal-body">
-                                ${patientsHtml}
+                                <h1 class="text-white fw-bold mb-1">Bienvenue sur Synchronie</h1>
+                                <p class="text-white-50 mb-0">Automatisez la documentation, mesurez le progrès, concentrez-vous sur le soin.</p>
                             </div>
                         </div>
+                        <div class="mt-3 text-white-50 small">
+                            <i class="bi bi-people me-1"></i> Patients actifs: {{ stats.patients_actifs }}
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-file-music me-1"></i> Séances ce mois: {{ stats.seances_ce_mois }}
+                            <span class="mx-2">•</span>
+                            <i class="bi bi-robot me-1"></i> Total séances: {{ stats.total_seances }}
+                        </div>
+  
+                        <div class="mt-4 row g-3 quick-actions">
+                            <div class="col-12 col-sm-6 col-lg-3">
+                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouveau_patient.url }}">
+                                    <div class="card-body d-flex align-items-center gap-3">
+                                        <div class="action-icon bg-primary-subtle text-primary"><i class="bi bi-person-plus-fill"></i></div>
+                                        <div><div class="fw-semibold">Nouveau Patient</div><small class="text-white-75">Créer un dossier</small></div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg-3">
+                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouvelle_seance.url }}">
+                                    <div class="card-body d-flex align-items-center gap-3">
+                                        <div class="action-icon bg-success-subtle text-success"><i class="bi bi-plus-circle-fill"></i></div>
+                                        <div><div class="fw-semibold">Nouvelle Séance</div><small class="text-white-75">Planifier / saisir</small></div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg-3">
+                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouveau_rapport.url }}">
+                                    <div class="card-body d-flex align-items-center gap-3">
+                                        <div class="action-icon bg-warning-subtle text-warning"><i class="bi bi-file-earmark-text-fill"></i></div>
+                                        <div><div class="fw-semibold">Nouveau Rapport</div><small class="text-white-75">Synthèse périodique</small></div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg-3">
+                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.agenda.url }}">
+                                    <div class="card-body d-flex align-items-center gap-3">
+                                        <div class="action-icon bg-info-subtle text-info"><i class="bi bi-calendar2-week-fill"></i></div>
+                                        <div><div class="fw-semibold">Agenda</div><small class="text-white-75">Vue planning</small></div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                </div>`;
-            document.body.insertAdjacentHTML('beforeend', risqueModal);
-        } else {
-            alert('Erreur lors du chargement des patients à risque');
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
-        alert('Erreur de connexion aux analytics');
-    }
-}
 
-// Fonction pour fermer les modals
-function fermerModal() {
-    const modals = document.querySelectorAll('.modal.show');
-    modals.forEach(modal => modal.remove());
-}
-</script>
-{% endblock %}
+                    <!-- Patients récents -->
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h5 class="mb-0">Patients récents</h5>
+                            <a href="{{ recent_patients_url }}" class="btn btn-sm btn-outline-secondary">Voir tous les patients</a>
+                        </div>
+                        {% if recent_patients %}
+                            <div class="row g-3">
+                                {% for p in recent_patients %}
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <a class="card patient-card h-100 border-0 shadow-sm" href="{{ url_for('patients.view_patient', patient_id=p.id) }}">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="avatar-pill bg-primary text-white">{{ (p.prenom[:1] if p.prenom else '') ~ (p.nom[:1] if p.nom else '') }}</div>
+                                                    <div>
+                                                        <div class="fw-semibold">{{ p.prenom }} {{ p.nom }}</div>
+                                                        <small class="text-muted">{{ p.pathologie or '—' }}</small>
+                                                    </div>
+                                                </div>
+                                                <span class="badge rounded-pill bg-light text-muted"><i class="bi bi-clock-history me-1"></i>Récent</span>
+                                            </div>
+                                            {% if p.objectifs_therapeutiques %}
+                                            <div class="small text-muted line-clamp-2">{{ p.objectifs_therapeutiques }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-muted small">Aucun patient récent pour le moment.</div>
+                        {% endif %}
+                    </div>
+                    {% endblock %}
+                                <i class="bi bi-person-plus me-2"></i>

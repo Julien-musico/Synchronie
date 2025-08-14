@@ -2,6 +2,7 @@
 Routes pour la gestion des patients (interface web)
 """
 from datetime import datetime
+from typing import Any
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required  # type: ignore
@@ -35,7 +36,8 @@ def new_patient():
 @login_required  # type: ignore
 def create_patient():
     """Traitement de la création d'un patient"""
-    data = request.form.to_dict()
+    # Autoriser des types mixtes (ex: grilles_ids: List[int])
+    data: dict[str, Any] = request.form.to_dict()
     
     # Gérer la grille sélectionnée (radio button unique)
     grille_id = request.form.get('grille_id')

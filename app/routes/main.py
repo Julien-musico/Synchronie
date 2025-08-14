@@ -92,13 +92,31 @@ def dashboard():
             'engagement_moyen': seances_stats['engagement_moyen']
         }
         
-        # Séances récentes
+        # Séances récentes (toujours calculées si d'autres vues en ont besoin)
         seances_recentes = SeanceService.get_recent_seances(5)
-        
-        return render_template('dashboard.html', 
-                             stats=stats, 
-                             patients_recents=patients[:5],
-                             seances_recentes=seances_recentes)
+
+        # Actions rapides (liens robustes vers les sections clés)
+        quick_actions = {
+            'nouveau_patient': {'url': url_for('patients.new_patient')},
+            # Nouvelle séance requiert un patient, on redirige vers la liste des patients
+            'nouvelle_seance': {'url': url_for('patients.list_patients')},
+            # Nouveau rapport: renvoi vers la liste des patients par défaut (sélection du contexte)
+            'nouveau_rapport': {'url': url_for('patients.list_patients')},
+            'agenda': {'url': url_for('seances.list_seances')},
+        }
+
+        # Patients récents (6 max) — si modèle expose date_modification, on pourrait trier, sinon on tronque
+        recent_patients = patients[:6]
+        recent_patients_url = url_for('patients.list_patients')
+
+        return render_template(
+            'dashboard.html',
+            stats=stats,
+            seances_recentes=seances_recentes,
+            quick_actions=quick_actions,
+            recent_patients=recent_patients,
+            recent_patients_url=recent_patients_url,
+        )
     except Exception as e:
         # Log l'erreur pour debugging
         print(f"Erreur dashboard: {e}")
@@ -111,7 +129,17 @@ def dashboard():
             'duree_moyenne': 0,
             'engagement_moyen': 0
         }
-        return render_template('dashboard.html', 
-                             stats=stats, 
-                             patients_recents=[],
-                             seances_recentes=[])
+        quick_actions = {
+            'nouveau_patient': {'url': url_for('patients.new_patient')},
+            'nouvelle_seance': {'url': url_for('patients.list_patients')},
+            'nouveau_rapport': {'url': url_for('patients.list_patients')},
+            'agenda': {'url': url_for('seances.list_seances')},
+        }
+        return render_template(
+            'dashboard.html',
+            stats=stats,
+            seances_recentes=[],
+            quick_actions=quick_actions,
+            recent_patients=[],
+            recent_patients_url=url_for('patients.list_patients'),
+        )
