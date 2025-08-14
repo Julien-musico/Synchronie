@@ -484,54 +484,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Gestion des curseurs de cotation
+    // Gestion des curseurs de cotation (nouvelle mise en page inline)
     const cotationSliders = document.querySelectorAll('.cotation-slider-form');
-    
-    cotationSliders.forEach(slider => {
-        const scoreDisplay = slider.closest('.slider-container').querySelector('.score-display-form');
-        
-        function updateScoreDisplay(value) {
-            const labels = {
-                0: '0 - Non évalué',
-                1: '1 - Très faible',
-                2: '2 - Faible', 
-                3: '3 - Modéré',
-                4: '4 - Bon',
-                5: '5 - Excellent'
-            };
-            
-            const colors = {
-                0: 'bg-secondary',
-                1: 'bg-danger',
-                2: 'bg-warning',
-                3: 'bg-info',
-                4: 'bg-primary',
-                5: 'bg-success'
-            };
-            
-            // Retirer toutes les classes de couleur
-            scoreDisplay.className = 'badge score-display-form';
-            scoreDisplay.classList.add(colors[value]);
-            scoreDisplay.textContent = labels[value];
+
+    function sliderColor(value) {
+        // Palette cohérente Bootstrap
+        switch (parseInt(value, 10)) {
+            case 1: return '#dc3545'; // danger
+            case 2: return '#fd7e14'; // orange
+            case 3: return '#0dcaf0'; // info
+            case 4: return '#0d6efd'; // primary
+            case 5: return '#198754'; // success
+            default: return '#6c757d'; // secondary
         }
-        
-        // Initialiser l'affichage
-        updateScoreDisplay(slider.value);
-        
-        // Mettre à jour en temps réel
-        slider.addEventListener('input', function() {
-            updateScoreDisplay(this.value);
-        });
-    });
-    
-    // Animation des curseurs
+    }
+
+    function applySliderBackground(slider) {
+        const v = parseInt(slider.value || '0', 10);
+        const pct = Math.max(0, Math.min(100, (v / 5) * 100));
+        const color = sliderColor(v);
+        slider.style.background = `linear-gradient(to right, ${color} 0%, ${color} ${pct}%, #e9ecef ${pct}%, #e9ecef 100%)`;
+    }
+
     cotationSliders.forEach(slider => {
-        slider.addEventListener('input', function() {
-            this.style.background = `linear-gradient(to right, #007bff 0%, #007bff ${(this.value/5)*100}%, #e9ecef ${(this.value/5)*100}%, #e9ecef 100%)`;
-        });
-        
-        // Initialiser l'apparence
-        slider.style.background = `linear-gradient(to right, #007bff 0%, #007bff 0%, #e9ecef 0%, #e9ecef 100%)`;
+        const container = slider.closest('.list-group-item') || slider.closest('.card-body') || slider.parentElement;
+        const scoreDisplay = container ? container.querySelector('.score-display-form') : null;
+
+        function updateScoreDisplay(val) {
+            const value = parseInt(val || '0', 10);
+            const labels = { 0:'0 - Non évalué', 1:'1 - Très faible', 2:'2 - Faible', 3:'3 - Modéré', 4:'4 - Bon', 5:'5 - Excellent' };
+            const colorClasses = { 0:'bg-secondary', 1:'bg-danger', 2:'bg-warning', 3:'bg-info', 4:'bg-primary', 5:'bg-success' };
+            if (scoreDisplay) {
+                scoreDisplay.className = 'badge score-display-form ' + (colorClasses[value] || 'bg-secondary');
+                scoreDisplay.textContent = labels[value] || labels[0];
+            }
+            applySliderBackground(slider);
+        }
+
+        updateScoreDisplay(slider.value);
+        slider.addEventListener('input', function() { updateScoreDisplay(this.value); });
     });
     
     // Validation du formulaire avec information sur la cotation
@@ -624,7 +615,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const seanceId = '{{ seance.id if seance else "" }}';
             fetch(`/audio/transcribe-only/${seanceId}`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'same-origin'
             })
             .then(r => r.json())
             .then(data => {
@@ -777,7 +769,7 @@ function startTempTranscription(file) {
     const formData = new FormData();
     formData.append('audio_file', file);
 
-    fetch('/audio/transcribe-temp', { method: 'POST', body: formData })
+    fetch('/audio/transcribe-temp', { method: 'POST', body: formData, credentials: 'same-origin' })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
@@ -792,6 +784,12 @@ function startTempTranscription(file) {
                 if (preview && previewText) {
                     preview.style.display = 'block';
                     previewText.textContent = data.transcription || '';
+                }
+                // Déployer automatiquement l'accordéon de transcription si présent
+                const collapseEl = document.getElementById('collapseTranscription');
+                if (collapseEl && typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+                    const coll = new bootstrap.Collapse(collapseEl, { toggle: false });
+                    coll.show();
                 }
             } else {
                 throw new Error(data.message || 'Erreur inconnue');
@@ -812,10 +810,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     btn.addEventListener('click', function() {
         const mode = '{{ mode }}';
-        const observations = document.getElementById('observations')?.value || '';
-        const objectifs = document.getElementById('objectifs_seance')?.value || '';
-        const activites = document.getElementById('activites_realisees')?.value || '';
-        const transcrTemp = document.getElementById('transcription_temp_text')?.value || '';
+        const observationsEl = document.getElementById('observations');
+        const objectifsEl = document.getElementById('objectifs_seance');
+        const activitesEl = document.getElementById('activites_realisees');
+        const transcrEl = document.getElementById('transcription_temp_text');
+        const observations = observationsEl ? observationsEl.value : '';
+        const objectifs = objectifsEl ? objectifsEl.value : '';
+        const activites = activitesEl ? activitesEl.value : '';
+        const transcrTemp = transcrEl ? transcrEl.value : '';
         const synthHidden = document.getElementById('synthese_temp_text');
 
         // Afficher un statut
