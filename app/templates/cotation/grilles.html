@@ -71,6 +71,23 @@
     margin-top: 20px;
 }
 
+/* Présentation en lignes (style dashboard) */
+.grille-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.grille-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: #fff;
+    border: 2px solid #f1f3f4; border-radius: 12px;
+    transition: all .2s ease; cursor: pointer;
+}
+.grille-row:hover { border-color: #667eea; box-shadow: 0 8px 24px rgba(0,0,0,.06); transform: translateY(-1px); }
+.row-left { display:flex; align-items:center; gap:14px; min-width:0; flex:1; }
+.row-title { font-weight:600; color:#495057; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.row-desc { color:#6c757d; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 540px; }
+.chips { display:flex; gap:8px; flex-wrap:wrap; }
+.chip { background:#f8f9fa; color:#495057; border:1px solid #e9ecef; padding:3px 8px; border-radius:12px; font-size:.75rem; }
+.row-right { display:flex; align-items:center; gap:6px; margin-left: 10px; }
+.row-right .btn-icon { padding:6px; font-size: 1rem; }
+
 .grille-card {
     background: white;
     border: 2px solid #f1f3f4;
@@ -361,44 +378,40 @@
             <div id="mes-grilles" class="tab-content active">
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
                     <input id="searchUserGrids" type="text" placeholder="Rechercher une grille…" 
-                           oninput="filtrerGrilles('#mes-grilles .grille-card', this.value)"
+                           oninput="filtrerGrilles('#mes-grilles .grille-row', this.value)"
                            style="flex:1; padding:10px 14px; border:1px solid #e9ecef; border-radius:10px;">
                 </div>
                 {% if grilles_user %}
-                <div class="grille-grid">
+                <div class="grille-list">
                     {% for grille in grilles_user %}
-                    <div class="grille-card grille-open" data-grille-id="{{ grille.id }}">
-                        <div class="grille-card-header">
+                    <div class="grille-row grille-open" data-grille-id="{{ grille.id }}">
+                        <div class="row-left">
                             <div>
                                 <span class="grille-badge">{{ grille.reference_scientifique or 'CUSTOM' }}</span>
                                 <span class="grille-version-badge" title="Version active">V{{ grille.versions|length or 1 }}</span>
                             </div>
-                            <div class="grille-actions">
-                                    <button class="btn-icon action-view" data-grille-id="{{ grille.id }}" title="Voir la grille">
-                                        👁️
-                                    </button>
-                                <button class="btn-icon action-edit" data-grille-id="{{ grille.id }}" title="Éditer">
-                                    ✏️
-                                </button>
-                                <button class="btn-icon action-delete" data-grille-id="{{ grille.id }}" title="Supprimer">
-                                    🗑️
-                                </button>
+                            <div class="d-flex flex-column" style="min-width:0;">
+                                <div class="row-title">{{ grille.nom }}</div>
+                                {% if grille.description %}
+                                <div class="row-desc">{{ grille.description }}</div>
+                                {% endif %}
+                                <div class="chips mt-1">
+                                    <span class="chip">{{ grille.domaines|length }} domaine{{ '' if grille.domaines|length < 2 else 's' }}</span>
+                                    <span class="chip">{{ grille.versions|length }} version{{ '' if (grille.versions|length) < 2 else 's' }}</span>
+                                    <span class="chip">Créée {{ grille.date_creation.strftime('%d/%m/%Y') }}</span>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="grille-title">{{ grille.nom }}</div>
-                        <div class="grille-description">{{ grille.description }}</div>
-                        
-                        <div class="grille-stats">
-                            <span>{{ grille.domaines|length }} domaine{{ '' if grille.domaines|length < 2 else 's' }}</span>
-                            <span>V{{ grille.versions|length or 1 }} • {{ grille.versions|length }} version{{ '' if (grille.versions|length) < 2 else 's' }}</span>
-                        </div>
-                        <div class="mt-3">
-                            <a class="btn btn-sm btn-outline-primary" href="/cotation/grille/{{ grille.id }}">Voir la grille</a>
-                        </div>
-                        <div class="grille-stats" style="border-top:none; margin-top:4px; padding-top:0; font-size:0.7rem; opacity:.8;">
-                            <span>Créée le {{ grille.date_creation.strftime('%d/%m/%Y') }}</span>
-                            <span>Maj le {{ grille.date_modification.strftime('%d/%m/%Y') }}</span>
+                        <div class="row-right">
+                            <button class="btn-icon action-view" data-grille-id="{{ grille.id }}" title="Voir la grille">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn-icon action-edit" data-grille-id="{{ grille.id }}" title="Éditer">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn-icon action-delete" data-grille-id="{{ grille.id }}" title="Supprimer">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                     </div>
                     {% endfor %}
@@ -419,37 +432,36 @@
             <div id="grilles-standard" class="tab-content">
                 <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
                     <input id="searchStdGrids" type="text" placeholder="Rechercher une grille standard…" 
-                           oninput="filtrerGrilles('#grilles-standard .grille-card', this.value)"
+                           oninput="filtrerGrilles('#grilles-standard .grille-row', this.value)"
                            style="flex:1; padding:10px 14px; border:1px solid #e9ecef; border-radius:10px;">
                 </div>
                 {% if grilles_publiques %}
-                <div class="grille-grid">
+                <div class="grille-list">
                     {% for grille in grilles_publiques %}
-                    <div class="grille-card grille-open" data-grille-id="{{ grille.id }}">
-                        <div class="grille-card-header">
+                    <div class="grille-row grille-open" data-grille-id="{{ grille.id }}">
+                        <div class="row-left">
                             <div>
                                 <span class="grille-badge">{{ grille.reference_scientifique }}</span>
                                 <span class="grille-version-badge" title="Version active">V{{ grille.versions|length or 1 }}</span>
                             </div>
-                            <div class="grille-actions">
-                                    <button class="btn-icon action-view" data-grille-id="{{ grille.id }}" title="Voir la grille">
-                                        👁️
-                                    </button>
-                                <button class="btn-icon action-copy" data-grille-id="{{ grille.id }}" title="Copier dans mes grilles">
-                                    📋
-                                </button>
+                            <div class="d-flex flex-column" style="min-width:0;">
+                                <div class="row-title">{{ grille.nom }}</div>
+                                {% if grille.description %}
+                                <div class="row-desc">{{ grille.description }}</div>
+                                {% endif %}
+                                <div class="chips mt-1">
+                                    <span class="chip">{{ grille.domaines|length }} domaine{{ '' if grille.domaines|length < 2 else 's' }}</span>
+                                    <span class="chip">Validée</span>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="grille-title">{{ grille.nom }}</div>
-                        <div class="grille-description">{{ grille.description }}</div>
-                        
-                        <div class="grille-stats">
-                            <span>{{ grille.domaines|length }} domaine{{ '' if grille.domaines|length < 2 else 's' }}</span>
-                            <span>V{{ grille.versions|length or 1 }} • 🔬 Validée</span>
-                        </div>
-                        <div class="mt-3">
-                            <a class="btn btn-sm btn-outline-primary" href="/cotation/grille/{{ grille.id }}">Voir la grille</a>
+                        <div class="row-right">
+                            <button class="btn-icon action-view" data-grille-id="{{ grille.id }}" title="Voir la grille">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn-icon action-copy" data-grille-id="{{ grille.id }}" title="Copier dans mes grilles">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
                         </div>
                     </div>
                     {% endfor %}
@@ -748,7 +760,7 @@ window.onclick = function(event) {
 
 // Délégation d'événements (remplace les onclick inline)
 document.addEventListener('click', function(e) {
-    const target = e.target.closest('button, .grille-card');
+    const target = e.target.closest('button, .grille-card, .grille-row');
     if (!target) return;
     if (target.classList.contains('action-edit')) {
         e.stopPropagation();
@@ -773,8 +785,8 @@ function filtrerGrilles(selector, texte) {
     const cards = document.querySelectorAll(selector);
     const q = (texte || '').toLowerCase().trim();
     cards.forEach(card => {
-        const title = (card.querySelector('.grille-title')?.textContent || '').toLowerCase();
-        const desc = (card.querySelector('.grille-description')?.textContent || '').toLowerCase();
+        const title = (card.querySelector('.row-title')?.textContent || card.querySelector('.grille-title')?.textContent || '').toLowerCase();
+        const desc = (card.querySelector('.row-desc')?.textContent || card.querySelector('.grille-description')?.textContent || '').toLowerCase();
         const visible = !q || title.includes(q) || desc.includes(q);
         card.style.display = visible ? '' : 'none';
     });
