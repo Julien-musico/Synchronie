@@ -609,7 +609,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (assignSelect && dynamicRoot) {
         assignSelect.addEventListener('change', function() {
             const gid = this.value;
-            dynamicRoot.innerHTML = '';
+            // Show a small loading indicator
+            dynamicRoot.innerHTML = '<div class="alert alert-light"><div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2"></div>Chargement de la grille...</div></div>';
             if (!gid) return;
             // Fetch domaines of selected grille
             fetch(`/grilles/api/${gid}/domaines`)
@@ -621,7 +622,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Build cotation section with sliders (0..5 like the simplified UI)
                     const section = document.createElement('div');
                     section.className = 'cotation-section';
-                    section.innerHTML = `
+            const grilleNom = (data.grille && data.grille.nom) ? data.grille.nom : 'Sélectionnée';
+            section.innerHTML = `
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title mb-0">
                                 <i class="bi bi-clipboard-check text-success me-2"></i>
@@ -634,7 +636,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>Grille : ${data.grille?.nom || 'Sélectionnée'}</strong> - Vous pouvez coter cette séance dès maintenant.
+                <strong>Grille : ${grilleNom}</strong> - Vous pouvez coter cette séance dès maintenant.
                         </div>
                         <div id="cotation-content-dyn"></div>
                         <div class="mb-3 mt-3">
@@ -721,6 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(err => {
                     console.error('Erreur chargement grille:', err);
+                    dynamicRoot.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-2"></i>Impossible de charger la grille sélectionnée. Réessayez.</div>';
                 });
         });
     }
