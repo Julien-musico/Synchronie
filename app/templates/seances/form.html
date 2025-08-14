@@ -607,14 +607,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const assignSelect = document.getElementById('assign_grille_id');
     const dynamicRoot = document.getElementById('dynamic-cotation-root');
     if (assignSelect && dynamicRoot) {
+        // Build API URL from Flask to support subpath deployments
+        const API_GRILLE_DOMAINES_TEMPLATE = "{{ url_for('grilles.api_grille_domaines', grille_id=0) }}"; // e.g., /grilles/api/0/domaines
         assignSelect.addEventListener('change', function() {
             const gid = this.value;
             // Show a small loading indicator
             dynamicRoot.innerHTML = '<div class="alert alert-light"><div class="d-flex align-items-center"><div class="spinner-border spinner-border-sm me-2"></div>Chargement de la grille...</div></div>';
             if (!gid) return;
             // Fetch domaines of selected grille
-            fetch(`/grilles/api/${gid}/domaines`)
-                .then(r => r.json())
+            const url = API_GRILLE_DOMAINES_TEMPLATE.replace('/0/', `/${gid}/`);
+            fetch(url, { credentials: 'same-origin' })
+                .then(r => {
+                    const ct = r.headers.get('content-type') || '';
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    if (ct.indexOf('application/json') === -1) throw new Error('Réponse inattendue');
+                    return r.json();
+                })
                 .then(data => {
                     if (!data.success) throw new Error(data.message || 'Erreur chargement grille');
                     const domaines = data.domaines || [];
