@@ -69,7 +69,12 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tab-transcription" data-bs-toggle="tab" data-bs-target="#pane-transcription" type="button" role="tab" aria-controls="pane-transcription" aria-selected="false">
-                                <i class="bi bi-mic me-1"></i> Transcription & Synthèse
+                                <i class="bi bi-mic me-1"></i> Transcription
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tab-synthese" data-bs-toggle="tab" data-bs-target="#pane-synthese" type="button" role="tab" aria-controls="pane-synthese" aria-selected="false">
+                                <i class="bi bi-robot me-1"></i> Synthèse
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -157,7 +162,7 @@
                             </div>
                         </div>
 
-                        <!-- Pane: Transcription & Synthèse -->
+                        <!-- Pane: Transcription -->
                         <div class="tab-pane fade" id="pane-transcription" role="tabpanel" aria-labelledby="tab-transcription">
                             <div class="row">
                                 <div class="col-md-8">
@@ -202,7 +207,28 @@
                                     </div>
                                     {% endif %}
 
-                                    <!-- Synthèse IA -->
+                                    
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="alert alert-secondary">
+                                        <div class="fw-semibold mb-1"><i class="bi bi-lightbulb me-2"></i>Conseils</div>
+                                        <ul class="small mb-0">
+                                            <li>Ajoutez un audio pour générer une transcription.</li>
+                                            <li>La synthèse est disponible dans l’onglet « Synthèse ».</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pane: Synthèse -->
+                        <div class="tab-pane fade" id="pane-synthese" role="tabpanel" aria-labelledby="tab-synthese">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="alert alert-info">
+                                        <div>La synthèse tient compte des objectifs, activités et observations et le cas échéant du verbatim audio.</div>
+                                        <div>Vous pouvez la regénérer après modification.</div>
+                                    </div>
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <h6 class="mb-0"><i class="bi bi-robot me-2"></i> Synthèse thérapeutique IA</h6>
                                         <button type="button" class="btn btn-outline-success btn-sm" id="btn-generate-synthese"><i class="bi bi-magic me-1"></i> Générer synthèse</button>
@@ -215,11 +241,11 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="alert alert-secondary">
+        
                                         <div class="fw-semibold mb-1"><i class="bi bi-lightbulb me-2"></i>Conseils</div>
                                         <ul class="small mb-0">
-                                            <li>Ajoutez un audio pour générer une transcription.</li>
-                                            <li>La synthèse tient compte des objectifs, activités et observations.</li>
-                                            <li>Vous pouvez la régénérer après modifications.</li>
+                                            <li>Vérifiez/complétez les objectifs, activités et observations.</li>
+                                            <li>Ajoutez un audio pour enrichir la synthèse avec le verbatim.</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -229,20 +255,6 @@
                         <!-- Pane: Cotation -->
                         <div class="tab-pane fade" id="pane-cotation" role="tabpanel" aria-labelledby="tab-cotation">
                     
-                    {% if mode == 'create' %}
-                    <div id="synthese-preview" class="mb-3" style="display:none;">
-                        <label class="form-label">
-                            <i class="bi bi-robot me-1"></i>
-                            Synthèse thérapeutique IA (prévisualisation)
-                        </label>
-                        <div class="card border-0 bg-light">
-                            <div class="card-body">
-                                <div id="synthese-preview-text" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
                     <hr class="my-4">
 
                     <!-- Section de cotation optionnelle (création ET modification) -->
@@ -337,13 +349,7 @@
 
                     <hr class="my-4">
 
-                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                        <div>
-                            <button type="button" class="btn btn-outline-success" id="btn-generate-synthese">
-                                <i class="bi bi-magic me-1"></i>
-                                Générer synthèse
-                            </button>
-                        </div>
+                    <div class="d-flex justify-content-end align-items-center gap-2 mb-2">
                         <div class="d-flex gap-2">
                             <a href="{{ url_for('patients.view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-circle me-2"></i>
