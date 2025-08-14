@@ -35,17 +35,17 @@
                                 <p class="text-white-50 mb-0">Automatisez la documentation, mesurez le progrès, concentrez-vous sur le soin.</p>
                             </div>
                         </div>
-                        <div class="mt-3 text-white-50 small">
-                            <i class="bi bi-people me-1"></i> Patients actifs: {{ stats.patients_actifs }}
+                            <div class="mt-3 text-white-50 small">
+                                <i class="bi bi-people me-1"></i> Patients actifs: {{ stats.patients_actifs or 0 }}
                             <span class="mx-2">•</span>
-                            <i class="bi bi-file-music me-1"></i> Séances ce mois: {{ stats.seances_ce_mois }}
+                                <i class="bi bi-file-music me-1"></i> Séances ce mois: {{ stats.seances_ce_mois or 0 }}
                             <span class="mx-2">•</span>
-                            <i class="bi bi-robot me-1"></i> Total séances: {{ stats.total_seances }}
+                                <i class="bi bi-robot me-1"></i> Total séances: {{ stats.total_seances or 0 }}
                         </div>
   
                         <div class="mt-4 row g-3 quick-actions">
                             <div class="col-12 col-sm-6 col-lg-3">
-                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouveau_patient.url }}">
+                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouveau_patient.url | default('#') }}">
                                     <div class="card-body d-flex align-items-center gap-3">
                                         <div class="action-icon bg-primary-subtle text-primary"><i class="bi bi-person-plus-fill"></i></div>
                                         <div><div class="fw-semibold">Nouveau Patient</div><small class="text-white-75">Créer un dossier</small></div>
@@ -53,7 +53,7 @@
                                 </a>
                             </div>
                             <div class="col-12 col-sm-6 col-lg-3">
-                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouvelle_seance.url }}">
+                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouvelle_seance.url | default('#') }}">
                                     <div class="card-body d-flex align-items-center gap-3">
                                         <div class="action-icon bg-success-subtle text-success"><i class="bi bi-plus-circle-fill"></i></div>
                                         <div><div class="fw-semibold">Nouvelle Séance</div><small class="text-white-75">Planifier / saisir</small></div>
@@ -61,7 +61,7 @@
                                 </a>
                             </div>
                             <div class="col-12 col-sm-6 col-lg-3">
-                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouveau_rapport.url }}">
+                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.nouveau_rapport.url | default('#') }}">
                                     <div class="card-body d-flex align-items-center gap-3">
                                         <div class="action-icon bg-warning-subtle text-warning"><i class="bi bi-file-earmark-text-fill"></i></div>
                                         <div><div class="fw-semibold">Nouveau Rapport</div><small class="text-white-75">Synthèse périodique</small></div>
@@ -69,7 +69,7 @@
                                 </a>
                             </div>
                             <div class="col-12 col-sm-6 col-lg-3">
-                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.agenda.url }}">
+                                <a class="card action-card h-100 border-0 shadow-sm" href="{{ quick_actions.agenda.url | default('#') }}">
                                     <div class="card-body d-flex align-items-center gap-3">
                                         <div class="action-icon bg-info-subtle text-info"><i class="bi bi-calendar2-week-fill"></i></div>
                                         <div><div class="fw-semibold">Agenda</div><small class="text-white-75">Vue planning</small></div>
@@ -83,7 +83,7 @@
                     <div>
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <h5 class="mb-0">Patients récents</h5>
-                            <a href="{{ recent_patients_url }}" class="btn btn-sm btn-outline-secondary">Voir tous les patients</a>
+                            <a href="{{ recent_patients_url | default(url_for('patients.list_patients')) }}" class="btn btn-sm btn-outline-secondary">Voir tous les patients</a>
                         </div>
                         {% if recent_patients %}
                             <div class="row g-3">
@@ -93,7 +93,7 @@
                                         <div class="card-body">
                                             <div class="d-flex align-items-center justify-content-between mb-2">
                                                 <div class="d-flex align-items-center gap-2">
-                                                    <div class="avatar-pill bg-primary text-white">{{ (p.prenom[:1] if p.prenom else '') ~ (p.nom[:1] if p.nom else '') }}</div>
+                                                    <div class="avatar-pill bg-primary text-white">{{ ((p.prenom or '')[:1]) ~ ((p.nom or '')[:1]) }}</div>
                                                     <div>
                                                         <div class="fw-semibold">{{ p.prenom }} {{ p.nom }}</div>
                                                         <small class="text-muted">{{ p.pathologie or '—' }}</small>
