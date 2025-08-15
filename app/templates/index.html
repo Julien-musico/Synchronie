@@ -3,123 +3,83 @@
 {% block title %}Accueil - Synchronie{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Hero Section -->
-    <div class="col-12">
-        <div class="text-center py-5">
-            <div class="mb-4">
-                <i class="bi bi-music-note-beamed display-1 text-primary"></i>
-            </div>
-            <h1 class="display-4 fw-bold mb-3">Bienvenue dans Synchronie</h1>
-            <p class="lead text-muted mb-4">
-                L'intelligence artificielle au service de la musicothérapie
-            </p>
-            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-lg">
-                    <i class="bi bi-speedometer2 me-2"></i>
-                    Accéder au tableau de bord
-                </a>
-                <a href="{{ url_for('patients.new_patient') }}" class="btn btn-outline-primary btn-lg">
-                    <i class="bi bi-person-plus me-2"></i>
-                    Ajouter un patient
-                </a>
-            </div>
-        </div>
+<div class="row align-items-center mt-5">
+    <div class="col-md-6 text-center mx-auto">
+        <img src="{{ url_for('static', filename='img/wave_resonance.svg') }}" alt="Onde sonore" style="height:120px; margin-bottom:24px; filter: drop-shadow(0 4px 16px #4F8EF7);">
+        <h1 class="display-4 fw-bold mb-3" style="color:#764ba2;">Bienvenue sur Synchronie</h1>
+        <p class="lead" style="color:#667eea;">L'IA au service de la musicothérapie, pour une documentation intelligente et un suivi thérapeutique personnalisé.</p>
     </div>
 </div>
 
 <div class="row g-4 mt-5">
-    <!-- Fonctionnalités principales -->
-    <div class="col-12 mb-4">
-        <h2 class="text-center mb-5">
-            <i class="bi bi-stars text-warning me-2"></i>
-            Fonctionnalités révolutionnaires
-        </h2>
-    </div>
-    
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-4">
                 <div class="d-flex align-items-center mb-3">
                     <div class="bg-primary bg-opacity-10 rounded-3 p-3 me-3">
-                        <i class="bi bi-people-fill text-primary fs-3"></i>
+                        <i class="bi bi-person-badge text-primary fs-2"></i>
                     </div>
                     <h4 class="card-title mb-0">Gestion intelligente des patients</h4>
                 </div>
-                <p class="card-text text-muted">
-                    Dossiers centralisés avec suivi longitudinal complet. 
-                    Recherche avancée et historique détaillé de chaque patient.
-                </p>
+                <p class="card-text text-muted">Dossiers centralisés avec suivi longitudinal complet. Recherche avancée et historique détaillé de chaque patient.</p>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Profils patients complets</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Historique des séances</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Objectifs thérapeutiques</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Profils patients complets</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Historique des séances</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Objectifs thérapeutiques</li>
                 </ul>
             </div>
         </div>
     </div>
-
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-4">
                 <div class="d-flex align-items-center mb-3">
                     <div class="bg-success bg-opacity-10 rounded-3 p-3 me-3">
-                        <i class="bi bi-mic-fill text-success fs-3"></i>
+                        <i class="bi bi-soundwave text-success fs-2"></i>
                     </div>
                     <h4 class="card-title mb-0">Traitement automatique audio</h4>
                 </div>
-                <p class="card-text text-muted">
-                    Transcription et analyse automatiques des enregistrements 
-                    grâce à l'intelligence artificielle OpenAI.
-                </p>
+                <p class="card-text text-muted">Transcription et analyse automatiques des enregistrements grâce à l'intelligence artificielle OpenAI.</p>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Transcription via Whisper</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Synthèse thérapeutique IA</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Détection des moments clés</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Transcription via Whisper</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Synthèse thérapeutique IA</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Détection des moments clés</li>
                 </ul>
             </div>
         </div>
     </div>
-
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-4">
                 <div class="d-flex align-items-center mb-3">
                     <div class="bg-info bg-opacity-10 rounded-3 p-3 me-3">
-                        <i class="bi bi-clipboard-data-fill text-info fs-3"></i>
+                        <i class="bi bi-bar-chart-steps text-info fs-2"></i>
                     </div>
                     <h4 class="card-title mb-0">Cotation thérapeutique</h4>
                 </div>
-                <p class="card-text text-muted">
-                    Grilles personnalisables basées sur les standards internationaux 
-                    (AMTA, IMCAP-ND, MRS).
-                </p>
+                <p class="card-text text-muted">Grilles personnalisables basées sur les standards internationaux (AMTA, IMCAP-ND, MRS).</p>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Templates scientifiques</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Grilles sur mesure</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Cotation intelligente</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Templates scientifiques</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Grilles sur mesure</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Cotation intelligente</li>
                 </ul>
             </div>
         </div>
     </div>
-
     <div class="col-lg-6">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body p-4">
                 <div class="d-flex align-items-center mb-3">
                     <div class="bg-warning bg-opacity-10 rounded-3 p-3 me-3">
-                        <i class="bi bi-file-text-fill text-warning fs-3"></i>
+                        <i class="bi bi-file-earmark-bar-graph text-warning fs-2"></i>
                     </div>
                     <h4 class="card-title mb-0">Rapports automatisés</h4>
                 </div>
-                <p class="card-text text-muted">
-                    Génération automatique de synthèses d'évolution 
-                    pour les équipes médicales et les familles.
-                </p>
+                <p class="card-text text-muted">Génération automatique de synthèses d'évolution pour les équipes médicales et les familles.</p>
                 <ul class="list-unstyled">
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Rapports périodiques</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Format professionnel</li>
-                    <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Distribution automatique</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Rapports périodiques</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Format professionnel</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Distribution automatique</li>
                 </ul>
             </div>
         </div>
@@ -128,13 +88,11 @@
 
 <div class="row mt-5">
     <div class="col-12">
-        <div class="card bg-gradient border-0 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <div class="card-body p-5 text-center">
+        <div class="card border-0 text-white text-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body p-5">
                 <h3 class="card-title mb-3">🎯 Notre mission</h3>
-                <p class="card-text lead mb-4">
-                    Révolutionner la pratique de la musicothérapie en automatisant la documentation 
-                    des séances grâce à l'intelligence artificielle, tout en offrant des outils de 
-                    suivi thérapeutique basés sur les standards internationaux.
+                <p class="card-text lead mb-4" style="color:#fff;">
+                    Révolutionner la pratique de la musicothérapie en automatisant la documentation des séances grâce à l'intelligence artificielle, tout en offrant des outils de suivi thérapeutique basés sur les standards internationaux.
                 </p>
                 <div class="row g-4 text-center">
                     <div class="col-md-3">
@@ -159,14 +117,9 @@
     </div>
 </div>
 
-<div class="row align-items-center mt-5">
-    <div class="col-md-6 text-center">
-        <img src="{{ url_for('static', filename='img/wave_resonance.svg') }}" alt="Onde sonore" style="height:120px; margin-bottom:24px; filter: drop-shadow(0 4px 16px #4F8EF7);">
-        <h1 class="display-4 fw-bold mb-3" style="color:#764ba2;">Bienvenue sur Synchronie</h1>
-        <p class="lead" style="color:#667eea;">L'IA au service de la musicothérapie, pour une documentation intelligente et un suivi thérapeutique personnalisé.</p>
-    </div>
-    <div class="col-md-6">
-        <div class="card shadow-lg border-0" style="background: linear-gradient(120deg, #667eea 0%, #764ba2 100%); color: #fff;">
+<div class="row mt-5 mb-4">
+    <div class="col-12 text-center">
+        <div class="card shadow-lg border-0 mx-auto" style="max-width: 500px; background: linear-gradient(120deg, #667eea 0%, #764ba2 100%); color: #fff;">
             <div class="card-body p-4">
                 <h3 class="mb-3"><i class="bi bi-quote text-warning"></i> Citation de la semaine</h3>
                 <blockquote class="blockquote mb-0" id="citation-block">
