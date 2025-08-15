@@ -69,7 +69,7 @@ def index():
     """Redirige vers login si non authentifié, sinon dashboard."""
     if not current_user.is_authenticated:  # type: ignore
         return redirect(url_for('auth.login'))
-    return redirect(url_for('main.dashboard'))
+    return render_template('index.html')
 
 @main.route('/dashboard')
 @login_required  # type: ignore

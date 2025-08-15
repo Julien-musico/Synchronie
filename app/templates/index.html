@@ -158,4 +158,42 @@
         </div>
     </div>
 </div>
+
+<div class="row align-items-center mt-5">
+    <div class="col-md-6 text-center">
+        <img src="{{ url_for('static', filename='img/wave_resonance.svg') }}" alt="Onde sonore" style="height:120px; margin-bottom:24px; filter: drop-shadow(0 4px 16px #4F8EF7);">
+        <h1 class="display-4 fw-bold mb-3" style="color:#764ba2;">Bienvenue sur Synchronie</h1>
+        <p class="lead" style="color:#667eea;">L'IA au service de la musicothérapie, pour une documentation intelligente et un suivi thérapeutique personnalisé.</p>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-lg border-0" style="background: linear-gradient(120deg, #667eea 0%, #764ba2 100%); color: #fff;">
+            <div class="card-body p-4">
+                <h3 class="mb-3"><i class="bi bi-quote text-warning"></i> Citation de la semaine</h3>
+                <blockquote class="blockquote mb-0" id="citation-block">
+                    <p id="citation-text">La musique donne une âme à nos cœurs et des ailes à la pensée. </p>
+                    <footer class="blockquote-footer text-light">Platon</footer>
+                </blockquote>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+// Citations thérapeutiques et musicales (une par semaine)
+const citations = [
+    {text: "La musique donne une âme à nos cœurs et des ailes à la pensée.", author: "Platon"},
+    {text: "Là où les mots échouent, la musique parle.", author: "Hans Christian Andersen"},
+    {text: "La musicothérapie est l'art d'utiliser la musique pour soigner l'âme.", author: "Bruscia"},
+    {text: "La musique peut changer le monde parce qu'elle peut changer les gens.", author: "Bono"},
+    {text: "La musique exprime ce qui ne peut être dit et sur quoi il est impossible de rester silencieux.", author: "Victor Hugo"},
+    {text: "La thérapie commence là où la musique touche le cœur.", author: "Anonyme"}
+];
+function setWeeklyCitation() {
+    const now = new Date();
+    const week = Math.floor((now.getTime() / (1000 * 60 * 60 * 24 * 7)) % citations.length);
+    const citation = citations[week];
+    document.getElementById('citation-text').textContent = citation.text;
+    document.querySelector('#citation-block .blockquote-footer').textContent = citation.author;
+}
+setWeeklyCitation();
+</script>
 {% endblock %}
