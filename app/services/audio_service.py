@@ -206,17 +206,13 @@ class AudioTranscriptionService:
             logger.info("Génération de l'analyse IA de la séance")
             
             # Prompt spécialisé pour l'analyse de musicothérapie
-            system_prompt = """Tu es un assistant spécialisé en musicothérapie. Analyse cette séance et génère une synthèse thérapeutique structurée.
-
-La synthèse doit inclure :
-1. **Observations générales** - Ambiance et déroulement de la séance
-2. **Engagement du patient** - Niveau de participation et réceptivité
-3. **Moments significatifs** - Réactions particulières, progrès observés
-4. **Activités musicales** - Instruments utilisés, préférences exprimées
-5. **Évolution émotionnelle** - Changements d'humeur ou d'expression
-6. **Recommandations** - Suggestions pour les prochaines séances
-
-Reste professionnel, bienveillant et utilise un vocabulaire approprié au domaine de la musicothérapie."""
+            system_prompt = """Tu es musicothérapeute spécialisé en psychologie. Reformule fidèlement le contenu ci-dessous.
+Contraintes:
+- Style professionnel, sobre, factuel
+- Écrire à la première personne ("je")
+- Aucune invention: s'appuyer exclusivement sur le texte fourni
+- Pas de généralités ni d'interprétations non sourcées
+- Français clair"""
             
             contexte = ""
             if session_context:

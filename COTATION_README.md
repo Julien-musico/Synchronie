@@ -33,7 +33,7 @@ app/routes/cotation.py              # Routes API et vues
 ### Frontend (Templates HTML/CSS/JS)
 ```
 app/templates/cotation/
-├── interface_cotation.html         # Interface de cotation visuelle
+├── interface_cotation_clean.html   # Interface de cotation visuelle (active)
 └── grilles.html                   # Gestion des grilles d'évaluation
 ```
 

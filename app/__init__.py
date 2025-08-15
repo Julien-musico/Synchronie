@@ -1,7 +1,7 @@
 """
 Factory pattern pour créer l'application Flask
 """
-from flask import Flask
+from flask import Flask, redirect, url_for
 from flask_migrate import Migrate
 
 try:
@@ -85,6 +85,13 @@ def create_app(config_name: str = 'default') -> Flask:
         @app.route('/cotation/grilles')  # type: ignore
         def cotation_placeholder():  # type: ignore
             return '<h2>Cotation indisponible (initialisation en cours)</h2>'
+
+    # Redirections des anciennes routes /grilles vers la nouvelle page unifiée
+    @app.route('/grilles')  # type: ignore
+    @app.route('/grilles/')  # type: ignore
+    @app.route('/grilles/<path:subpath>')  # type: ignore
+    def redirect_legacy_grilles(subpath: str | None = None):  # type: ignore
+        return redirect(url_for('cotation.grilles'), code=302)
 
     # Contexte global pour les templates
     @app.context_processor  # type: ignore
