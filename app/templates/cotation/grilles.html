@@ -76,6 +76,10 @@
 .row-desc { color:#6c757d; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 540px; }
 .chips { display:flex; gap:8px; flex-wrap:wrap; }
 .chip { background:#f8f9fa; color:#495057; border:1px solid #e9ecef; padding:3px 8px; border-radius:12px; font-size:.75rem; }
+.status-pill { padding:3px 9px; border-radius:999px; font-size:.72rem; font-weight:700; border:1px solid transparent; letter-spacing:.2px; display:inline-flex; align-items:center; gap:6px; }
+.status-pill i { font-size:.9em; line-height:1; }
+.status-officiel { background:#eef4ff; color:#3b5bdb; border-color:#dbe4ff; }
+.status-perso { background:#f1f3f5; color:#495057; border-color:#e9ecef; }
 .row-right { display:flex; align-items:center; gap:6px; margin-left: 10px; }
 .row-right .btn-icon { padding:6px; font-size: 1rem; }
 
@@ -205,6 +209,43 @@
                     <i class="bi bi-award me-1"></i>{{ grilles_publiques|length }} standards
                 </div>
             </div>
+            <div class="p-3 p-md-4">
+                <div class="row g-3 quick-actions">
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <a class="card action-card h-100 border-0 shadow-sm" href="#" onclick="return creerGrilleVide();">
+                            <div class="card-body d-flex align-items-center gap-3">
+                                <div class="action-icon bg-white text-primary"><i class="bi bi-gear-fill"></i></div>
+                                <div>
+                                    <div class="fw-semibold text-white">Créer une grille vide</div>
+                                    <small class="text-white-75">Définir vos domaines et indicateurs</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <a class="card action-card h-100 border-0 shadow-sm" href="{{ url_for('cotation.seances_a_coter') }}">
+                            <div class="card-body d-flex align-items-center gap-3">
+                                <div class="action-icon bg-white text-success"><i class="bi bi-check2-square"></i></div>
+                                <div>
+                                    <div class="fw-semibold text-white">Séances à coter</div>
+                                    <small class="text-white-75">Poursuivre vos cotations</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <a class="card action-card h-100 border-0 shadow-sm" href="{{ url_for('cotation.analyses_overview') }}">
+                            <div class="card-body d-flex align-items-center gap-3">
+                                <div class="action-icon bg-white text-warning"><i class="bi bi-graph-up"></i></div>
+                                <div>
+                                    <div class="fw-semibold text-white">Analyses</div>
+                                    <small class="text-white-75">Tendances et indicateurs clés</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
             
             <div class="section-tabs">
                 <button class="tab-button active" onclick="switchTab(event, 'mes-grilles')">
@@ -238,6 +279,7 @@
                                     <span class="chip">{{ grille.domaines|length }} domaine{{ '' if grille.domaines|length < 2 else 's' }}</span>
                                     <span class="chip">{{ grille.versions|length }} version{{ '' if (grille.versions|length) < 2 else 's' }}</span>
                                     <span class="chip">Créée {{ grille.date_creation.strftime('%d/%m/%Y') }}</span>
+                                    <span class="status-pill status-perso" title="Grille personnelle"><i class="bi bi-person-badge"></i>Perso</span>
                                 </div>
                             </div>
                         </div>
@@ -288,7 +330,7 @@
                                 {% endif %}
                                 <div class="chips mt-1">
                                     <span class="chip">{{ grille.domaines|length }} domaine{{ '' if grille.domaines|length < 2 else 's' }}</span>
-                                    <span class="chip">Validée</span>
+                                    <span class="status-pill status-officiel" title="Grille officielle"><i class="bi bi-award"></i>Officielle</span>
                                 </div>
                             </div>
                         </div>
@@ -365,26 +407,25 @@ async function supprimerGrille(grilleId) {
     } catch(e){ alert('Erreur: ' + e.message); }
 }
 
-async function copierGrille(grilleId) {
+async function creerGrilleVide() {
     try {
-        const resp = await fetch(`/cotation/grille/${grilleId}/copier`, { method: 'POST' });
-        const data = await resp.json();
-        if (data.success) location.reload(); else alert(data.error || 'Erreur');
-    } catch(e){ alert('Erreur: ' + e.message); }
-}
-
-async function creerGrillePersonnalisee() {
-    const nom = prompt('Nom de la nouvelle grille :');
-    if (!nom) return;
-    try {
+        const nom = 'Nouvelle grille';
         const resp = await fetch('/cotation/grilles/personnalisee', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ nom: nom, description: '' , domaines: [] })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom, description: '', domaines: [] })
         });
         const data = await resp.json();
-        if (data.success) location.reload(); else alert(data.error || 'Erreur');
-    } catch(e){ alert('Erreur: ' + e.message); }
+        if (data && data.success && data.grille_id) {
+            window.location = `/cotation/grille/${data.grille_id}/editer-domaines`;
+            return false;
+        }
+        alert(data.error || 'Création impossible');
+        return false;
+    } catch (e) {
+        alert('Erreur: ' + e.message);
+        return false;
+    }
 }
 
 // Délégation d'événements
