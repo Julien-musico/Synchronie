@@ -52,3 +52,21 @@
   box-shadow: 0 2px 8px rgba(76,76,120,0.08);
   border: 1px solid #e0e7ef;
 }
+
+.dashboard-stat-card {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgba(76,76,120,0.10);
+  padding: 1.2rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.dashboard-stat-card i {
+  font-size: 2rem;
+  opacity: 0.85;
+}
