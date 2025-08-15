@@ -43,3 +43,12 @@
   line-clamp: 2;
   overflow: hidden;
 }
+
+/* Stat blocks */
+.stat-block {
+  min-width: 180px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(76,76,120,0.08);
+  border: 1px solid #e0e7ef;
+}
