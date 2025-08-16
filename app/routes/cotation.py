@@ -33,7 +33,7 @@ def grilles():  # type: ignore[no-untyped-def]
     from flask import current_app
     try:
         grilles_user = GrilleEvaluation.query.filter_by(
-            musicotherapeute_id=current_user.id,
+            user_id=current_user.id,
             active=True
         ).all()
         grilles_publiques = GrilleEvaluation.query.filter_by(
@@ -69,7 +69,7 @@ def creer_grille_predefinee():
         if not grille:
             return jsonify({'success': False, 'error': 'Type de grille inconnu'}), 400
         # Assigner à l'utilisateur actuel
-        grille.musicotherapeute_id = current_user.id
+        grille.user_id = current_user.id
         grille.publique = False
         db.session.commit()
         return jsonify({
@@ -77,7 +77,6 @@ def creer_grille_predefinee():
             'grille_id': grille.id,
             'nom': grille.nom
         })
-            
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -88,7 +87,7 @@ def seances_a_coter():
     """Page listant les séances disponibles pour cotation"""
     # Récupérer toutes les séances de l'utilisateur via la relation patient
     seances = db.session.query(Seance).join(Patient).filter(
-        Patient.musicotherapeute_id == current_user.id
+        Patient.user_id == current_user.id
     ).order_by(Seance.date_seance.desc()).all()
     
     # Enrichir avec info cotation
@@ -111,7 +110,7 @@ def interface_cotation(seance_id):
         seance = Seance.query.get_or_404(seance_id)
         
         # Vérifier que l'utilisateur a accès à cette séance
-        if seance.patient.musicotherapeute_id != current_user.id:
+    if seance.patient.user_id != current_user.id:
             flash('Accès non autorisé', 'error')
             return redirect(url_for('main.dashboard'))
         
@@ -119,7 +118,7 @@ def interface_cotation(seance_id):
         try:
             grilles = GrilleEvaluation.query.filter(
                 db.or_(
-                    GrilleEvaluation.musicotherapeute_id == current_user.id,
+                    GrilleEvaluation.user_id == current_user.id,
                     GrilleEvaluation.publique.is_(True)
                 ),
                 GrilleEvaluation.active.is_(True)
@@ -128,8 +127,8 @@ def interface_cotation(seance_id):
             # Fallback si les colonnes publique/active n'existent pas encore
             grilles = GrilleEvaluation.query.filter(
                 db.or_(
-                    GrilleEvaluation.musicotherapeute_id == current_user.id,
-                    GrilleEvaluation.musicotherapeute_id.is_(None)
+                    GrilleEvaluation.user_id == current_user.id,
+                    GrilleEvaluation.user_id.is_(None)
                 )
             ).all()
         
@@ -151,7 +150,7 @@ def preview_grille(grille_id):
     grille = GrilleEvaluation.query.get_or_404(grille_id)
     
     # Vérifier l'accès
-    if not grille.publique and grille.musicotherapeute_id != current_user.id:
+    if not grille.publique and grille.user_id != current_user.id:
         return jsonify({'error': 'Accès non autorisé'}), 403
     
     return jsonify({
@@ -168,7 +167,7 @@ def api_grille_domaines(grille_id):  # type: ignore[no-untyped-def]
     """API: Domaines et indicateurs d'une grille (remplace l'ancienne route /grilles/api/<id>/domaines)."""
     grille = GrilleEvaluation.query.get_or_404(grille_id)
     # Vérifier l'accès: publique ou appartenant à l'utilisateur
-    if not grille.publique and grille.musicotherapeute_id != current_user.id:
+    if not grille.publique and grille.user_id != current_user.id:
         return jsonify({'success': False, 'message': 'Accès non autorisé'}), 403
 
     # Normaliser les domaines/indicateurs et injecter des IDs si absents
@@ -214,7 +213,7 @@ def grille_detail(grille_id):  # type: ignore[no-untyped-def]
     """Vue détaillée d'une grille: domaines et indicateurs."""
     grille = GrilleEvaluation.query.get_or_404(grille_id)
     # Vérifier l'accès: publique ou appartenant à l'utilisateur
-    if not grille.publique and grille.musicotherapeute_id != current_user.id:
+    if not grille.publique and grille.user_id != current_user.id:
         flash('Accès non autorisé', 'error')
         return redirect(url_for('cotation.grilles'))
     return render_template('cotation/grille_detail.html', grille=grille)
@@ -365,38 +364,38 @@ def cotations_seance(seance_id):
     
     cotations = CotationSeance.query.filter_by(seance_id=seance_id).all()
     
-    result = []
-    for cotation in cotations:
-        result.append({
-            'id': cotation.id,
-            'grille_nom': cotation.grille.nom,
-            'score_global': cotation.score_global,
-            'pourcentage': round(cotation.pourcentage_reussite, 1),
-            'scores_detailles': cotation.scores,
-            'observations': cotation.observations_cotation,
-            'date_cotation': cotation.date_creation.isoformat()
-        })
-    
-    return jsonify(result)
-
-# ---------------------- ANALYTICS & REPORTING ---------------------- #
-@cotation_bp.route('/analytics/dashboard')
-@login_required
-def dashboard_analytics():
-    """API: Statistiques globales pour le dashboard"""
-    stats = AnalyticsService.statistiques_globales(current_user.id)
-    # Ajouter taux_couverture pour usage générique
-    stats['taux_couverture'] = AnalyticsService.taux_couverture_cotation(current_user.id, 30)
-    return jsonify(stats)
-
-@cotation_bp.route('/analytics/couverture')
-@login_required
-def analytics_couverture():
-    """API: Taux de couverture des cotations (30 jours)."""
-    taux = AnalyticsService.taux_couverture_cotation(current_user.id, 30)
-    return jsonify({'taux_couverture': taux})
-
-@cotation_bp.route('/analytics/activite-hebdo')
+    try:
+        seance = Seance.query.get_or_404(seance_id)
+        # Vérifier que l'utilisateur a accès à cette séance
+        if seance.patient.user_id != current_user.id:
+            flash('Accès non autorisé', 'error')
+            return redirect(url_for('main.dashboard'))
+        # Grilles disponibles pour l'utilisateur - version robuste
+        try:
+            grilles = GrilleEvaluation.query.filter(
+                db.or_(
+                    GrilleEvaluation.user_id == current_user.id,
+                    GrilleEvaluation.publique.is_(True)
+                ),
+                GrilleEvaluation.active.is_(True)
+            ).all()
+        except Exception:
+            # Fallback si les colonnes publique/active n'existent pas encore
+            grilles = GrilleEvaluation.query.filter(
+                db.or_(
+                    GrilleEvaluation.user_id == current_user.id,
+                    GrilleEvaluation.user_id.is_(None)
+                )
+            ).all()
+        # Cotations existantes pour cette séance
+        cotations_existantes = CotationSeance.query.filter_by(seance_id=seance_id).all()
+        return render_template('cotation/interface_cotation_clean.html',
+            seance=seance,
+            grilles=grilles,
+            cotations_existantes=cotations_existantes)
+    except Exception as e:
+        flash(f'Erreur lors du chargement de l\'interface de cotation: {str(e)}', 'error')
+        return redirect(url_for('main.dashboard'))
 @login_required
 def analytics_activite_hebdo():
     """API: Activité hebdomadaire (8 dernières semaines)."""

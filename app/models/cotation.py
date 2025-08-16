@@ -18,7 +18,8 @@ class GrilleEvaluation(TimestampMixin, db.Model):
     description = db.Column(db.Text)
     type_grille = db.Column(db.String(50), nullable=False)  # 'standard', 'personnalisee'
     reference_scientifique = db.Column(db.String(100))  # Ex: 'AMTA', 'IMCAP-ND'
-    musicotherapeute_id = db.Column(db.Integer, nullable=True, index=True)  # Propriétaire de la grille
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)  # Propriétaire de la grille
+    user = db.relationship('User', backref='grilles')
     
     # Configuration JSON de la grille
     domaines_config = db.Column(db.Text, nullable=False)  # JSON des domaines et indicateurs
