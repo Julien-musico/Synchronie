@@ -1,5 +1,82 @@
 {% extends "base.html" %}
-...existing code...
+
+{% block title %}Grilles d'évaluation{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Grilles d'évaluation</h2>
+    <div class="mb-3 d-flex gap-3">
+        <input type="text" id="filtreDomaine" class="form-control" placeholder="Filtrer par domaine…" oninput="filtrerTableau()">
+        <input type="text" id="filtrePublic" class="form-control" placeholder="Filtrer par public cible…" oninput="filtrerTableau()">
+        <button class="btn btn-primary ms-auto" onclick="creerGrillePerso()">Créer une nouvelle grille</button>
+    </div>
+    <table class="table table-bordered table-hover" id="tableGrilles">
+        <thead class="table-light">
+            <tr>
+                <th>Nom</th>
+                <th>Description</th>
+                <th>Domaines</th>
+                <th>Public cible</th>
+                <th>Type</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for grille in grilles_user + grilles_publiques %}
+            <tr class="grille-row">
+                <td>{{ grille.nom }}</td>
+                <td>{{ grille.description }}</td>
+                <td>
+                    {% for domaine in grille.domaines %}
+                        <span class="badge bg-info text-dark me-1">{{ domaine.nom }}</span>
+                    {% endfor %}
+                </td>
+                <td>{{ grille.public_cible if grille.public_cible else '—' }}</td>
+                <td>{{ 'Personnalisée' if not grille.publique else 'Standard' }}</td>
+                <td>
+                    <a href="{{ url_for('cotation.grille_detail', grille_id=grille.id) }}" class="btn btn-sm btn-outline-primary">Voir</a>
+                    {% if not grille.publique %}
+                    <button class="btn btn-sm btn-outline-warning" onclick="editerGrille({{ grille.id }})">Éditer</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="supprimerGrille({{ grille.id }})">Supprimer</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filtrerTableau() {
+    const domaine = document.getElementById('filtreDomaine').value.toLowerCase();
+    const publicCible = document.getElementById('filtrePublic').value.toLowerCase();
+    document.querySelectorAll('#tableGrilles tbody tr').forEach(row => {
+        const domaines = row.querySelectorAll('td')[2].textContent.toLowerCase();
+        const publicCell = row.querySelectorAll('td')[3].textContent.toLowerCase();
+        const visible = (!domaine || domaines.includes(domaine)) && (!publicCible || publicCell.includes(publicCible));
+        row.style.display = visible ? '' : 'none';
+    });
+}
+
+function creerGrillePerso() {
+    window.location = '/cotation/grilles/personnalisee';
+}
+
+function editerGrille(id) {
+    window.location = `/cotation/grille/${id}/editer-domaines`;
+}
+
+function supprimerGrille(id) {
+    if (confirm('Supprimer cette grille ?')) {
+        fetch(`/cotation/grille/${id}`, { method: 'DELETE' })
+            .then(resp => resp.json())
+            .then(data => { if (data.success) location.reload(); else alert(data.error || 'Erreur'); });
+    }
+}
+</script>
+{% endblock %}
 ...existing code...
 /* plus de grille en cartes: uniquement une liste aérée */
 
