@@ -67,9 +67,13 @@ def create_app(config_name: str = 'default') -> Flask:
                 app.register_blueprint(bp, url_prefix=url_prefix)
             else:
                 app.register_blueprint(bp)
+            app.logger.info(f"Blueprint '{import_path}.{attr}' chargé avec succès.")
             return True
         except Exception as e:  # noqa
-            app.logger.warning(f"Blueprint '{import_path}.{attr}' non chargé: {e}")
+            import traceback
+            tb = traceback.format_exc()
+            app.logger.error(f"Blueprint '{import_path}.{attr}' non chargé: {e}\nTraceback:\n{tb}")
+            print(f"[SAFE_REGISTER] ERREUR: Blueprint '{import_path}.{attr}' non chargé: {e}\nTraceback:\n{tb}")
             return False
 
     safe_register('app.routes.main', 'main')
