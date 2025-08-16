@@ -285,7 +285,7 @@ def sauvegarder_cotation(seance_id):
     """Sauvegarde une cotation complète"""
     seance = Seance.query.get_or_404(seance_id)
     
-    if seance.patient.musicotherapeute_id != current_user.id:
+    if seance.patient.user_id != current_user.id:
         return jsonify({'success': False, 'error': 'Accès non autorisé'}), 403
     
     try:
@@ -340,7 +340,7 @@ def evolution_patient(patient_id, grille_id):
     """API: Données d'évolution d'un patient pour une grille donnée"""
     patient = Patient.query.get_or_404(patient_id)
     
-    if patient.musicotherapeute_id != current_user.id:
+    if patient.user_id != current_user.id:
         return jsonify({'error': 'Accès non autorisé'}), 403
     
     evolution = CotationService.get_evolution_patient(patient_id, grille_id)
@@ -359,7 +359,7 @@ def cotations_seance(seance_id):
     """API: Toutes les cotations d'une séance"""
     seance = Seance.query.get_or_404(seance_id)
     
-    if seance.patient.musicotherapeute_id != current_user.id:
+    if seance.patient.user_id != current_user.id:
         return jsonify({'error': 'Accès non autorisé'}), 403
     
     try:
@@ -413,7 +413,7 @@ def evolution_detaillee(patient_id, grille_id):
     """API: Évolution détaillée d'un patient pour une grille"""
     # Vérifier ownership du patient
     patient = Patient.query.get_or_404(patient_id)
-    if patient.musicotherapeute_id != current_user.id:
+    if patient.user_id != current_user.id:
         return jsonify({'error': 'Accès non autorisé'}), 403
     
     evolution = AnalyticsService.evolution_patient_detaillee(patient_id, grille_id)
@@ -458,7 +458,7 @@ def api_save_cotation():
         
         # Vérifier que la séance existe et appartient à l'utilisateur
         seance = Seance.query.get(seance_id)
-        if not seance or seance.patient.musicotherapeute_id != current_user.id:
+        if not seance or seance.patient.user_id != current_user.id:
             return jsonify({'success': False, 'message': 'Séance non trouvée ou accès refusé'}), 404
         
         # Sauvegarder les scores
@@ -467,7 +467,7 @@ def api_save_cotation():
             grille_id=grille_id,
             scores=scores,
             observations=observations,
-            musicotherapeute_id=current_user.id
+            user_id=current_user.id
         )
         
         if success:

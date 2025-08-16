@@ -377,26 +377,26 @@ class CotationService:
         except ValidationError as e:
             raise ValueError(f"Domaines invalides: {e}") from e
         
-        g = GrilleEvaluation()
-        g.nom = nom
-        g.description = description.strip()[:500]
-        g.type_grille = "personnalisee"
-        g.reference_scientifique = None
-        g.domaines_config = json.dumps(domaines_valides)
-        g.active = True
-        g.publique = False
-        g.musicotherapeute_id = current_user.id  # type: ignore[attr-defined]
-        db.session.add(g)
-        db.session.commit()
-        CotationService._ensure_initial_version(g)
-        return g
+    g = GrilleEvaluation()
+    g.nom = nom
+    g.description = description.strip()[:500]
+    g.type_grille = "personnalisee"
+    g.reference_scientifique = None
+    g.domaines_config = json.dumps(domaines_valides)
+    g.active = True
+    g.publique = False
+    g.user_id = current_user.id  # type: ignore[attr-defined]
+    db.session.add(g)
+    db.session.commit()
+    CotationService._ensure_initial_version(g)
+    return g
 
     @staticmethod
     def copier_grille(grille_id: int) -> Optional[GrilleEvaluation]:
         src = GrilleEvaluation.query.get(grille_id)
         if not src:
             return None
-        if not src.publique and src.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
+        if not src.publique and src.user_id != current_user.id:  # type: ignore[attr-defined]
             return None
         g = GrilleEvaluation()
         g.nom = f"{src.nom} (copie)"
@@ -406,11 +406,11 @@ class CotationService:
         g.domaines_config = src.domaines_config
         g.active = True
         g.publique = False
-        g.musicotherapeute_id = current_user.id  # type: ignore[attr-defined]
+        g.user_id = current_user.id  # type: ignore[attr-defined]
         db.session.add(g)
         db.session.commit()
         CotationService._ensure_initial_version(g)
-        return g
+        # Suppression du code orphelin hors fonction
 
     @staticmethod
     def _ensure_initial_version(grille: GrilleEvaluation) -> None:
@@ -430,7 +430,7 @@ class CotationService:
         g = GrilleEvaluation.query.get(grille_id)
         if not g:
             return None
-        if g.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
+        if g.user_id != current_user.id:  # type: ignore[attr-defined]
             return None
         if nom:
             g.nom = nom
@@ -444,7 +444,7 @@ class CotationService:
         g = GrilleEvaluation.query.get(grille_id)
         if not g:
             return False
-        if g.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
+        if g.user_id != current_user.id:  # type: ignore[attr-defined]
             return False
         g.active = False
         db.session.commit()
@@ -456,15 +456,13 @@ class CotationService:
         g = GrilleEvaluation.query.get(grille_id)
         if not g:
             return None
-        if g.musicotherapeute_id != current_user.id:  # type: ignore[attr-defined]
+        if g.user_id != current_user.id:  # type: ignore[attr-defined]
             return None
-        
         # Validation stricte des domaines
         try:
             cleaned = CotationValidator.valider_grille_complete(domaines)
         except ValidationError as e:
             raise ValueError(f"Validation échouée: {e}") from e
-        
         last_v = GrilleVersion.query.filter_by(grille_id=g.id).order_by(GrilleVersion.version_num.desc()).first()
         if last_v and last_v.active:
             last_v.active = False
@@ -542,7 +540,7 @@ class CotationService:
             user_id = current_user.id  # type: ignore[attr-defined]
             return GrilleEvaluation.query.filter_by(
                 type_grille='personnalisee',
-                musicotherapeute_id=user_id,
+                user_id=user_id,
                 active=True
             ).all()
         except Exception:
@@ -561,7 +559,7 @@ class CotationService:
         
         try:
             user_id = current_user.id  # type: ignore[attr-defined]
-            if grille.musicotherapeute_id == user_id:
+            if grille.user_id == user_id:
                 return grille
         except Exception:
             pass
@@ -579,7 +577,7 @@ class CotationService:
         # Vérification des droits d'édition
         try:
             user_id = current_user.id  # type: ignore[attr-defined]
-            if grille.musicotherapeute_id != user_id:
+            if grille.user_id != user_id:
                 return None
         except Exception:
             return None
