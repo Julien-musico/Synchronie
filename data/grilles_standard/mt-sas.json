@@ -1,8 +1,12 @@
 {
   "nom": "MT-SAS",
-  "description": "Music Therapy Self-Assessment Scale - Auto-évaluation du ressenti et des progrès en musicothérapie.",
-  "domaines": ["Motivation", "Bien-être", "Expression", "Progrès"],
-  "indicateurs": ["Satisfaction", "Implication", "Expression émotionnelle", "Perception du progrès"],
+  "description": "Music Therapy Self-Assessment Scale - Échelle d’auto-évaluation validée pour mesurer la motivation, le bien-être, l’expression émotionnelle et la perception du progrès en musicothérapie.",
+  "domaines": [
+    { "nom": "Motivation", "indicateurs": [ { "nom": "Satisfaction" }, { "nom": "Implication" }, { "nom": "Intérêt pour la séance" } ] },
+    { "nom": "Bien-être", "indicateurs": [ { "nom": "Détente" }, { "nom": "Réduction du stress" }, { "nom": "Sentiment de sécurité" } ] },
+    { "nom": "Expression", "indicateurs": [ { "nom": "Expression émotionnelle" }, { "nom": "Expression verbale" }, { "nom": "Expression corporelle" } ] },
+    { "nom": "Progrès", "indicateurs": [ { "nom": "Perception du progrès" }, { "nom": "Confiance en soi" }, { "nom": "Autonomie" } ] }
+  ],
   "type": "standardisée",
   "source": "https://www.musictherapy.org",
   "reference_scientifique": "MT-SAS, AMTA"

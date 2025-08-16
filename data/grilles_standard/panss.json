@@ -1,9 +1,52 @@
 {
   "nom": "PANSS",
   "description": "Positive and Negative Syndrome Scale - Évaluation psychiatrique (schizophrénie).",
-  "domaines": ["Symptômes positifs", "Symptômes négatifs", "Cognition", "Comportement"],
-  "indicateurs": ["Hallucinations", "Retrait social", "Désorganisation", "Expression émotionnelle"],
+  "domaines": [
+    {
+      "nom": "Symptômes positifs",
+      "indicateurs": [
+        { "nom": "Délires" },
+        { "nom": "Conceptualisation désorganisée" },
+        { "nom": "Hallucinations" },
+        { "nom": "Comportement bizarre" },
+        { "nom": "Excitation" }
+      ]
+    },
+    {
+      "nom": "Symptômes négatifs",
+      "indicateurs": [
+        { "nom": "Retrait émotionnel" },
+        { "nom": "Retrait social" },
+        { "nom": "Apathie" },
+        { "nom": "Pauvreté du discours" },
+        { "nom": "Blunting affectif" },
+        { "nom": "Passivité sociale" },
+        { "nom": "Pensée abstraite diminuée" }
+      ]
+    },
+    {
+      "nom": "Symptômes généraux",
+      "indicateurs": [
+        { "nom": "Anxiété" },
+        { "nom": "Dépression" },
+        { "nom": "Difficultés d’attention" },
+        { "nom": "Tension" },
+        { "nom": "Hostilité" },
+        { "nom": "Coopération diminuée" },
+        { "nom": "Impulsivité" },
+        { "nom": "Préoccupation somatique" },
+        { "nom": "Troubles du sommeil" },
+        { "nom": "Troubles de l’orientation" },
+        { "nom": "Troubles de la perception" },
+        { "nom": "Troubles de la motricité" },
+        { "nom": "Troubles de la pensée" },
+        { "nom": "Troubles du jugement" },
+        { "nom": "Troubles du contrôle des impulsions" },
+        { "nom": "Troubles de la conscience" }
+      ]
+    }
+  ],
   "type": "standardisée",
   "source": "https://www.psychiatry.org",
-  "reference_scientifique": "PANSS"
+  "reference_scientifique": "Kay et al., 1987"
 }

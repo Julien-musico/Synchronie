@@ -1,9 +1,72 @@
 {
   "nom": "EMTC Standardized Tools",
-  "description": "Grilles validées par la Confédération Européenne de Musicothérapie.",
-  "domaines": ["Musicalité", "Social", "Cognitif", "Émotionnel"],
-  "indicateurs": ["Compétences musicales", "Compétences sociales", "Compétences cognitives", "Expression émotionnelle"],
+  "description": "Grilles validées par la Confédération Européenne de Musicothérapie (EMTC) - domaines et indicateurs enrichis.",
+  "domaines": [
+    {
+      "nom": "Musicalité",
+      "indicateurs": [
+        { "nom": "Rythme" },
+        { "nom": "Mélodie" },
+        { "nom": "Improvisation" },
+        { "nom": "Participation musicale" }
+      ]
+    },
+    {
+      "nom": "Social",
+      "indicateurs": [
+        { "nom": "Interaction sociale" },
+        { "nom": "Communication verbale" },
+        { "nom": "Communication non verbale" },
+        { "nom": "Travail en groupe" }
+      ]
+    },
+    {
+      "nom": "Cognitif",
+      "indicateurs": [
+        { "nom": "Attention" },
+        { "nom": "Mémoire" },
+        { "nom": "Résolution de problèmes" },
+        { "nom": "Planification" }
+      ]
+    },
+    {
+      "nom": "Émotionnel",
+      "indicateurs": [
+        { "nom": "Expression émotionnelle" },
+        { "nom": "Gestion des émotions" },
+        { "nom": "Reconnaissance des émotions" },
+        { "nom": "Régulation émotionnelle" }
+      ]
+    },
+    {
+      "nom": "Physique",
+      "indicateurs": [
+        { "nom": "Motricité fine" },
+        { "nom": "Motricité globale" },
+        { "nom": "Coordination" },
+        { "nom": "Endurance" }
+      ]
+    },
+    {
+      "nom": "Sensoriel",
+      "indicateurs": [
+        { "nom": "Perception auditive" },
+        { "nom": "Perception visuelle" },
+        { "nom": "Perception tactile" },
+        { "nom": "Intégration sensorielle" }
+      ]
+    },
+    {
+      "nom": "Comportemental",
+      "indicateurs": [
+        { "nom": "Adaptation au changement" },
+        { "nom": "Respect des consignes" },
+        { "nom": "Initiative" },
+        { "nom": "Gestion des comportements" }
+      ]
+    }
+  ],
   "type": "standardisée",
   "source": "https://www.emtc-eu.com",
-  "reference_scientifique": "EMTC"
+  "reference_scientifique": "EMTC, Standards Europe"
 }

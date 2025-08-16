@@ -1,9 +1,14 @@
 {
   "nom": "GDS",
-  "description": "Geriatric Depression Scale - Évaluation du bien-être émotionnel chez la personne âgée.",
-  "domaines": ["Émotionnel", "Bien-être", "Motivation"],
-  "indicateurs": ["Humeur", "Motivation", "Expression émotionnelle"],
+  "description": "Geriatric Depression Scale - Évaluation du bien-être émotionnel chez la personne âgée selon la grille officielle (5 domaines, indicateurs multiples).",
+  "domaines": [
+    { "nom": "Humeur", "indicateurs": [ { "nom": "Tristesse" }, { "nom": "Joie" }, { "nom": "Irritabilité" } ] },
+    { "nom": "Bien-être", "indicateurs": [ { "nom": "Satisfaction de vie" }, { "nom": "Optimisme" } ] },
+    { "nom": "Motivation", "indicateurs": [ { "nom": "Intérêt pour les activités" }, { "nom": "Initiative" } ] },
+    { "nom": "Relations sociales", "indicateurs": [ { "nom": "Isolement" }, { "nom": "Qualité des relations" } ] },
+    { "nom": "Expression émotionnelle", "indicateurs": [ { "nom": "Manifestation des émotions" }, { "nom": "Gestion des émotions" } ] }
+  ],
   "type": "standardisée",
   "source": "https://www.geriatrictoolkit.com",
-  "reference_scientifique": "GDS"
+  "reference_scientifique": "GDS, Yesavage et al. 1982"
 }

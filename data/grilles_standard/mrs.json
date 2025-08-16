@@ -1,9 +1,13 @@
 {
   "nom": "MRS",
-  "description": "Music Receptive Scale - Évaluation de la réceptivité musicale chez l’adulte et la personne âgée.",
-  "domaines": ["Réceptivité", "Émotion", "Bien-être", "Attention", "Relaxation"],
-  "indicateurs": ["Impact émotionnel", "Détente", "Concentration", "Expression verbale", "Réponse physique"],
+  "description": "Music Therapy Rating Scale - Évaluation standardisée de la réceptivité musicale, de l'engagement, de l'expression émotionnelle et de l'interaction sociale.",
+  "domaines": [
+    { "nom": "Réceptivité musicale", "indicateurs": [ { "nom": "Attention à la musique" }, { "nom": "Réponse sensorielle" }, { "nom": "Réceptivité auditive" } ] },
+    { "nom": "Engagement", "indicateurs": [ { "nom": "Participation active" }, { "nom": "Initiative musicale" }, { "nom": "Persévérance" } ] },
+    { "nom": "Expression émotionnelle", "indicateurs": [ { "nom": "Réaction émotionnelle" }, { "nom": "Expression verbale des émotions" }, { "nom": "Expression non verbale" } ] },
+    { "nom": "Interaction sociale", "indicateurs": [ { "nom": "Réponse aux autres" }, { "nom": "Collaboration" }, { "nom": "Respect des consignes" } ] }
+  ],
   "type": "standardisée",
-  "source": "https://www.emtc-eu.com",
-  "reference_scientifique": "MRS, EMTC"
+  "source": "https://www.musictherapy.org",
+  "reference_scientifique": "MRS, Bruscia"
 }

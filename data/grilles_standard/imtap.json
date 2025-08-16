@@ -1,8 +1,18 @@
 {
   "nom": "IMTAP",
-  "description": "Individual Music Therapy Assessment Profile - Évaluation complète des capacités musicales, sociales, émotionnelles et cognitives.",
-  "domaines": ["Musicalité", "Communication", "Social", "Émotionnel", "Cognitif", "Physique", "Sensoriel", "Comportement", "Autonomie", "Bien-être"],
-  "indicateurs": ["Réponse musicale", "Interaction sociale", "Expression émotionnelle", "Attention", "Motricité", "Perception sensorielle", "Comportement adapté", "Initiative", "Gestion du stress"],
+  "description": "Individual Music Therapy Assessment Profile - Évaluation complète des capacités musicales, sociales, émotionnelles et cognitives, domaines et indicateurs enrichis.",
+  "domaines": [
+    { "nom": "Musicalité", "indicateurs": [ { "nom": "Réponse musicale" }, { "nom": "Rythme" }, { "nom": "Mélodie" }, { "nom": "Improvisation" } ] },
+    { "nom": "Communication", "indicateurs": [ { "nom": "Expression verbale" }, { "nom": "Compréhension verbale" }, { "nom": "Initiative communicative" } ] },
+    { "nom": "Social", "indicateurs": [ { "nom": "Interaction sociale" }, { "nom": "Travail en groupe" }, { "nom": "Respect des règles" } ] },
+    { "nom": "Émotionnel", "indicateurs": [ { "nom": "Expression émotionnelle" }, { "nom": "Gestion des émotions" }, { "nom": "Reconnaissance des émotions" } ] },
+    { "nom": "Cognitif", "indicateurs": [ { "nom": "Attention" }, { "nom": "Mémoire" }, { "nom": "Résolution de problèmes" } ] },
+    { "nom": "Physique", "indicateurs": [ { "nom": "Motricité fine" }, { "nom": "Motricité globale" }, { "nom": "Coordination" } ] },
+    { "nom": "Sensoriel", "indicateurs": [ { "nom": "Perception auditive" }, { "nom": "Perception visuelle" }, { "nom": "Perception tactile" } ] },
+    { "nom": "Comportement", "indicateurs": [ { "nom": "Comportement adapté" }, { "nom": "Gestion des comportements" }, { "nom": "Initiative comportementale" } ] },
+    { "nom": "Autonomie", "indicateurs": [ { "nom": "Initiative" }, { "nom": "Gestion personnelle" }, { "nom": "Soin personnel" } ] },
+    { "nom": "Bien-être", "indicateurs": [ { "nom": "Gestion du stress" }, { "nom": "Satisfaction" }, { "nom": "Engagement" } ] }
+  ],
   "type": "standardisée",
   "source": "https://www.imtap.com",
   "reference_scientifique": "IMTAP, AMTA"

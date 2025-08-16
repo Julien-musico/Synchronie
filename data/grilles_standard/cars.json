@@ -1,9 +1,24 @@
 {
   "nom": "CARS",
-  "description": "Childhood Autism Rating Scale - Évaluation de la sévérité des troubles autistiques.",
-  "domaines": ["Comportement", "Communication", "Social", "Cognition"],
-  "indicateurs": ["Contact visuel", "Expression verbale", "Interaction sociale", "Comportement adapté"],
+  "description": "Childhood Autism Rating Scale - Évaluation de la sévérité des troubles autistiques selon la grille officielle (15 domaines, indicateurs multiples).",
+  "domaines": [
+    { "nom": "Relation avec les personnes", "indicateurs": [ { "nom": "Réponse sociale" }, { "nom": "Initiative sociale" } ] },
+    { "nom": "Imitation", "indicateurs": [ { "nom": "Imitation verbale" }, { "nom": "Imitation gestuelle" } ] },
+    { "nom": "Réponse émotionnelle", "indicateurs": [ { "nom": "Expression émotionnelle" }, { "nom": "Gestion des émotions" } ] },
+    { "nom": "Utilisation du corps", "indicateurs": [ { "nom": "Mouvements stéréotypés" }, { "nom": "Motricité globale" } ] },
+    { "nom": "Utilisation d’objets", "indicateurs": [ { "nom": "Manipulation d’objets" }, { "nom": "Utilisation fonctionnelle" } ] },
+    { "nom": "Adaptation au changement", "indicateurs": [ { "nom": "Flexibilité comportementale" }, { "nom": "Réaction au changement" } ] },
+    { "nom": "Réponse sensorielle", "indicateurs": [ { "nom": "Réponse auditive" }, { "nom": "Réponse visuelle" }, { "nom": "Réponse tactile" } ] },
+    { "nom": "Communication verbale", "indicateurs": [ { "nom": "Expression verbale" }, { "nom": "Compréhension verbale" } ] },
+    { "nom": "Communication non verbale", "indicateurs": [ { "nom": "Gestes" }, { "nom": "Mimique" } ] },
+    { "nom": "Niveau d’activité", "indicateurs": [ { "nom": "Hyperactivité" }, { "nom": "Hypoactivité" } ] },
+    { "nom": "Intelligence", "indicateurs": [ { "nom": "Capacités cognitives" }, { "nom": "Résolution de problèmes" } ] },
+    { "nom": "Consistance des réponses intellectuelles", "indicateurs": [ { "nom": "Stabilité des performances" } ] },
+    { "nom": "Comportement général", "indicateurs": [ { "nom": "Comportement adapté" }, { "nom": "Comportement inadapté" } ] },
+    { "nom": "Autonomie", "indicateurs": [ { "nom": "Gestion personnelle" }, { "nom": "Initiative" } ] },
+    { "nom": "Contact visuel", "indicateurs": [ { "nom": "Maintien du regard" }, { "nom": "Contact visuel spontané" } ] }
+  ],
   "type": "standardisée",
   "source": "https://www.autism.org",
-  "reference_scientifique": "CARS"
+  "reference_scientifique": "CARS, Schopler et al. 1980"
 }

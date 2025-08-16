@@ -1,8 +1,15 @@
 {
   "nom": "IMCAP-ND",
-  "description": "Individual Music-Centered Assessment Profile for Neurodevelopmental Disorders - Spécifique pour l’autisme.",
-  "domaines": ["Communication", "Interaction sociale", "Réceptivité musicale", "Motricité", "Cognition", "Comportement", "Autonomie"],
-  "indicateurs": ["Réponse à la musique", "Contact visuel", "Initiative sociale", "Compréhension", "Expression verbale", "Gestion des émotions"],
+  "description": "Individual Music-Centered Assessment Profile for Neurodevelopmental Disorders - Spécifique pour l’autisme, domaines et indicateurs enrichis.",
+  "domaines": [
+    { "nom": "Communication", "indicateurs": [ { "nom": "Expression verbale" }, { "nom": "Compréhension verbale" }, { "nom": "Initiative communicative" } ] },
+    { "nom": "Interaction sociale", "indicateurs": [ { "nom": "Contact visuel" }, { "nom": "Initiative sociale" }, { "nom": "Réponse sociale" } ] },
+    { "nom": "Réceptivité musicale", "indicateurs": [ { "nom": "Réponse à la musique" }, { "nom": "Attention musicale" }, { "nom": "Engagement musical" } ] },
+    { "nom": "Motricité", "indicateurs": [ { "nom": "Motricité fine" }, { "nom": "Motricité globale" }, { "nom": "Coordination" } ] },
+    { "nom": "Cognition", "indicateurs": [ { "nom": "Compréhension" }, { "nom": "Mémoire" }, { "nom": "Résolution de problèmes" } ] },
+    { "nom": "Comportement", "indicateurs": [ { "nom": "Adaptation au changement" }, { "nom": "Gestion des comportements" }, { "nom": "Initiative comportementale" } ] },
+    { "nom": "Autonomie", "indicateurs": [ { "nom": "Gestion des émotions" }, { "nom": "Initiative personnelle" }, { "nom": "Soin personnel" } ] }
+  ],
   "type": "standardisée",
   "source": "https://www.imcapnd.com",
   "reference_scientifique": "IMCAP-ND, AMTA"

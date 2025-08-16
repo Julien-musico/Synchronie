@@ -1,9 +1,72 @@
 {
   "nom": "AMTA Assessment Tools",
-  "description": "Outils d’évaluation recommandés par l’American Music Therapy Association.",
-  "domaines": ["Musicalité", "Social", "Cognitif", "Émotionnel"],
-  "indicateurs": ["Compétences musicales", "Compétences sociales", "Compétences cognitives", "Expression émotionnelle"],
+  "description": "Outils d’évaluation recommandés par l’American Music Therapy Association (AMTA) - 7 domaines, 28 indicateurs.",
+  "domaines": [
+    {
+      "nom": "Musicalité",
+      "indicateurs": [
+        { "nom": "Rythme" },
+        { "nom": "Mélodie" },
+        { "nom": "Harmonie" },
+        { "nom": "Improvisation" }
+      ]
+    },
+    {
+      "nom": "Social",
+      "indicateurs": [
+        { "nom": "Interaction sociale" },
+        { "nom": "Communication verbale" },
+        { "nom": "Communication non verbale" },
+        { "nom": "Travail en groupe" }
+      ]
+    },
+    {
+      "nom": "Cognitif",
+      "indicateurs": [
+        { "nom": "Attention" },
+        { "nom": "Mémoire" },
+        { "nom": "Résolution de problèmes" },
+        { "nom": "Planification" }
+      ]
+    },
+    {
+      "nom": "Émotionnel",
+      "indicateurs": [
+        { "nom": "Expression émotionnelle" },
+        { "nom": "Gestion des émotions" },
+        { "nom": "Reconnaissance des émotions" },
+        { "nom": "Régulation émotionnelle" }
+      ]
+    },
+    {
+      "nom": "Physique",
+      "indicateurs": [
+        { "nom": "Motricité fine" },
+        { "nom": "Motricité globale" },
+        { "nom": "Coordination" },
+        { "nom": "Endurance" }
+      ]
+    },
+    {
+      "nom": "Sensoriel",
+      "indicateurs": [
+        { "nom": "Perception auditive" },
+        { "nom": "Perception visuelle" },
+        { "nom": "Perception tactile" },
+        { "nom": "Intégration sensorielle" }
+      ]
+    },
+    {
+      "nom": "Comportemental",
+      "indicateurs": [
+        { "nom": "Adaptation au changement" },
+        { "nom": "Respect des consignes" },
+        { "nom": "Initiative" },
+        { "nom": "Gestion des comportements" }
+      ]
+    }
+  ],
   "type": "standardisée",
   "source": "https://www.musictherapy.org",
-  "reference_scientifique": "AMTA"
+  "reference_scientifique": "AMTA, Standards of Practice"
 }
