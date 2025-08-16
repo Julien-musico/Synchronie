@@ -363,6 +363,18 @@ class CotationService:
         return g
 
     @staticmethod
+    def _ensure_initial_version(grille: GrilleEvaluation) -> None:
+        if GrilleVersion.query.filter_by(grille_id=grille.id).first():
+            return
+        v = GrilleVersion()
+        v.grille_id = grille.id
+        v.version_num = 1
+        v.domaines_config = grille.domaines_config
+        v.active = True
+        db.session.add(v)
+        db.session.commit()
+
+    @staticmethod
     def creer_grille_personnalisee(nom: str, description: str, domaines: List[Dict[str, Any]]) -> GrilleEvaluation:
         # Validation du nom
         nom = nom.strip()
@@ -377,19 +389,19 @@ class CotationService:
         except ValidationError as e:
             raise ValueError(f"Domaines invalides: {e}") from e
         
-    g = GrilleEvaluation()
-    g.nom = nom
-    g.description = description.strip()[:500]
-    g.type_grille = "personnalisee"
-    g.reference_scientifique = None
-    g.domaines_config = json.dumps(domaines_valides)
-    g.active = True
-    g.publique = False
-    g.user_id = current_user.id  # type: ignore[attr-defined]
-    db.session.add(g)
-    db.session.commit()
-    CotationService._ensure_initial_version(g)
-    return g
+        g = GrilleEvaluation()
+        g.nom = nom
+        g.description = description.strip()[:500]
+        g.type_grille = "personnalisee"
+        g.reference_scientifique = None
+        g.domaines_config = json.dumps(domaines_valides)
+        g.active = True
+        g.publique = False
+        g.user_id = current_user.id  # type: ignore[attr-defined]
+        db.session.add(g)
+        db.session.commit()
+        CotationService._ensure_initial_version(g)
+        return g
 
     @staticmethod
     def copier_grille(grille_id: int) -> Optional[GrilleEvaluation]:
@@ -411,18 +423,6 @@ class CotationService:
         db.session.commit()
         CotationService._ensure_initial_version(g)
         # Suppression du code orphelin hors fonction
-
-    @staticmethod
-    def _ensure_initial_version(grille: GrilleEvaluation) -> None:
-        if GrilleVersion.query.filter_by(grille_id=grille.id).first():
-            return
-        v = GrilleVersion()
-        v.grille_id = grille.id
-        v.version_num = 1
-        v.domaines_config = grille.domaines_config
-        v.active = True
-        db.session.add(v)
-        db.session.commit()
 
     # ------------------- Edition / suppression ------------------- #
     @staticmethod
