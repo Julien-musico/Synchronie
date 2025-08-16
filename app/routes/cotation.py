@@ -12,6 +12,7 @@ except ImportError:  # fallback pour analyse statique si non installé
         id: int = 0
     current_user = _User()  # type: ignore
 import json
+import os
 
 from app.models import Patient, Seance, db
 from app.models.cotation import CotationSeance, GrilleEvaluation
@@ -25,6 +26,30 @@ cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 def analyses_overview():  # type: ignore[no-untyped-def]
     """Page d'analyse (vue globale)."""
     return render_template('analyses/overview.html')
+
+def charger_grilles_standards():
+    """Charge toutes les grilles JSON du dossier grilles_standard et les retourne sous forme de liste."""
+    grilles = []
+    dossier = os.path.join(os.path.dirname(__file__), '../../data/grilles_standard')
+    for nom_fichier in os.listdir(dossier):
+        if nom_fichier.endswith('.json'):
+            chemin = os.path.join(dossier, nom_fichier)
+            with open(chemin, encoding='utf-8') as f:
+                try:
+                    data = json.load(f)
+                    # On suppose que chaque fichier contient un dict avec nom, description, domaines, etc.
+                    grilles.append({
+                        'nom': data.get('nom', nom_fichier.replace('.json','').upper()),
+                        'description': data.get('description', ''),
+                        'domaines': data.get('domaines', []),
+                        'reference_scientifique': data.get('reference_scientifique', nom_fichier.replace('.json','').upper()),
+                        'versions': [data],
+                        'id': f"std-{nom_fichier}",
+                        'publique': True
+                    })
+                except Exception as e:
+                    print(f"Erreur chargement {nom_fichier}: {e}")
+    return grilles
 
 @cotation_bp.route('/grilles')
 @login_required
@@ -40,6 +65,9 @@ def grilles():  # type: ignore[no-untyped-def]
             publique=True,
             active=True
         ).all()
+        # Ajout des grilles standards JSON
+        grilles_standards = charger_grilles_standards()
+        grilles_publiques = list(grilles_publiques) + grilles_standards
         return render_template('cotation/grilles.html',
                                grilles_user=grilles_user,
                                grilles_publiques=grilles_publiques)
@@ -466,8 +494,7 @@ def api_save_cotation():
             seance_id=seance_id,
             grille_id=grille_id,
             scores=scores,
-            observations=observations,
-            user_id=current_user.id
+            observations=observations
         )
         
         if success:
