@@ -48,7 +48,8 @@ class Patient(TimestampMixin, db.Model):
     email = db.Column(db.String(120))
     adresse = db.Column(db.Text)
     # Musicothérapeute propriétaire (optionnel si multi-utilisateurs)
-    musicotherapeute_id = db.Column(db.Integer, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+    user = db.relationship('User', backref='patients')
     
     # Informations médicales
     pathologie = db.Column(db.String(200))
