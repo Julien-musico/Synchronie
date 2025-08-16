@@ -1,0 +1,9 @@
+{
+  "nom": "IMTAP",
+  "description": "Individual Music Therapy Assessment Profile - Évaluation complète des capacités musicales, sociales, émotionnelles et cognitives.",
+  "domaines": ["Musicalité", "Communication", "Social", "Émotionnel", "Cognitif", "Physique", "Sensoriel", "Comportement", "Autonomie", "Bien-être"],
+  "indicateurs": ["Réponse musicale", "Interaction sociale", "Expression émotionnelle", "Attention", "Motricité", "Perception sensorielle", "Comportement adapté", "Initiative", "Gestion du stress"],
+  "type": "standardisée",
+  "source": "https://www.imtap.com",
+  "reference_scientifique": "IMTAP, AMTA"
+}

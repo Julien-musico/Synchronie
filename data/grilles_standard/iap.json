@@ -1,0 +1,9 @@
+{
+  "nom": "IAP",
+  "description": "Individualized Assessment Profile (Bruscia) - Grille active pour improvisation et création musicale.",
+  "domaines": ["Créativité", "Expression", "Improvisation", "Interaction", "Bien-être"],
+  "indicateurs": ["Initiative créative", "Expression personnelle", "Interaction musicale", "Gestion des émotions"],
+  "type": "standardisée",
+  "source": "https://www.musictherapy.org",
+  "reference_scientifique": "IAP, Bruscia"
+}

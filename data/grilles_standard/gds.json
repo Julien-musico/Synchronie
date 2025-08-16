@@ -1,0 +1,9 @@
+{
+  "nom": "GDS",
+  "description": "Geriatric Depression Scale - Évaluation du bien-être émotionnel chez la personne âgée.",
+  "domaines": ["Émotionnel", "Bien-être", "Motivation"],
+  "indicateurs": ["Humeur", "Motivation", "Expression émotionnelle"],
+  "type": "standardisée",
+  "source": "https://www.geriatrictoolkit.com",
+  "reference_scientifique": "GDS"
+}

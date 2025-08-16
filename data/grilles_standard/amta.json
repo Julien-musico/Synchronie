@@ -1,0 +1,9 @@
+{
+  "nom": "AMTA Assessment Tools",
+  "description": "Outils d’évaluation recommandés par l’American Music Therapy Association.",
+  "domaines": ["Musicalité", "Social", "Cognitif", "Émotionnel"],
+  "indicateurs": ["Compétences musicales", "Compétences sociales", "Compétences cognitives", "Expression émotionnelle"],
+  "type": "standardisée",
+  "source": "https://www.musictherapy.org",
+  "reference_scientifique": "AMTA"
+}

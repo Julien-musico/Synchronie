@@ -1,0 +1,9 @@
+{
+  "nom": "MRS",
+  "description": "Music Receptive Scale - Évaluation de la réceptivité musicale chez l’adulte et la personne âgée.",
+  "domaines": ["Réceptivité", "Émotion", "Bien-être", "Attention", "Relaxation"],
+  "indicateurs": ["Impact émotionnel", "Détente", "Concentration", "Expression verbale", "Réponse physique"],
+  "type": "standardisée",
+  "source": "https://www.emtc-eu.com",
+  "reference_scientifique": "MRS, EMTC"
+}

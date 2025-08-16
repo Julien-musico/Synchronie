@@ -1,0 +1,9 @@
+{
+  "nom": "PANSS",
+  "description": "Positive and Negative Syndrome Scale - Évaluation psychiatrique (schizophrénie).",
+  "domaines": ["Symptômes positifs", "Symptômes négatifs", "Cognition", "Comportement"],
+  "indicateurs": ["Hallucinations", "Retrait social", "Désorganisation", "Expression émotionnelle"],
+  "type": "standardisée",
+  "source": "https://www.psychiatry.org",
+  "reference_scientifique": "PANSS"
+}

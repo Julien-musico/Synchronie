@@ -1,0 +1,9 @@
+{
+  "nom": "CARS",
+  "description": "Childhood Autism Rating Scale - Évaluation de la sévérité des troubles autistiques.",
+  "domaines": ["Comportement", "Communication", "Social", "Cognition"],
+  "indicateurs": ["Contact visuel", "Expression verbale", "Interaction sociale", "Comportement adapté"],
+  "type": "standardisée",
+  "source": "https://www.autism.org",
+  "reference_scientifique": "CARS"
+}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Cotation (obsolète){% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="alert alert-warning d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    Cette page est obsolète. Utilisez désormais l'interface active.
+  </div>
+  <a class="btn btn-primary" href="{{ url_for('cotation.seances_a_coter') }}">Aller à la cotation</a>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{
+  "nom": "IMCAP-ND",
+  "description": "Individual Music-Centered Assessment Profile for Neurodevelopmental Disorders - Spécifique pour l’autisme.",
+  "domaines": ["Communication", "Interaction sociale", "Réceptivité musicale", "Motricité", "Cognition", "Comportement", "Autonomie"],
+  "indicateurs": ["Réponse à la musique", "Contact visuel", "Initiative sociale", "Compréhension", "Expression verbale", "Gestion des émotions"],
+  "type": "standardisée",
+  "source": "https://www.imcapnd.com",
+  "reference_scientifique": "IMCAP-ND, AMTA"
+}

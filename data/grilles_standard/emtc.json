@@ -1,0 +1,9 @@
+{
+  "nom": "EMTC Standardized Tools",
+  "description": "Grilles validées par la Confédération Européenne de Musicothérapie.",
+  "domaines": ["Musicalité", "Social", "Cognitif", "Émotionnel"],
+  "indicateurs": ["Compétences musicales", "Compétences sociales", "Compétences cognitives", "Expression émotionnelle"],
+  "type": "standardisée",
+  "source": "https://www.emtc-eu.com",
+  "reference_scientifique": "EMTC"
+}
