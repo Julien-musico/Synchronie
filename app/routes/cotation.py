@@ -34,21 +34,23 @@ def charger_grilles_standards():
     for nom_fichier in os.listdir(dossier):
         if nom_fichier.endswith('.json'):
             chemin = os.path.join(dossier, nom_fichier)
-            with open(chemin, encoding='utf-8') as f:
-                try:
+            try:
+                with open(chemin, encoding='utf-8') as f:
                     data = json.load(f)
-                    # On suppose que chaque fichier contient un dict avec nom, description, domaines, etc.
-                    grilles.append({
-                        'nom': data.get('nom', nom_fichier.replace('.json','').upper()),
-                        'description': data.get('description', ''),
-                        'domaines': data.get('domaines', []),
-                        'reference_scientifique': data.get('reference_scientifique', nom_fichier.replace('.json','').upper()),
-                        'versions': [data],
-                        'id': f"std-{nom_fichier}",
-                        'publique': True
-                    })
-                except Exception as e:
-                    print(f"Erreur chargement {nom_fichier}: {e}")
+                grilles.append({
+                    'nom': data.get('nom', nom_fichier.replace('.json','').upper()),
+                    'description': data.get('description', ''),
+                    'domaines': data.get('domaines', []),
+                    'reference_scientifique': data.get('reference_scientifique', nom_fichier.replace('.json','').upper()),
+                    'versions': [data],
+                    'id': f"std-{nom_fichier}",
+                    'publique': True
+                })
+            except Exception as e:
+                import traceback
+                print(f"[GRILLES STANDARD] Erreur chargement {nom_fichier}: {e}")
+                traceback.print_exc()
+    print(f"[GRILLES STANDARD] {len(grilles)} grilles chargées: {[g['nom'] for g in grilles]}")
     return grilles
 
 @cotation_bp.route('/grilles')
