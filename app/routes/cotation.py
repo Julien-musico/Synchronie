@@ -110,7 +110,7 @@ def interface_cotation(seance_id):
         seance = Seance.query.get_or_404(seance_id)
         
         # Vérifier que l'utilisateur a accès à cette séance
-    if seance.patient.user_id != current_user.id:
+        if seance.patient.user_id != current_user.id:
             flash('Accès non autorisé', 'error')
             return redirect(url_for('main.dashboard'))
         
@@ -222,7 +222,7 @@ def grille_detail(grille_id):  # type: ignore[no-untyped-def]
 @login_required
 def editer_domaines_page(grille_id):  # type: ignore[no-untyped-def]
     grille = GrilleEvaluation.query.get_or_404(grille_id)
-    if grille.musicotherapeute_id != current_user.id:
+    if grille.user_id != current_user.id:
         flash('Accès non autorisé', 'error')
         return redirect(url_for('cotation.grilles'))
     # Passer domaines JSON pour initialisation
@@ -361,8 +361,6 @@ def cotations_seance(seance_id):
     
     if seance.patient.musicotherapeute_id != current_user.id:
         return jsonify({'error': 'Accès non autorisé'}), 403
-    
-    cotations = CotationSeance.query.filter_by(seance_id=seance_id).all()
     
     try:
         seance = Seance.query.get_or_404(seance_id)
