@@ -81,7 +81,7 @@
                 {% if grilles_publiques %}
                 <div class="grille-list">
                     {% for grille in grilles_publiques %}
-                    <div class="grille-row" data-href="{% if grille.id.startswith('std-') %}{{ url_for('cotation.grille_standard_detail', grille_id=grille.id[4:]) }}{% else %}{{ url_for('cotation.grille_detail', grille_id=grille.id) }}{% endif %}" data-grille-id="{{ grille.id }}">
+                    <div class="grille-row" data-href="{% if grille.id is string and grille.id.startswith('std-') %}{{ url_for('cotation.grille_standard_detail', grille_id=grille.id[4:]) }}{% else %}{{ url_for('cotation.grille_detail', grille_id=grille.id) }}{% endif %}" data-grille-id="{{ grille.id }}">
                         <div class="row-left">
                             <div>
                                 <span class="grille-badge">{{ grille.reference_scientifique }}</span>
@@ -99,7 +99,7 @@
                             </div>
                         </div>
                         <div class="row-right">
-                            <a class="btn-icon" title="Voir la grille" href="{% if grille.id.startswith('std-') %}{{ url_for('cotation.grille_standard_detail', grille_id=grille.id[4:]) }}{% else %}{{ url_for('cotation.grille_detail', grille_id=grille.id) }}{% endif %}">
+                            <a class="btn-icon" title="Voir la grille" href="{% if grille.id is string and grille.id.startswith('std-') %}{{ url_for('cotation.grille_standard_detail', grille_id=grille.id[4:]) }}{% else %}{{ url_for('cotation.grille_detail', grille_id=grille.id) }}{% endif %}">
                                 <i class="bi bi-eye"></i>
                             </a>
                         </div>
