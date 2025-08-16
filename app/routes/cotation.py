@@ -246,6 +246,23 @@ def grille_detail(grille_id):  # type: ignore[no-untyped-def]
         return redirect(url_for('cotation.grilles'))
     return render_template('cotation/grille_detail.html', grille=grille)
 
+@cotation_bp.route('/grille-standard/<grille_id>')
+@login_required
+def grille_standard_detail(grille_id):
+    """Affiche le détail d'une grille standard (JSON)"""
+    import os
+    chemin = os.path.join(os.path.dirname(__file__), '../../data/grilles_standard', grille_id)
+    if not os.path.exists(chemin):
+        flash('Grille standard introuvable', 'error')
+        return redirect(url_for('cotation.grilles'))
+    with open(chemin, encoding='utf-8') as f:
+        grille = json.load(f)
+        # Pour compatibilité avec le template
+        grille['id'] = f'std-{grille_id}'
+        grille['publique'] = True
+        grille['versions'] = [grille]
+    return render_template('cotation/grille_detail.html', grille=grille)
+
 @cotation_bp.route('/grille/<int:grille_id>/editer-domaines')
 @login_required
 def editer_domaines_page(grille_id):  # type: ignore[no-untyped-def]
