@@ -36,8 +36,8 @@
                 <td>
                     <a href="{{ url_for('cotation.grille_detail', grille_id=grille.id) }}" class="btn btn-sm btn-outline-primary">Voir</a>
                     {% if not grille.publique %}
-                    <button class="btn btn-sm btn-outline-warning" onclick="editerGrille({{ grille.id }})">Éditer</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="supprimerGrille({{ grille.id }})">Supprimer</button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="editerGrille('{{ grille.id }}')">Éditer</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="supprimerGrille('{{ grille.id }}')">Supprimer</button>
                     {% endif %}
                 </td>
             </tr>
