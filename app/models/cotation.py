@@ -2,9 +2,40 @@
 import json
 from datetime import datetime, timezone
 from typing import Any, Dict
-from .cotation import Domaine, Indicateur, GrilleDomaine, DomaineIndicateur
-
 from . import TimestampMixin, db
+
+# Table de liaison grille <-> domaine
+class GrilleDomaine(db.Model):
+    __tablename__ = 'grille_domaine'
+    id = db.Column(db.Integer, primary_key=True)
+    grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
+    domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=False)
+
+# Table de liaison domaine <-> indicateur
+class DomaineIndicateur(db.Model):
+    __tablename__ = 'domaine_indicateur'
+    id = db.Column(db.Integer, primary_key=True)
+    domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=False)
+    indicateur_id = db.Column(db.Integer, db.ForeignKey('indicateur.id'), nullable=False)
+
+# Modèles de base Domaine et Indicateur
+class Domaine(db.Model):
+    __tablename__ = 'domaine'
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    couleur = db.Column(db.String(20))
+    poids = db.Column(db.Float)
+
+class Indicateur(db.Model):
+    __tablename__ = 'indicateur'
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    echelle_min = db.Column(db.Float)
+    echelle_max = db.Column(db.Float)
+    unite = db.Column(db.String(20))
+    poids = db.Column(db.Float)
 
 
 class GrilleEvaluation(TimestampMixin, db.Model):
