@@ -65,21 +65,7 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script>
-// Filtrage simple (optionnel)
-function filtrerGrilles(selector, texte) {
-	const items = document.querySelectorAll(selector);
-	const q = (texte || '').toLowerCase().trim();
-	items.forEach(item => {
-		const title = (item.querySelector('strong')?.textContent || '').toLowerCase();
-		const desc = (item.querySelector('small')?.textContent || '').toLowerCase();
-		const visible = !q || title.includes(q) || desc.includes(q);
-		item.style.display = visible ? '' : 'none';
-	});
-}
-</script>
-{% endblock %}
+
 <footer>
 	<p>&copy; 2023 Mon Application</p>
 </footer>
