@@ -19,10 +19,7 @@ def grilles():
     grilles_publiques = Grille.query.filter(Grille.type_grille.in_(["standardisée", "publique"]))
     grilles_publiques = grilles_publiques.all()
     # Ajoute domaines/indicateurs pour affichage
-    for grille in grilles_publiques:
-        grille.domaines = grille.domaines  # propriété du modèle
-    for grille in grilles_user:
-        grille.domaines = grille.domaines
+    # Les propriétés grille.domaines sont déjà accessibles, inutile d'assigner
     return render_template('cotation/grilles.html', grilles_user=grilles_user, grilles_publiques=grilles_publiques)
 
 @grilles_bp.route('/creer-grille-personalisee', endpoint='creer_grille_personalisee')
