@@ -12,16 +12,18 @@ grilles_bp = Blueprint('grilles', __name__, url_prefix='/grilles')
 @login_required
 def grilles():
     """Affiche toutes les grilles standardisées avec le nombre de domaines et d'indicateurs."""
-    grilles_standardisees = Grille.query.filter_by(type_grille="standardisée").all()
-    for grille in grilles_standardisees:
-        domaines = GrilleDomaine.query.filter_by(grille_id=grille.id).all()
-        grille.nb_domaines = len(domaines)
-        nb_indicateurs = 0
-        for gd in domaines:
-            indicateurs = DomaineIndicateur.query.filter_by(domaine_id=gd.domaine_id).all()
-            nb_indicateurs += len(indicateurs)
-        grille.nb_indicateurs = nb_indicateurs
-    return render_template('cotation/grilles.html', grilles_standardisees=grilles_standardisees)
+    from flask_login import current_user
+    # Grilles personnalisées de l'utilisateur
+    grilles_user = Grille.query.filter_by(type_grille="personnalisée", user_id=current_user.id).all() if current_user.is_authenticated else []
+    # Grilles publiques et standardisées
+    grilles_publiques = Grille.query.filter(Grille.type_grille.in_(["standardisée", "publique"]))
+    grilles_publiques = grilles_publiques.all()
+    # Ajoute domaines/indicateurs pour affichage
+    for grille in grilles_publiques:
+        grille.domaines = grille.domaines  # propriété du modèle
+    for grille in grilles_user:
+        grille.domaines = grille.domaines
+    return render_template('cotation/grilles.html', grilles_user=grilles_user, grilles_publiques=grilles_publiques)
 
 @grilles_bp.route('/creer-grille-personalisee', endpoint='creer_grille_personalisee')
 @login_required
