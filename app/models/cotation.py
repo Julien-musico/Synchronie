@@ -60,9 +60,8 @@ class GrilleDomaine(db.Model):
 # Table de liaison domaine <-> indicateur
 class DomaineIndicateur(db.Model):
     __tablename__ = 'domaine_indicateur'
-    id = db.Column(db.Integer, primary_key=True)
-    domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=False)
-    indicateur_id = db.Column(db.Integer, db.ForeignKey('indicateur.id'), nullable=False)
+    domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), primary_key=True, nullable=False)
+    indicateur_id = db.Column(db.Integer, db.ForeignKey('indicateur.id'), primary_key=True, nullable=False)
 
 # Modèles de base Domaine et Indicateur
 class Domaine(db.Model):
