@@ -1,50 +1,73 @@
+
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-4">
     <h2>Créer une grille personnalisée</h2>
-    <form method="POST" action="{{ url_for('cotation.grilles.creer_grille_personalisee') }}">
+    <form id="formGrillePerso" method="POST" action="{{ url_for('cotation.grilles.creer_grille_personalisee') }}">
         <div class="mb-3">
             <label for="nom" class="form-label">Nom de la grille</label>
             <input type="text" class="form-control" id="nom" name="nom" required>
-        </div>
-        <div class="mb-3">
-            <label for="type" class="form-label">Type de grille</label>
-            <select class="form-select" id="type" name="type">
-                <option value="personnalisee">Personnalisée</option>
-                <option value="standard">Standard</option>
-            </select>
         </div>
         <div class="mb-3">
             <label for="description" class="form-label">Description</label>
             <textarea class="form-control" id="description" name="description" rows="2"></textarea>
         </div>
         <hr>
-        <h4>Domaines et indicateurs</h4>
-        <div id="domaines-container">
-            <!-- Les domaines et indicateurs seront ajoutés dynamiquement en JS -->
+        <h4>Domaines existants</h4>
+        <div id="domainesExistants">
+            {% for domaine in domaines %}
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="domaine_{{ domaine.id }}" value="{{ domaine.id }}" onchange="toggleDomaine({{ domaine.id }})">
+                <label class="form-check-label" for="domaine_{{ domaine.id }}">
+                    <strong>{{ domaine.nom }}</strong>
+                    {% if domaine.description %}<span class="text-muted">({{ domaine.description }})</span>{% endif %}
+                </label>
+                <div class="ms-4" id="indicateurs_{{ domaine.id }}" style="display:none;">
+                    <div class="fw-bold small">Indicateurs liés :</div>
+                    {% for indicateur in domaine.indicateurs %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="ind_{{ indicateur.id }}" value="{{ indicateur.id }}" name="indicateurs_{{ domaine.id }}[]">
+                        <label class="form-check-label" for="ind_{{ indicateur.id }}">{{ indicateur.nom }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
         </div>
-        <button type="button" class="btn btn-outline-primary mb-3" onclick="ajouterDomaine()">Ajouter un domaine</button>
+        <hr>
+        <h4>Ajouter un nouveau domaine</h4>
+        <div id="nouveauDomaineContainer"></div>
+        <button type="button" class="btn btn-outline-primary mb-3" onclick="ajouterNouveauDomaine()">Ajouter un domaine</button>
         <br>
         <button type="submit" class="btn btn-success">Créer la grille</button>
-    <a href="{{ url_for('cotation.grilles.grilles') }}" class="btn btn-secondary">Annuler</a>
+        <a href="{{ url_for('cotation.grilles.grilles') }}" class="btn btn-secondary">Annuler</a>
     </form>
+    <div id="resultMsg"></div>
 </div>
 <script>
-function ajouterDomaine() {
-    const container = document.getElementById('domaines-container');
-    const domaineIndex = container.children.length;
+function toggleDomaine(domaineId) {
+    const indicateursDiv = document.getElementById('indicateurs_' + domaineId);
+    const domaineCheckbox = document.getElementById('domaine_' + domaineId);
+    indicateursDiv.style.display = domaineCheckbox.checked ? 'block' : 'none';
+}
+let nouveauDomaineIndex = 0;
+function ajouterNouveauDomaine() {
+    const container = document.getElementById('nouveauDomaineContainer');
     const domaineDiv = document.createElement('div');
     domaineDiv.className = 'card mb-2';
     domaineDiv.innerHTML = `
         <div class="card-body">
             <label>Nom du domaine :</label>
-            <input type="text" name="domaines[${domaineIndex}][nom]" class="form-control mb-2" required>
+            <input type="text" name="nouveaux_domaines[${nouveauDomaineIndex}][nom]" class="form-control mb-2" required>
+            <label>Description :</label>
+            <input type="text" name="nouveaux_domaines[${nouveauDomaineIndex}][description]" class="form-control mb-2">
             <label>Indicateurs :</label>
             <div class="indicateurs-container"></div>
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="ajouterIndicateur(this, ${domaineIndex})">Ajouter un indicateur</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="ajouterIndicateur(this, ${nouveauDomaineIndex})">Ajouter un indicateur</button>
         </div>
     `;
     container.appendChild(domaineDiv);
+    nouveauDomaineIndex++;
 }
 function ajouterIndicateur(btn, domaineIndex) {
     const indicateursContainer = btn.parentElement.querySelector('.indicateurs-container');
@@ -52,7 +75,7 @@ function ajouterIndicateur(btn, domaineIndex) {
     const indicateurDiv = document.createElement('div');
     indicateurDiv.className = 'input-group mb-1';
     indicateurDiv.innerHTML = `
-        <input type="text" name="domaines[${domaineIndex}][indicateurs][${indicateurIndex}]" class="form-control" placeholder="Nom de l'indicateur" required>
+        <input type="text" name="nouveaux_domaines[${domaineIndex}][indicateurs][${indicateurIndex}]" class="form-control" placeholder="Nom de l'indicateur" required>
         <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()">Supprimer</button>
     `;
     indicateursContainer.appendChild(indicateurDiv);
