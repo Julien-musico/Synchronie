@@ -1,7 +1,8 @@
 """Modèles pour le système de cotation thérapeutique."""
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict
+from .cotation import Domaine, Indicateur, GrilleDomaine, DomaineIndicateur
 
 from . import TimestampMixin, db
 
@@ -35,18 +36,30 @@ class GrilleEvaluation(TimestampMixin, db.Model):
     def __repr__(self):
         return f'<GrilleEvaluation {self.nom}>'
     
-    @property
-    def domaines(self):
-        """Retourne les domaines de la grille décodés depuis JSON"""
-        try:
-            return json.loads(self.domaines_config)  # type: ignore
-        except Exception:
-            return []
-    
-    @domaines.setter
-    def domaines(self, value: List[Dict[str, Any]]) -> None:  # liste de domaines
-        """Encode les domaines en JSON"""
-        self.domaines_config = json.dumps(value)
+        @property
+        def domaines(self):
+            """Récupère les domaines liés à la grille via la table de liaison"""
+            domaines = Domaine.query.join(GrilleDomaine, Domaine.id == GrilleDomaine.domaine_id)
+            domaines = domaines.filter(GrilleDomaine.grille_id == self.id).all()
+            # Pour chaque domaine, ajouter les indicateurs liés
+            for domaine in domaines:
+                domaine.indicateurs = Indicateur.query.join(DomaineIndicateur, Indicateur.id == DomaineIndicateur.indicateur_id)
+                domaine.indicateurs = domaine.indicateurs.filter(DomaineIndicateur.domaine_id == domaine.id).all()
+            return domaines
+
+    # Table de liaison grille <-> domaine
+    class GrilleDomaine(db.Model):
+        __tablename__ = 'grille_domaine'
+        id = db.Column(db.Integer, primary_key=True)
+        grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
+        domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=False)
+
+    # Table de liaison domaine <-> indicateur
+    class DomaineIndicateur(db.Model):
+        __tablename__ = 'domaine_indicateur'
+        id = db.Column(db.Integer, primary_key=True)
+        domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=False)
+        indicateur_id = db.Column(db.Integer, db.ForeignKey('indicateur.id'), nullable=False)
 
 class CotationSeance(TimestampMixin, db.Model):
     """Cotation d'une séance selon une grille d'évaluation.
