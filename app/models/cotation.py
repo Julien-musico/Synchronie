@@ -78,19 +78,7 @@ class GrilleEvaluation(TimestampMixin, db.Model):
                 domaine.indicateurs = domaine.indicateurs.filter(DomaineIndicateur.domaine_id == domaine.id).all()
             return domaines
 
-    # Table de liaison grille <-> domaine
-    class GrilleDomaine(db.Model):
-        __tablename__ = 'grille_domaine'
-        id = db.Column(db.Integer, primary_key=True)
-        grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
-        domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=False)
-
-    # Table de liaison domaine <-> indicateur
-    class DomaineIndicateur(db.Model):
-        __tablename__ = 'domaine_indicateur'
-        id = db.Column(db.Integer, primary_key=True)
-        domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=False)
-        indicateur_id = db.Column(db.Integer, db.ForeignKey('indicateur.id'), nullable=False)
+    # ...existing code...
 
 class CotationSeance(TimestampMixin, db.Model):
     """Cotation d'une séance selon une grille d'évaluation.
