@@ -62,8 +62,8 @@ def creer_grille_personalisee():
         else:
             domaines_data = []
         from app import db
-    from flask_login import current_user
-    grille = Grille(nom=nom, description=description, type_grille='personnalisée', user_id=current_user.id)
+        from flask_login import current_user
+        grille = Grille(nom=nom, description=description, type_grille='personnalisée', user_id=current_user.id)
         db.session.add(grille)
         db.session.flush()
         for domaine_info in domaines_data:
@@ -88,7 +88,7 @@ def creer_grille_personalisee():
                     db.session.add(domaine_indicateur)
         db.session.commit()
         flash('Grille personnalisée créée avec succès.', 'success')
-    return redirect(url_for('cotation.grilles.grilles'))
+        return redirect(url_for('cotation.grilles.grilles'))
     # Récupère tous les domaines et leurs indicateurs
     domaines = Domaine.query.all()
     domaines_data = []
