@@ -14,7 +14,6 @@ class Grille(db.Model):
     type_grille = db.Column(db.String(50), nullable=False)  # 'standardisée', 'personnalisée'
     reference_scientifique = db.Column(db.String(100))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
-    publique = db.Column(db.Boolean, default=False)
     user = db.relationship('User', backref='grilles_new')
 
     def __repr__(self):
