@@ -5,12 +5,58 @@ from typing import Any, Dict
 
 from . import TimestampMixin, db
 
+# Nouveau modèle pour la table 'grille'
+class Grille(db.Model):
+    __tablename__ = 'grille'
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    type_grille = db.Column(db.String(50), nullable=False)  # 'standardisée', 'personnalisée'
+    reference_scientifique = db.Column(db.String(100))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    active = db.Column(db.Boolean, default=True)
+    publique = db.Column(db.Boolean, default=False)
+    user = db.relationship('User', backref='grilles_new')
+
+    def __repr__(self):
+        return f'<Grille {self.nom}>'
+
+    @property
+    def domaines(self):
+        domaines = Domaine.query.join(GrilleDomaine, Domaine.id == GrilleDomaine.domaine_id)
+        domaines = domaines.filter(GrilleDomaine.grille_id == self.id).all() or []
+        result = []
+        for domaine in domaines:
+            indicateurs = Indicateur.query.join(DomaineIndicateur, Indicateur.id == DomaineIndicateur.indicateur_id)
+            indicateurs = indicateurs.filter(DomaineIndicateur.domaine_id == domaine.id).all() or []
+            indicateurs_list = [
+                {
+                    'id': indicateur.id,
+                    'nom': indicateur.nom,
+                    'description': indicateur.description,
+                    'echelle_min': indicateur.echelle_min,
+                    'echelle_max': indicateur.echelle_max,
+                    'unite': indicateur.unite,
+                    'poids': indicateur.poids
+                }
+                for indicateur in indicateurs
+            ]
+            result.append({
+                'id': domaine.id,
+                'nom': domaine.nom,
+                'description': domaine.description,
+                'couleur': domaine.couleur,
+                'poids': domaine.poids,
+                'indicateurs': indicateurs_list
+            })
+        return result
+
 
 # Table de liaison grille <-> domaine
 class GrilleDomaine(db.Model):
     __tablename__ = 'grille_domaine'
     id = db.Column(db.Integer, primary_key=True)
-    grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
+    grille_id = db.Column(db.Integer, db.ForeignKey('grille.id'), nullable=False)
     domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=False)
 
 # Table de liaison domaine <-> indicateur
