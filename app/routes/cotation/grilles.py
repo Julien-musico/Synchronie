@@ -93,7 +93,7 @@ def creer_grille_personalisee():
     domaines = Domaine.query.all()
     domaines_data = []
     for domaine in domaines:
-        indicateurs = Indicateur.query.join('domaine_indicateur').filter_by(domaine_id=domaine.id).all()
+        indicateurs = Indicateur.query.join(DomaineIndicateur, Indicateur.id == DomaineIndicateur.indicateur_id).filter(DomaineIndicateur.domaine_id == domaine.id).all()
         domaines_data.append({
             'id': domaine.id,
             'nom': domaine.nom,
