@@ -88,7 +88,7 @@ def creer_grille_personalisee():
                     db.session.add(domaine_indicateur)
         db.session.commit()
         flash('Grille personnalisée créée avec succès.', 'success')
-        return redirect(url_for('grilles.grilles'))
+    return redirect(url_for('cotation.grilles.grilles'))
     # Récupère tous les domaines et leurs indicateurs
     domaines = Domaine.query.all()
     domaines_data = []
