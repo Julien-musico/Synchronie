@@ -6,7 +6,7 @@ from flask import Blueprint, render_template
 from flask_login import login_required, current_user
 
 from app.models import Seance, Patient, db
-from app.models.cotation_seance import CotationSeance
+
 
 seances_bp = Blueprint('seances', __name__, url_prefix='/seances')
 
@@ -19,10 +19,9 @@ def seances_a_coter():
         Seance.date_seance.desc()).all()
     seances_info = []
     for seance in seances:
-        cotations = CotationSeance.query.filter_by(seance_id=seance.id).all()
         seances_info.append({
             'seance': seance,
-            'nb_cotations': len(cotations),
-            'derniere_cotation': cotations[-1] if cotations else None
+            'nb_cotations': 0,
+            'derniere_cotation': None
         })
     return render_template('cotation/seances_a_coter.html', seances_info=seances_info)
