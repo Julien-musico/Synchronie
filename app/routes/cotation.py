@@ -24,8 +24,20 @@ from app.models.cotation import CotationSeance, GrilleEvaluation
 from app.services.analytics_service import AnalyticsService
 from app.services.cotation_service import CotationService
 
-# Blueprint definition must come before any route decorators
+ # Blueprint definition must come before any route decorators
 cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
+
+# Route for custom grille detail (for non-standard grilles)
+@cotation_bp.route('/grille/<int:grille_id>')
+@login_required
+def grille_detail(grille_id):
+    """Affiche le détail d'une grille personnalisée (non standard)."""
+    grille = GrilleEvaluation.query.get_or_404(grille_id)
+    # Vérifier l'accès: grille doit appartenir à l'utilisateur ou être publique
+    if not grille.publique and grille.user_id != current_user.id:
+        flash('Accès non autorisé', 'error')
+        return redirect(url_for('cotation.grilles'))
+    return render_template('cotation/grille_detail.html', grille=grille)
 
 def user_owns_patient(patient):
     """Vérifie que le patient appartient à l'utilisateur courant."""
