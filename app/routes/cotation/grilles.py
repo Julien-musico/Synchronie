@@ -1,3 +1,4 @@
+
 """
 Routes pour la gestion des grilles d'évaluation (standardisées et personnalisées).
 """
@@ -21,3 +22,8 @@ def grilles():
             nb_indicateurs += len(indicateurs)
         grille.nb_indicateurs = nb_indicateurs
     return render_template('cotation/grilles.html', grilles_standardisees=grilles_standardisees)
+
+@grilles_bp.route('/creer-grille-personalisee', endpoint='creer_grille_personalisee')
+@login_required
+def creer_grille_personalisee():
+    return render_template('cotation/creer_grille_personalisee.html')
