@@ -38,6 +38,10 @@
 
 {% block content %}
 <div class="container">
+  <div class="alert alert-warning">
+    <strong>DEBUG:</strong>
+    <pre>{{ grille.domaines | tojson(indent=2) }}</pre>
+  </div>
   <div class="grille-hero mb-4">
     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
       <div>
@@ -53,11 +57,11 @@
           <span class="badge-soft">
             <i class="bi bi-list-check me-1"></i>
             {% set total_indicateurs = 0 %}
-            {% if grille.domaines %}
-              {% for d in grille.domaines %}
-                {% set total_indicateurs = total_indicateurs + (d.indicateurs|length if d.indicateurs else (d.get('indicateurs')|length if d.get('indicateurs') else 0)) %}
-              {% endfor %}
-            {% endif %}
+            {% for d in grille.domaines %}
+              {% if d.indicateurs is iterable %}
+                {% set total_indicateurs = total_indicateurs + (d.indicateurs|length) %}
+              {% endif %}
+            {% endfor %}
             {{ total_indicateurs }} indicateurs
           </span>
           {% if grille.reference_scientifique %}
