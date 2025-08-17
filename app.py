@@ -63,6 +63,9 @@ def get_patients():
         'date_creation': p.date_creation.isoformat()
     } for p in patients])
 
+from app.routes.cotation import cotation_bp
+app.register_blueprint(cotation_bp)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
