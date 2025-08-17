@@ -47,11 +47,19 @@ const indicateursContainer = document.getElementById('indicateursContainer');
 let domainesIndicateurs = {};
 
 domainesSelect.addEventListener('change', function() {
+    // Conserve les indicateurs déjà sélectionnés
+    const selectedDomaines = Array.from(domainesSelect.selectedOptions).map(opt => opt.value);
+    // Retire les domaines non sélectionnés
+    Object.keys(domainesIndicateurs).forEach(d => {
+        if (!selectedDomaines.includes(d)) delete domainesIndicateurs[d];
+    });
+    // Ajoute les nouveaux domaines sélectionnés
+    selectedDomaines.forEach(d => {
+        if (!domainesIndicateurs[d]) domainesIndicateurs[d] = [];
+    });
+    // Reconstruit l'affichage
     indicateursContainer.innerHTML = '';
-    domainesIndicateurs = {};
-    Array.from(domainesSelect.selectedOptions).forEach(option => {
-        const domaine = option.value;
-        domainesIndicateurs[domaine] = [];
+    selectedDomaines.forEach(domaine => {
         const div = document.createElement('div');
         div.className = 'mb-3 p-3 border rounded';
         div.innerHTML = `<h5>${domaine}</h5>`;
@@ -59,12 +67,25 @@ domainesSelect.addEventListener('change', function() {
         if (indicateursStandard[domaine].length > 0) {
             indicateursStandard[domaine].forEach(ind => {
                 const id = `ind_${domaine}_${ind}`;
-                div.innerHTML += `<div class='form-check'><input type='checkbox' class='form-check-input' id='${id}' value='${ind}' onchange='toggleIndicateur("${domaine}", "${ind}", this.checked)'><label class='form-check-label' for='${id}'>${ind}</label></div>`;
+                const checked = domainesIndicateurs[domaine].includes(ind) ? 'checked' : '';
+                div.innerHTML += `<div class='form-check'><input type='checkbox' class='form-check-input' id='${id}' value='${ind}' onchange='toggleIndicateur("${domaine}", "${ind}", this.checked)' ${checked}><label class='form-check-label' for='${id}'>${ind}</label></div>`;
             });
         }
         // Ajout d'un indicateur personnalisé
         const customId = `custom_${domaine}`;
         div.innerHTML += `<div class='input-group mt-2'><input type='text' class='form-control' id='${customId}' placeholder='Ajouter un indicateur'><button type='button' class='btn btn-outline-primary' onclick='addCustomIndicateur("${domaine}")'>Ajouter</button></div><div id='customList_${domaine}'></div>`;
+        // Affiche les indicateurs personnalisés déjà ajoutés
+        const customListDiv = document.createElement('div');
+        customListDiv.id = `customList_${domaine}`;
+        domainesIndicateurs[domaine].forEach(ind => {
+            if (!indicateursStandard[domaine].includes(ind)) {
+                const item = document.createElement('div');
+                item.className = 'mt-1';
+                item.innerHTML = `<span class='badge bg-info'>${ind}</span> <button type='button' class='btn btn-sm btn-link text-danger' onclick='removeCustomIndicateur("${domaine}", "${ind}", this)'><i class='bi bi-x-circle'></i></button>`;
+                customListDiv.appendChild(item);
+            }
+        });
+        div.appendChild(customListDiv);
         indicateursContainer.appendChild(div);
     });
 });

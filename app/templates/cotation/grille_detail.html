@@ -130,6 +130,11 @@
       {% endfor %}
     </div>
   {% endif %}
+
+  <div class="alert alert-warning">
+    <strong>DEBUG:</strong>
+    <pre>{{ grille.domaines | tojson(indent=2) }}</pre>
+  </div>
 </div>
 {% endblock %}
 
