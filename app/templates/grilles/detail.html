@@ -7,9 +7,9 @@
     <div class="alert alert-warning d-flex align-items-center" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
         Cette page est obsolète. Consultez plutôt
-        <a class="alert-link ms-1" href="{{ url_for('cotation.grilles') }}">la nouvelle vue de grille</a>.
+        <a class="alert-link ms-1" href="{{ url_for('grilles.grilles') }}">la nouvelle vue de grille</a>.
     </div>
-    <a class="btn btn-primary" href="{{ url_for('cotation.grilles') }}">Revenir aux grilles</a>
+    <a class="btn btn-primary" href="{{ url_for('grilles.grilles') }}">Revenir aux grilles</a>
     <div class="text-muted small mt-3">Mettez à jour vos favoris si nécessaire.</div>
 </div>
 {% endblock %}
