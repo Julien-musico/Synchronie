@@ -102,9 +102,6 @@ def grilles():  # type: ignore[no-untyped-def]
             publique=True,
             active=True
         ).all()
-        # Ajout des grilles standards JSON
-        grilles_standards = charger_grilles_standards()
-        grilles_publiques = list(grilles_publiques) + grilles_standards
         print("DEBUG grilles_user:", grilles_user)
         print("DEBUG grilles_publiques:", grilles_publiques)
         return render_template('cotation/grilles.html',
