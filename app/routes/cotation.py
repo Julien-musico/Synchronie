@@ -24,6 +24,7 @@ from app.models.cotation import CotationSeance, GrilleEvaluation
 from app.services.analytics_service import AnalyticsService
 from app.services.cotation_service import CotationService
 
+# Blueprint definition must come before any route decorators
 cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 
 def user_owns_patient(patient):
