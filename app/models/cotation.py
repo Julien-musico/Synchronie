@@ -154,6 +154,11 @@ class CotationSeance(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     seance_id = db.Column(db.Integer, db.ForeignKey('seances.id'), nullable=False)
     grille_id = db.Column(db.Integer, db.ForeignKey('grille_evaluation.id'), nullable=False)
+    indicateur_id = db.Column(db.Integer, db.ForeignKey('indicateur.id'), nullable=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
+    therapeute_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    type_cotation = db.Column(db.String(20), nullable=False, default='globale')
+    domaine_id = db.Column(db.Integer, db.ForeignKey('domaine.id'), nullable=True)
     
     # Scores par domaine (JSON)
     scores_detailles = db.Column(db.Text, nullable=False)  # JSON des scores par indicateur
