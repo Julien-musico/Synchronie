@@ -69,15 +69,34 @@ class GrilleEvaluation(TimestampMixin, db.Model):
     
         @property
         def domaines(self):
-            """Récupère les domaines liés à la grille via la table de liaison"""
+            """Retourne les domaines liés à la grille, avec indicateurs, sous forme de dicts sérialisables."""
             domaines = Domaine.query.join(GrilleDomaine, Domaine.id == GrilleDomaine.domaine_id)
             domaines = domaines.filter(GrilleDomaine.grille_id == self.id).all() or []
-            # Pour chaque domaine, ajouter les indicateurs liés
+            result = []
             for domaine in domaines:
                 indicateurs = Indicateur.query.join(DomaineIndicateur, Indicateur.id == DomaineIndicateur.indicateur_id)
                 indicateurs = indicateurs.filter(DomaineIndicateur.domaine_id == domaine.id).all() or []
-                domaine.indicateurs = indicateurs
-            return domaines or []
+                indicateurs_list = [
+                    {
+                        'id': indicateur.id,
+                        'nom': indicateur.nom,
+                        'description': indicateur.description,
+                        'echelle_min': indicateur.echelle_min,
+                        'echelle_max': indicateur.echelle_max,
+                        'unite': indicateur.unite,
+                        'poids': indicateur.poids
+                    }
+                    for indicateur in indicateurs
+                ]
+                result.append({
+                    'id': domaine.id,
+                    'nom': domaine.nom,
+                    'description': domaine.description,
+                    'couleur': domaine.couleur,
+                    'poids': domaine.poids,
+                    'indicateurs': indicateurs_list
+                })
+            return result
 
     # ...existing code...
 
