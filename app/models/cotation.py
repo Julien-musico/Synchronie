@@ -78,22 +78,22 @@ class GrilleEvaluation(TimestampMixin, db.Model):
                 indicateurs = indicateurs.filter(DomaineIndicateur.domaine_id == domaine.id).all() or []
                 indicateurs_list = [
                     {
-                        'id': indicateur.id,
-                        'nom': indicateur.nom,
-                        'description': indicateur.description,
-                        'echelle_min': indicateur.echelle_min,
-                        'echelle_max': indicateur.echelle_max,
-                        'unite': indicateur.unite,
-                        'poids': indicateur.poids
+                        'id': indicateur.id if indicateur.id is not None else '',
+                        'nom': indicateur.nom if indicateur.nom is not None else '',
+                        'description': indicateur.description if indicateur.description is not None else '',
+                        'echelle_min': indicateur.echelle_min if indicateur.echelle_min is not None else 0,
+                        'echelle_max': indicateur.echelle_max if indicateur.echelle_max is not None else 0,
+                        'unite': indicateur.unite if indicateur.unite is not None else '',
+                        'poids': indicateur.poids if indicateur.poids is not None else 0
                     }
                     for indicateur in indicateurs
                 ]
                 result.append({
-                    'id': domaine.id,
-                    'nom': domaine.nom,
-                    'description': domaine.description,
-                    'couleur': domaine.couleur,
-                    'poids': domaine.poids,
+                    'id': domaine.id if domaine.id is not None else '',
+                    'nom': domaine.nom if domaine.nom is not None else '',
+                    'description': domaine.description if domaine.description is not None else '',
+                    'couleur': domaine.couleur if domaine.couleur is not None else '',
+                    'poids': domaine.poids if domaine.poids is not None else 0,
                     'indicateurs': indicateurs_list
                 })
             return result
