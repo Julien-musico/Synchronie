@@ -105,7 +105,6 @@ class GrilleEvaluation(TimestampMixin, db.Model):
     
     # Statut
     active = db.Column(db.Boolean, default=True)
-    publique = db.Column(db.Boolean, default=False)  # Partageable entre thérapeutes
     
     # Relations
     cotations = db.relationship('CotationSeance', backref='grille', lazy=True)
