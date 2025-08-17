@@ -4,9 +4,16 @@ Routes pour la gestion des grilles d'évaluation (standardisées et personnalis�
 """
 from flask import Blueprint, render_template
 from flask_login import login_required
-from app.models.cotation import Grille, GrilleDomaine, DomaineIndicateur
+from app.models.cotation import Grille
 
 grilles_bp = Blueprint('grilles', __name__, url_prefix='/grilles')
+
+@grilles_bp.route('/<int:grille_id>', endpoint='grille_detail')
+@login_required
+def grille_detail(grille_id):
+    """Affiche le détail d'une grille (standardisée ou personnalisée)."""
+    grille = Grille.query.get_or_404(grille_id)
+    return render_template('cotation/grille_detail.html', grille=grille)
 
 @grilles_bp.route('/', endpoint='grilles')
 @login_required
