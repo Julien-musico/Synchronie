@@ -2,7 +2,7 @@
 """
 Routes pour la gestion des grilles d'évaluation (standardisées et personnalisées).
 """
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask_login import login_required
 from app.models.cotation import Grille
 
@@ -29,7 +29,25 @@ def grilles():
     # Les propriétés grille.domaines sont déjà accessibles, inutile d'assigner
     return render_template('cotation/grilles.html', grilles_user=grilles_user, grilles_publiques=grilles_publiques)
 
-@grilles_bp.route('/creer-grille-personalisee', endpoint='creer_grille_personalisee')
+@grilles_bp.route('/creer-grille-personalisee', methods=['GET', 'POST'], endpoint='creer_grille_personalisee')
 @login_required
 def creer_grille_personalisee():
-    return render_template('cotation/creer_grille_personalisee.html')
+    from app.models.cotation import Domaine, Indicateur
+    if request.method == 'POST':
+        nom = request.form.get('nom')
+        description = request.form.get('description')
+        # TODO: Traiter domaines/indicateurs, créer la grille et lier domaines/indicateurs
+        flash('Grille personnalisée créée (simulation)', 'success')
+        return redirect(url_for('cotation.grilles.grilles'))
+    # Récupère tous les domaines et leurs indicateurs
+    domaines = Domaine.query.all()
+    domaines_data = []
+    for domaine in domaines:
+        indicateurs = Indicateur.query.join('domaine_indicateur').filter_by(domaine_id=domaine.id).all()
+        domaines_data.append({
+            'id': domaine.id,
+            'nom': domaine.nom,
+            'description': domaine.description,
+            'indicateurs': [{'id': i.id, 'nom': i.nom, 'description': i.description} for i in indicateurs]
+        })
+    return render_template('cotation/creer_grille_personalisee.html', domaines=domaines_data)
