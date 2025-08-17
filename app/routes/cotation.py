@@ -6,7 +6,6 @@ Utilitaires d'accès utilisateur pour factoriser la vérification d'ownership.
 
 import json
 import os
-
 from flask import (
     Blueprint,
     Response,
@@ -18,9 +17,9 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-
 from app.models import Patient, Seance, db
-from app.models.cotation import CotationSeance, GrilleEvaluation
+from app.models.cotation import Grille, GrilleDomaine, DomaineIndicateur
+from app.models.cotation_seance import CotationSeance
 from app.services.analytics_service import AnalyticsService
 from app.services.cotation_service import CotationService
 
@@ -31,12 +30,8 @@ cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 @cotation_bp.route('/grille/<int:grille_id>')
 @login_required
 def grille_detail(grille_id):
-    """Affiche le détail d'une grille personnalisée (non standard)."""
-    grille = GrilleEvaluation.query.get_or_404(grille_id)
-    # Vérifier l'accès: grille doit appartenir à l'utilisateur ou être publique
-    if not grille.publique and grille.user_id != current_user.id:
-        flash('Accès non autorisé', 'error')
-        return redirect(url_for('cotation.grilles'))
+    """Affiche le détail d'une grille standardisée."""
+    grille = Grille.query.get_or_404(grille_id)
     return render_template('cotation/grille_detail.html', grille=grille)
 
 def user_owns_patient(patient):
@@ -90,27 +85,51 @@ def charger_grilles_standards():
 
 @cotation_bp.route('/grilles')
 @login_required
-def grilles():  # type: ignore[no-untyped-def]
-    """Page de gestion des grilles d'évaluation"""
+def grilles():
+    """Page de gestion des grilles d'évaluation (standardisées uniquement)"""
     from flask import current_app
     try:
-        grilles_user = GrilleEvaluation.query.filter_by(
-            user_id=current_user.id,
-            active=True
-        ).all()
-        grilles_publiques = GrilleEvaluation.query.filter_by(
-            publique=True,
-            active=True
-        ).all()
-        print("DEBUG grilles_user:", grilles_user)
-        print("DEBUG grilles_publiques:", grilles_publiques)
+        grilles_standardisees = Grille.query.filter_by(type_grille="standardisée", active=True).all()
+        # Ajout du nombre de domaines et d'indicateurs pour chaque grille standardisée
+        for grille in grilles_standardisees:
+            domaines = GrilleDomaine.query.filter_by(grille_id=grille.id).all()
+            grille.nb_domaines = len(domaines)
+            nb_indicateurs = 0
+            for gd in domaines:
+                indicateurs = DomaineIndicateur.query.filter_by(domaine_id=gd.domaine_id).all()
+                nb_indicateurs += len(indicateurs)
+            grille.nb_indicateurs = nb_indicateurs
+            grille.domaines = []
+            for gd in domaines:
+                domaine = GrilleDomaine.query.session.query(GrilleDomaine).filter_by(id=gd.id).first()
+                if domaine:
+                    indicateurs = DomaineIndicateur.query.filter_by(domaine_id=gd.domaine_id).all()
+                    grille.domaines.append({
+                        'id': gd.domaine_id,
+                        'nom': getattr(domaine, 'nom', ''),
+                        'description': getattr(domaine, 'description', ''),
+                        'couleur': getattr(domaine, 'couleur', ''),
+                        'poids': getattr(domaine, 'poids', 0),
+                        'indicateurs': [
+                            {
+                                'id': ind.indicateur_id,
+                                'nom': getattr(ind, 'nom', ''),
+                                'description': getattr(ind, 'description', ''),
+                                'echelle_min': getattr(ind, 'echelle_min', 0),
+                                'echelle_max': getattr(ind, 'echelle_max', 0),
+                                'unite': getattr(ind, 'unite', ''),
+                                'poids': getattr(ind, 'poids', 0)
+                            } for ind in indicateurs
+                        ]
+                    })
+
         return render_template('cotation/grilles.html',
-                               grilles_user=grilles_user,
-                               grilles_publiques=grilles_publiques)
-    except Exception:  # pragma: no cover
+                               grilles_standardisees=grilles_standardisees,
+                               grilles_personnalisees=[])
+    except Exception:
         current_app.logger.exception("Erreur chargement grilles")
         flash('Erreur interne chargement des grilles', 'error')
-        return render_template('cotation/grilles.html', grilles_user=[], grilles_publiques=[]), 500
+        return render_template('cotation/grilles.html', grilles_standardisees=[], grilles_personnalisees=[]), 500
 
 @cotation_bp.route('/grilles/predefinies')
 @login_required
@@ -180,20 +199,21 @@ def interface_cotation(seance_id):
         
         # Grilles disponibles pour l'utilisateur - version robuste
         try:
-            grilles = GrilleEvaluation.query.filter(
+            grilles = Grille.query.filter(
                 db.or_(
-                    GrilleEvaluation.user_id == current_user.id,
-                    GrilleEvaluation.publique.is_(True)
+                    Grille.user_id == current_user.id,
+                    Grille.publique.is_(True)
                 ),
-                GrilleEvaluation.active.is_(True)
+                Grille.active.is_(True)
             ).all()
         except Exception:
             # Fallback si les colonnes publique/active n'existent pas encore
-            grilles = GrilleEvaluation.query.filter(
+            grilles = Grille.query.filter(
                 db.or_(
-                    GrilleEvaluation.user_id == current_user.id,
-                    GrilleEvaluation.user_id.is_(None)
-                )
+                    Grille.user_id == current_user.id,
+                    Grille.publique.is_(True)
+                ),
+                Grille.active.is_(True)
             ).all()
         
         # Cotations existantes pour cette séance
@@ -211,12 +231,7 @@ def interface_cotation(seance_id):
 @login_required
 def preview_grille(grille_id):
     """API: Aperçu d'une grille avec tous ses domaines et indicateurs"""
-    grille = GrilleEvaluation.query.get_or_404(grille_id)
-    
-    # Vérifier l'accès
-    if not grille.publique and grille.user_id != current_user.id:
-        return jsonify({'error': 'Accès non autorisé'}), 403
-    
+    grille = Grille.query.get_or_404(grille_id)
     return jsonify({
         'id': grille.id,
         'nom': grille.nom,
@@ -229,14 +244,7 @@ def preview_grille(grille_id):
 @login_required
 def api_grille_domaines(grille_id: int) -> 'Response':
     """API: Domaines et indicateurs d'une grille (remplace l'ancienne route /grilles/api/<id>/domaines)."""
-    grille = GrilleEvaluation.query.get_or_404(grille_id)
-    # Vérifier l'accès: publique ou appartenant à l'utilisateur
-    if not grille.publique and grille.user_id != current_user.id:
-        response = jsonify({'success': False, 'message': 'Accès non autorisé'})
-        response.status_code = 403
-        return response
-
-    # Normaliser les domaines/indicateurs et injecter des IDs si absents
+    grille = Grille.query.get_or_404(grille_id)
     domaines_data = []
     try:
         raw_domaines = grille.domaines or []
@@ -276,13 +284,8 @@ def grille_standard_detail(grille_id):
 
 @cotation_bp.route('/grille/<int:grille_id>/editer-domaines')
 @login_required
-def editer_domaines_page(grille_id):  # type: ignore[no-untyped-def]
-    grille = GrilleEvaluation.query.get_or_404(grille_id)
-    if not user_owns_grille(grille):
-        flash('Accès non autorisé', 'error')
-        return redirect(url_for('cotation.grilles'))
-    # Passer domaines JSON pour initialisation
-    return render_template('cotation/editer_domaines.html', grille=grille, domaines_json=json.dumps(grille.domaines))
+def editer_domaines_page(grille_id):
+    return render_template('cotation/editer_domaines.html', grille=Grille.query.get_or_404(grille_id), domaines_json=json.dumps(Grille.query.get_or_404(grille_id).domaines))
 
 # ---------------------- CRUD additionnel pour les grilles ---------------------- #
 @cotation_bp.route('/grilles/personnalisee', methods=['POST'])
@@ -319,32 +322,22 @@ def copier_grille_route(grille_id):  # type: ignore[no-untyped-def]
 
 @cotation_bp.route('/grille/<int:grille_id>', methods=['PATCH'])
 @login_required
-def editer_grille_route(grille_id):  # type: ignore[no-untyped-def]
+def editer_grille_route(grille_id):
     data = request.json or {}
-    grille = GrilleEvaluation.query.get_or_404(grille_id)
-    if not user_owns_grille(grille):
-        return jsonify({'success': False, 'error': 'Modification non autorisée'}), 403
-    # Modification via service
-    grille = CotationService.editer_grille(grille_id, data.get('nom'), data.get('description'))
+    CotationService.editer_grille(grille_id, data.get('nom'), data.get('description'))
     return jsonify({'success': True})
 
 @cotation_bp.route('/grille/<int:grille_id>/domaines', methods=['PUT'])
 @login_required
-def update_domaines_route(grille_id):  # type: ignore[no-untyped-def]
+def update_domaines_route(grille_id):
     data = request.json or {}
     domaines = data.get('domaines', [])
-    grille = GrilleEvaluation.query.get_or_404(grille_id)
-    if not user_owns_grille(grille):
-        return jsonify({'success': False, 'error': 'Mise à jour non autorisée'}), 403
-    grille = CotationService.update_grille_domaines(grille_id, domaines)
+    CotationService.update_grille_domaines(grille_id, domaines)
     return jsonify({'success': True})
 
 @cotation_bp.route('/grille/<int:grille_id>', methods=['DELETE'])
 @login_required
 def supprimer_grille_route(grille_id):  # type: ignore[no-untyped-def]
-    grille = GrilleEvaluation.query.get_or_404(grille_id)
-    if not user_owns_grille(grille):
-        return jsonify({'success': False, 'error': 'Suppression non autorisée'}), 403
     CotationService.supprimer_grille(grille_id)
     return jsonify({'success': True})
 
@@ -371,7 +364,7 @@ def sauvegarder_cotation(seance_id):
         if cotation_existante:
             cotation_existante.scores_detailles = json.dumps(scores)
             cotation_existante.observations_cotation = observations
-            grille = GrilleEvaluation.query.get(grille_id)
+            grille = Grille.query.get(grille_id)
             if not grille:
                 return jsonify({'success': False, 'error': 'Grille introuvable'}), 404
             score_global, score_max, pourcentage = CotationService.calculer_score_global(scores, grille)
@@ -410,7 +403,7 @@ def evolution_patient(patient_id, grille_id):
     if not user_owns_patient(patient):
         return jsonify({'error': 'Accès non autorisé'}), 403
     evolution = CotationService.get_evolution_patient(patient_id, grille_id)
-    grille = GrilleEvaluation.query.get(grille_id)
+    grille = Grille.query.get(grille_id)
     grille_nom = grille.nom if grille else 'Grille'
     return jsonify({
         'patient_nom': f"{patient.prenom} {patient.nom}",
@@ -433,20 +426,21 @@ def cotations_seance(seance_id):
             return redirect(url_for('main.dashboard'))
         # Grilles disponibles pour l'utilisateur - version robuste
         try:
-            grilles = GrilleEvaluation.query.filter(
+            grilles = Grille.query.filter(
                 db.or_(
-                    GrilleEvaluation.user_id == current_user.id,
-                    GrilleEvaluation.publique.is_(True)
+                    Grille.user_id == current_user.id,
+                    Grille.publique.is_(True)
                 ),
-                GrilleEvaluation.active.is_(True)
+                Grille.active.is_(True)
             ).all()
         except Exception:
             # Fallback si les colonnes publique/active n'existent pas encore
-            grilles = GrilleEvaluation.query.filter(
+            grilles = Grille.query.filter(
                 db.or_(
-                    GrilleEvaluation.user_id == current_user.id,
-                    GrilleEvaluation.user_id.is_(None)
-                )
+                    Grille.user_id == current_user.id,
+                    Grille.publique.is_(True)
+                ),
+                Grille.active.is_(True)
             ).all()
         # Cotations existantes pour cette séance
         cotations_existantes = CotationSeance.query.filter_by(seance_id=seance_id).all()
