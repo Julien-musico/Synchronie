@@ -289,12 +289,14 @@ def editer_domaines_page(grille_id):  # type: ignore[no-untyped-def]
 @login_required
 def creer_grille_personnalisee_route():  # type: ignore[no-untyped-def]
     data = request.json or {}
+    print("[CREER_GRILLE_PERSONNALISEE] Données reçues:", data)
     try:
         grille = CotationService.creer_grille_personnalisee(
             nom=data.get('nom', 'Nouvelle grille'),
             description=data.get('description', ''),
             domaines=data.get('domaines', [])
         )
+        print(f"[CREER_GRILLE_PERSONNALISEE] Grille créée: id={grille.id}, nom={grille.nom}, user_id={grille.user_id}")
         # Affecter l'utilisateur courant et rendre la grille privée
         grille.user_id = current_user.id
         grille.publique = False
