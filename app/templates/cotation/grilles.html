@@ -18,6 +18,9 @@
 		</div>
 		<div class="col-md-6">
 			<h4>Mes grilles personnalisées</h4>
+			<button class="btn btn-primary mb-3" onclick="window.location='{{ url_for('cotation.creer_grille_personnalisee_form') }}'">
+				<i class="bi bi-plus-circle"></i> Créer une nouvelle grille personnalisée
+			</button>
 			{% if grilles_user and grilles_user|length > 0 %}
 				<div class="list-group mb-3">
 					{% for grille in grilles_user %}

@@ -1,3 +1,9 @@
+# Route GET pour afficher le formulaire de création de grille personnalisée
+@cotation_bp.route('/grilles/creer-personnalisee', methods=['GET'])
+@login_required
+def creer_grille_personnalisee_form():
+    """Affiche le formulaire de création d'une grille personnalisée."""
+    return render_template('cotation/creer_grille_personnalisee.html')
 """
 Routes pour le système de cotation thérapeutique
 """

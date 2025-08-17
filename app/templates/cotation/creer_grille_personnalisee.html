@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Créer une grille personnalisée{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2>Créer une grille personnalisée</h2>
+    <form id="formGrillePerso" class="mb-4">
+        <div class="mb-3">
+            <label for="nom" class="form-label">Nom de la grille</label>
+            <input type="text" class="form-control" id="nom" name="nom" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+        </div>
+        <div class="mb-3">
+            <label for="domaines" class="form-label">Domaines (séparés par des virgules)</label>
+            <input type="text" class="form-control" id="domaines" name="domaines" placeholder="Ex : Cognitif, Social, Emotionnel">
+        </div>
+        <button type="submit" class="btn btn-success">Créer la grille</button>
+    </form>
+    <div id="resultMsg"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('formGrillePerso').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const nom = document.getElementById('nom').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const domaines = document.getElementById('domaines').value.split(',').map(d => ({ nom: d.trim(), indicateurs: [] })).filter(d => d.nom);
+    const resp = await fetch('/cotation/grilles/personnalisee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom, description, domaines })
+    });
+    const data = await resp.json();
+    if (data.success && data.grille_id) {
+        document.getElementById('resultMsg').innerHTML = '<div class="alert alert-success">Grille créée ! <a href="/cotation/grille/' + data.grille_id + '">Voir la grille</a></div>';
+        this.reset();
+    } else {
+        document.getElementById('resultMsg').innerHTML = '<div class="alert alert-danger">Erreur : ' + (data.error || 'Création impossible') + '</div>';
+    }
+});
+</script>
+{% endblock %}
