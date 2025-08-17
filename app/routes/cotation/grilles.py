@@ -3,10 +3,30 @@
 Routes pour la gestion des grilles d'évaluation (standardisées et personnalisées).
 """
 from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required
 from app.models.cotation import Grille
 
 grilles_bp = Blueprint('grilles', __name__, url_prefix='/grilles')
+
+# --- Nouvelle route pour le catalogue domaines/indicateurs ---
+@grilles_bp.route('/catalogue_domaines_indicateurs', methods=['GET'])
+def catalogue_domaines_indicateurs():
+    """
+    Retourne la liste des domaines et pour chaque domaine, la liste des indicateurs associés.
+    Format : [{id, nom, indicateurs: [{id, nom}, ...]}, ...]
+    """
+    from app.models.cotation import Domaine, Indicateur, DomaineIndicateur
+    domaines = Domaine.query.all()
+    result = []
+    for domaine in domaines:
+        indicateurs = Indicateur.query.join(DomaineIndicateur).filter(DomaineIndicateur.domaine_id == domaine.id).all()
+        result.append({
+            'id': domaine.id,
+            'nom': domaine.nom,
+            'indicateurs': [{'id': i.id, 'nom': i.nom} for i in indicateurs]
+        })
+    return jsonify(result)
 
 @grilles_bp.route('/<int:grille_id>', endpoint='grille_detail')
 @login_required
@@ -32,13 +52,43 @@ def grilles():
 @grilles_bp.route('/creer-grille-personalisee', methods=['GET', 'POST'], endpoint='creer_grille_personalisee')
 @login_required
 def creer_grille_personalisee():
-    from app.models.cotation import Domaine, Indicateur
+    from app.models.cotation import Domaine, Indicateur, Grille, GrilleDomaine, DomaineIndicateur
     if request.method == 'POST':
         nom = request.form.get('nom')
         description = request.form.get('description')
-        # TODO: Traiter domaines/indicateurs, créer la grille et lier domaines/indicateurs
-        flash('Grille personnalisée créée (simulation)', 'success')
-        return redirect(url_for('cotation.grilles.grilles'))
+        domaines_data = request.form.get('domaines')
+        import json
+        if domaines_data:
+            domaines_data = json.loads(domaines_data)
+        else:
+            domaines_data = []
+        from app import db
+        grille = Grille(nom=nom, description=description, type_grille='personnalisée')
+        db.session.add(grille)
+        db.session.flush()
+        for domaine_info in domaines_data:
+            domaine = Domaine.query.filter_by(nom=domaine_info['nom']).first()
+            if not domaine:
+                domaine = Domaine(nom=domaine_info['nom'])
+                db.session.add(domaine)
+                db.session.flush()
+            # Vérifier si le lien existe déjà
+            if not GrilleDomaine.query.filter_by(grille_id=grille.id, domaine_id=domaine.id).first():
+                grille_domaine = GrilleDomaine(grille_id=grille.id, domaine_id=domaine.id)
+                db.session.add(grille_domaine)
+            for indicateur_nom in domaine_info['indicateurs']:
+                indicateur = Indicateur.query.filter_by(nom=indicateur_nom).first()
+                if not indicateur:
+                    indicateur = Indicateur(nom=indicateur_nom)
+                    db.session.add(indicateur)
+                    db.session.flush()
+                # Vérifier si le lien existe déjà
+                if not DomaineIndicateur.query.filter_by(domaine_id=domaine.id, indicateur_id=indicateur.id).first():
+                    domaine_indicateur = DomaineIndicateur(domaine_id=domaine.id, indicateur_id=indicateur.id)
+                    db.session.add(domaine_indicateur)
+        db.session.commit()
+        flash('Grille personnalisée créée avec succès.', 'success')
+        return redirect(url_for('grilles.grilles'))
     # Récupère tous les domaines et leurs indicateurs
     domaines = Domaine.query.all()
     domaines_data = []
