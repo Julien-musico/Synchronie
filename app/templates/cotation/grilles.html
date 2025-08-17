@@ -57,6 +57,7 @@
 										{% set total_indicateurs = 0 %}
 										{% for d in grille.domaines %}
 											{% set total_indicateurs = total_indicateurs + (d.indicateurs|length) %}
+											<pre>{{ d.indicateurs }}</pre>
 										{% endfor %}
 										{{ total_indicateurs }} indicateurs
 									</span>
