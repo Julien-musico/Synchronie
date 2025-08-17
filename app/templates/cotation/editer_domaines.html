@@ -35,7 +35,7 @@
     <h2 style="margin-top:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">🧩 Éditeur de domaines <span style="font-size:1rem;font-weight:500;color:#6c757d;">{{ grille.nom }}</span></h2>
     <div class="editor-toolbar">
       <button onclick="ajouterDomaine()">➕ Ajouter un domaine</button>
-      <button class="secondary" onclick="window.location='{{ url_for('grilles.grilles') }}'">⬅️ Retour</button>
+      <button class="secondary" onclick="window.location='{{ url_for('cotation.grilles.grilles') }}'">⬅️ Retour</button>
       <button class="secondary" onclick="previsualiser()">👁️ Prévisualiser</button>
     </div>
     <ul id="domainsList" class="domains-list"></ul>
