@@ -2,10 +2,9 @@
 """
 Routes pour la gestion des grilles d'évaluation (standardisées et personnalisées).
 """
-from flask import Blueprint, render_template, request, flash, redirect, url_for
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from flask_login import login_required
-from app.models.cotation import Grille
+from app.models.cotation import Grille, Domaine, Indicateur, GrilleDomaine, DomaineIndicateur
 
 grilles_bp = Blueprint('grilles', __name__, url_prefix='/grilles')
 
@@ -52,7 +51,7 @@ def grilles():
 @grilles_bp.route('/creer-grille-personalisee', methods=['GET', 'POST'], endpoint='creer_grille_personalisee')
 @login_required
 def creer_grille_personalisee():
-    from app.models.cotation import Domaine, Indicateur, Grille, GrilleDomaine, DomaineIndicateur
+    # Les modèles sont déjà importés en haut
     if request.method == 'POST':
         nom = request.form.get('nom')
         description = request.form.get('description')
@@ -63,7 +62,8 @@ def creer_grille_personalisee():
         else:
             domaines_data = []
         from app import db
-        grille = Grille(nom=nom, description=description, type_grille='personnalisée')
+    from flask_login import current_user
+    grille = Grille(nom=nom, description=description, type_grille='personnalisée', user_id=current_user.id)
         db.session.add(grille)
         db.session.flush()
         for domaine_info in domaines_data:
