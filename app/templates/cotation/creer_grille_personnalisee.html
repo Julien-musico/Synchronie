@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container py-4">
     <h2>Créer une grille personnalisée</h2>
-    <form id="formGrillePerso" class="mb-4">
+    <form id="formGrillePerso" class="mb-4" action="javascript:void(0);">
         <div class="mb-3">
             <label for="nom" class="form-label">Nom de la grille</label>
             <input type="text" class="form-control" id="nom" name="nom" required>
@@ -40,6 +40,7 @@ document.getElementById('formGrillePerso').addEventListener('submit', async func
     } else {
         document.getElementById('resultMsg').innerHTML = '<div class="alert alert-danger">Erreur : ' + (data.error || 'Création impossible') + '</div>';
     }
+    return false;
 });
 </script>
 {% endblock %}
