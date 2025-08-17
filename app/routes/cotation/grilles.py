@@ -11,7 +11,7 @@ grilles_bp = Blueprint('grilles', __name__, url_prefix='/grilles')
 @login_required
 def grilles():
     """Affiche toutes les grilles standardisées avec le nombre de domaines et d'indicateurs."""
-    grilles_standardisees = Grille.query.filter_by(type_grille="standardisée", active=True).all()
+    grilles_standardisees = Grille.query.filter_by(type_grille="standardisée").all()
     for grille in grilles_standardisees:
         domaines = GrilleDomaine.query.filter_by(grille_id=grille.id).all()
         grille.nb_domaines = len(domaines)
