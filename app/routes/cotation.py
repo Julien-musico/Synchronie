@@ -298,6 +298,10 @@ def creer_grille_personnalisee_route():  # type: ignore[no-untyped-def]
             description=data.get('description', ''),
             domaines=data.get('domaines', [])
         )
+        # Affecter l'utilisateur courant et rendre la grille privée
+        grille.user_id = current_user.id
+        grille.publique = False
+        db.session.commit()
         return jsonify({'success': True, 'grille_id': grille.id})
     except Exception as e:  # pragma: no cover
         db.session.rollback()
