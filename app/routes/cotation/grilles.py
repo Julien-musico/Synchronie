@@ -7,7 +7,7 @@ from app.models.cotation import Grille, GrilleDomaine, DomaineIndicateur
 
 grilles_bp = Blueprint('grilles', __name__, url_prefix='/grilles')
 
-@grilles_bp.route('/')
+@grilles_bp.route('/', endpoint='grilles')
 @login_required
 def grilles():
     """Affiche toutes les grilles standardisées avec le nombre de domaines et d'indicateurs."""
