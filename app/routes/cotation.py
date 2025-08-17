@@ -304,6 +304,9 @@ def creer_grille_personnalisee_route():  # type: ignore[no-untyped-def]
         db.session.commit()
         return jsonify({'success': True, 'grille_id': grille.id})
     except Exception as e:  # pragma: no cover
+        import traceback
+        print("[CREER_GRILLE_PERSONNALISEE] Exception:", e)
+        traceback.print_exc()
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 

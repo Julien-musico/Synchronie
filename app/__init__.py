@@ -82,19 +82,22 @@ def create_app(config_name: str = 'default') -> Flask:
     safe_register('app.routes.patients', 'patients', '/patients')
     safe_register('app.routes.seances', 'seances', '/seances')
     safe_register('app.routes.audio', 'audio', '/audio')
-    # Legacy grilles blueprint removed in favor of cotation routes
+    # --- Section routes cotation & legacy grilles ---
+    # Enregistrement du blueprint cotation (grilles et cotation)
     cotation_ok = safe_register('app.routes.cotation', 'cotation_bp')
 
+    # Si le blueprint cotation n'est pas chargé, affiche un placeholder d'indisponibilité
     if not cotation_ok:
         @app.route('/cotation/grilles')  # type: ignore
         def cotation_placeholder():  # type: ignore
             return '<h2>Cotation indisponible (initialisation en cours)</h2>'
 
-    # Redirections des anciennes routes /grilles vers la nouvelle page unifiée
+    # Redirection des anciennes routes /grilles vers la nouvelle page cotation/grilles
     @app.route('/grilles')  # type: ignore
     @app.route('/grilles/')  # type: ignore
     @app.route('/grilles/<path:subpath>')  # type: ignore
     def redirect_legacy_grilles(subpath: str | None = None):  # type: ignore
+        """Redirige toute requête legacy /grilles vers la nouvelle vue cotation.grilles."""
         return redirect(url_for('cotation.grilles'), code=302)
 
     # Contexte global pour les templates
