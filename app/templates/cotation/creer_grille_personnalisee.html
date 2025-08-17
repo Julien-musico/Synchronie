@@ -13,9 +13,18 @@
             <textarea class="form-control" id="description" name="description" rows="2"></textarea>
         </div>
         <div class="mb-3">
-            <label for="domaines" class="form-label">Domaines (séparés par des virgules)</label>
-            <input type="text" class="form-control" id="domaines" name="domaines" placeholder="Ex : Cognitif, Social, Emotionnel">
+            <label for="domainesSelect" class="form-label">Domaines</label>
+            <select id="domainesSelect" class="form-select" multiple>
+                <option value="Cognitif">Cognitif</option>
+                <option value="Social">Social</option>
+                <option value="Emotionnel">Emotionnel</option>
+                <option value="Communication">Communication</option>
+                <option value="Motricité">Motricité</option>
+                <option value="Créativité">Créativité</option>
+                <option value="Autre">Autre</option>
+            </select>
         </div>
+        <div id="indicateursContainer"></div>
         <button type="submit" class="btn btn-success">Créer la grille</button>
     </form>
     <div id="resultMsg"></div>
@@ -23,11 +32,82 @@
 {% endblock %}
 {% block scripts %}
 <script>
+const indicateursStandard = {
+    'Cognitif': ['Attention', 'Mémoire', 'Orientation'],
+    'Social': ['Interaction', 'Empathie', 'Coopération'],
+    'Emotionnel': ['Expression', 'Régulation', 'Motivation'],
+    'Communication': ['Verbalisation', 'Compréhension', 'Expression non verbale'],
+    'Motricité': ['Coordination', 'Mobilité', 'Gestuelle'],
+    'Créativité': ['Imagination', 'Initiative', 'Originalité'],
+    'Autre': []
+};
+
+const domainesSelect = document.getElementById('domainesSelect');
+const indicateursContainer = document.getElementById('indicateursContainer');
+let domainesIndicateurs = {};
+
+domainesSelect.addEventListener('change', function() {
+    indicateursContainer.innerHTML = '';
+    domainesIndicateurs = {};
+    Array.from(domainesSelect.selectedOptions).forEach(option => {
+        const domaine = option.value;
+        domainesIndicateurs[domaine] = [];
+        const div = document.createElement('div');
+        div.className = 'mb-3 p-3 border rounded';
+        div.innerHTML = `<h5>${domaine}</h5>`;
+        // Liste des indicateurs standards
+        if (indicateursStandard[domaine].length > 0) {
+            indicateursStandard[domaine].forEach(ind => {
+                const id = `ind_${domaine}_${ind}`;
+                div.innerHTML += `<div class='form-check'><input type='checkbox' class='form-check-input' id='${id}' value='${ind}' onchange='toggleIndicateur("${domaine}", "${ind}", this.checked)'><label class='form-check-label' for='${id}'>${ind}</label></div>`;
+            });
+        }
+        // Ajout d'un indicateur personnalisé
+        const customId = `custom_${domaine}`;
+        div.innerHTML += `<div class='input-group mt-2'><input type='text' class='form-control' id='${customId}' placeholder='Ajouter un indicateur'><button type='button' class='btn btn-outline-primary' onclick='addCustomIndicateur("${domaine}")'>Ajouter</button></div><div id='customList_${domaine}'></div>`;
+        indicateursContainer.appendChild(div);
+    });
+});
+
+window.toggleIndicateur = function(domaine, indicateur, checked) {
+    if (!domainesIndicateurs[domaine]) domainesIndicateurs[domaine] = [];
+    if (checked) {
+        if (!domainesIndicateurs[domaine].includes(indicateur)) domainesIndicateurs[domaine].push(indicateur);
+    } else {
+        domainesIndicateurs[domaine] = domainesIndicateurs[domaine].filter(i => i !== indicateur);
+    }
+};
+
+window.addCustomIndicateur = function(domaine) {
+    const input = document.getElementById(`custom_${domaine}`);
+    const value = input.value.trim();
+    if (value) {
+        if (!domainesIndicateurs[domaine]) domainesIndicateurs[domaine] = [];
+        domainesIndicateurs[domaine].push(value);
+        const listDiv = document.getElementById(`customList_${domaine}`);
+        const item = document.createElement('div');
+        item.className = 'mt-1';
+        item.innerHTML = `<span class='badge bg-info'>${value}</span> <button type='button' class='btn btn-sm btn-link text-danger' onclick='removeCustomIndicateur("${domaine}", "${value}", this)'><i class='bi bi-x-circle'></i></button>`;
+        listDiv.appendChild(item);
+        input.value = '';
+    }
+};
+
+window.removeCustomIndicateur = function(domaine, value, btn) {
+    if (!domainesIndicateurs[domaine]) return;
+    domainesIndicateurs[domaine] = domainesIndicateurs[domaine].filter(i => i !== value);
+    btn.parentElement.remove();
+};
+
 document.getElementById('formGrillePerso').addEventListener('submit', async function(e) {
     e.preventDefault();
     const nom = document.getElementById('nom').value.trim();
     const description = document.getElementById('description').value.trim();
-    const domaines = document.getElementById('domaines').value.split(',').map(d => ({ nom: d.trim(), indicateurs: [] })).filter(d => d.nom);
+    const domaines = Object.keys(domainesIndicateurs).map(d => ({ nom: d, indicateurs: domainesIndicateurs[d].map(i => ({ nom: i })) })).filter(d => d.nom && d.indicateurs.length > 0);
+    if (domaines.length === 0) {
+        document.getElementById('resultMsg').innerHTML = '<div class="alert alert-danger">Veuillez sélectionner au moins un domaine et un indicateur.</div>';
+        return false;
+    }
     const resp = await fetch('/cotation/grilles/personnalisee', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,6 +117,8 @@ document.getElementById('formGrillePerso').addEventListener('submit', async func
     if (data.success && data.grille_id) {
         document.getElementById('resultMsg').innerHTML = '<div class="alert alert-success">Grille créée ! <a href="/cotation/grille/' + data.grille_id + '">Voir la grille</a></div>';
         this.reset();
+        indicateursContainer.innerHTML = '';
+        domainesIndicateurs = {};
     } else {
         document.getElementById('resultMsg').innerHTML = '<div class="alert alert-danger">Erreur : ' + (data.error || 'Création impossible') + '</div>';
     }
