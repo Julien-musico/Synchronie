@@ -1,3 +1,9 @@
+# Route création de grille personnalisée
+@cotation_bp.route('/grilles/creer-grille-personalisee', methods=['GET', 'POST'], endpoint='creer_grille_personalisee')
+def creer_grille_personalisee():
+	"""Affiche le formulaire de création de grille personnalisée."""
+	# TODO: Remplacer par la vraie logique si besoin
+	return render_template('cotation/creer_grille_personalisee.html')
 from flask import Blueprint, render_template
 
 ## Removed import of grilles_bp (grilles.py deleted)
