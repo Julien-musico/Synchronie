@@ -28,12 +28,14 @@
         </ul>
       </div>
       <div class="col-md-4">
-        <h4>Indicateurs disponibles</h4>
+        <h4>Indicateurs disponibles (non liés)</h4>
         <ul class="list-group mb-3">
           {% for indicateur in indicateurs %}
-            <li class="list-group-item">
-              <input type="checkbox" name="indicateurs[]" value="{{ indicateur.id }}"> {{ indicateur.nom }}
-            </li>
+            {% if not indicateur.domaine_id %}
+              <li class="list-group-item">
+                <input type="checkbox" name="indicateurs[]" value="{{ indicateur.id }}"> {{ indicateur.nom }}
+              </li>
+            {% endif %}
           {% endfor %}
         </ul>
       </div>

@@ -77,6 +77,10 @@ def admin_grilles():
             # Ajoute les liens domaine-indicateur pour chaque domaine sélectionné
             for did in domaines_ids:
                 for iid in indicateurs_ids:
+                    # Vérifie que l'indicateur n'est pas déjà lié à un autre domaine
+                    already_linked = DomaineIndicateur.query.filter_by(indicateur_id=int(iid)).first()
+                    if already_linked:
+                        continue
                     exists_di = DomaineIndicateur.query.filter_by(domaine_id=int(did), indicateur_id=int(iid)).first()
                     if not exists_di:
                         di = DomaineIndicateur()
