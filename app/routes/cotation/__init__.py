@@ -7,7 +7,6 @@ from .analytics import analytics_bp
 
 cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 
-# Route catalogue des grilles (remplace l'ancien blueprint grilles)
 @cotation_bp.route('/grilles', methods=['GET'])
 def grilles():
     """Affiche le catalogue des grilles d'évaluation."""
@@ -20,6 +19,11 @@ def grilles():
         grilles_standard=grilles_standard,
         grilles_perso=grilles_perso
     )
+# Route détail d'une grille (nécessaire pour le lien dans grilles.html)
+@cotation_bp.route('/grille/<int:grille_id>', methods=['GET'], endpoint='grille_detail')
+def grille_detail(grille_id):
+    grille = GrilleEvaluation.query.get_or_404(grille_id)
+    return render_template('cotation/grille_detail.html', grille=grille)
 
 # Route création de grille personnalisée
 @cotation_bp.route('/grilles/creer-grille-personalisee', methods=['GET', 'POST'], endpoint='creer_grille_personalisee')
