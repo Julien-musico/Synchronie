@@ -43,6 +43,11 @@ def admin_grilles():
     grilles = GrilleEvaluation.query.order_by(GrilleEvaluation.nom).all()
     domaines = Domaine.query.order_by(Domaine.nom).all()
     indicateurs = Indicateur.query.order_by(Indicateur.nom).all()
+    # Structure: {domaine_id: [indicateur, ...]}
+    from app.models.cotation import DomaineIndicateur
+    domaine_indicateurs = {}
+    for d in domaines:
+        domaine_indicateurs[d.id] = [i for i in indicateurs if DomaineIndicateur.query.filter_by(domaine_id=d.id, indicateur_id=i.id).first()]
 
     if request.method == 'POST':
         grille_id = request.form.get('grille_id')
@@ -93,7 +98,7 @@ def admin_grilles():
             flash("Grille non trouvée.", "danger")
         return redirect(url_for('cotation.admin_grilles'))
 
-    return render_template('cotation/admin_grilles.html', grilles=grilles, domaines=domaines, indicateurs=indicateurs)
+    return render_template('cotation/admin_grilles.html', grilles=grilles, domaines=domaines, indicateurs=indicateurs, domaine_indicateurs=domaine_indicateurs)
 
 cotation_bp.register_blueprint(seances_bp)
 cotation_bp.register_blueprint(analytics_bp)
