@@ -66,18 +66,23 @@ def admin_grilles():
             db.session.commit()
             # Ajoute les nouveaux liens grille-domaine
             for did in domaines_ids:
-                gd = GrilleDomaine()
-                gd.grille_id = grille.id
-                gd.domaine_id = int(did)
-                db.session.add(gd)
+                # Vérifie si le lien grille-domaine existe déjà
+                exists_gd = GrilleDomaine.query.filter_by(grille_id=grille.id, domaine_id=int(did)).first()
+                if not exists_gd:
+                    gd = GrilleDomaine()
+                    gd.grille_id = grille.id
+                    gd.domaine_id = int(did)
+                    db.session.add(gd)
             db.session.commit()
             # Ajoute les liens domaine-indicateur pour chaque domaine sélectionné
             for did in domaines_ids:
                 for iid in indicateurs_ids:
-                    di = DomaineIndicateur()
-                    di.domaine_id = int(did)
-                    di.indicateur_id = int(iid)
-                    db.session.merge(di)
+                    exists_di = DomaineIndicateur.query.filter_by(domaine_id=int(did), indicateur_id=int(iid)).first()
+                    if not exists_di:
+                        di = DomaineIndicateur()
+                        di.domaine_id = int(did)
+                        di.indicateur_id = int(iid)
+                        db.session.add(di)
             db.session.commit()
             flash("Grille et liens mis à jour avec succès.", "success")
         else:
