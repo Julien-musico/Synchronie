@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Admin – Gestion des grilles{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2>🛠️ Administration des grilles</h2>
+  <div class="alert alert-warning">Interface réservée à l'utilisateur #1 (superadmin).</div>
+  <form id="adminGrilleForm" method="POST" action="{{ url_for('cotation.admin_grilles') }}">
+    <div class="row">
+      <div class="col-md-4">
+        <h4>Grilles existantes</h4>
+        <ul class="list-group mb-3">
+          {% for grille in grilles %}
+            <li class="list-group-item">
+              <input type="radio" name="grille_id" value="{{ grille.id }}" {% if loop.first %}checked{% endif %}> {{ grille.nom }}
+            </li>
+          {% endfor %}
+        </ul>
+        <button type="button" class="btn btn-outline-primary" onclick="location.reload()">Rafraîchir</button>
+      </div>
+      <div class="col-md-4">
+        <h4>Domaines disponibles</h4>
+        <ul class="list-group mb-3">
+          {% for domaine in domaines %}
+            <li class="list-group-item">
+              <input type="checkbox" name="domaines[]" value="{{ domaine.id }}"> {{ domaine.nom }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-md-4">
+        <h4>Indicateurs disponibles</h4>
+        <ul class="list-group mb-3">
+          {% for indicateur in indicateurs %}
+            <li class="list-group-item">
+              <input type="checkbox" name="indicateurs[]" value="{{ indicateur.id }}"> {{ indicateur.nom }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-success mt-3">Sauvegarder les liens</button>
+  </form>
+</div>
+{% endblock %}
