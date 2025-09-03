@@ -728,7 +728,7 @@ class CotationService:
 
     @staticmethod
     def sauvegarder_cotation_seance(seance_id: int, grille_id: int, scores: Dict, 
-                                   observations: str = "", musicotherapeute_id: Optional[int] = None) -> bool:
+                                   observations: str = "", user_id: Optional[int] = None) -> bool:
         """Sauvegarde une cotation de séance avec les scores détaillés."""
         try:
             # Vérifier si une cotation existe déjà pour cette séance et cette grille

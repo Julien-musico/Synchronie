@@ -29,7 +29,7 @@ class ObjectifService:
         obj.description = description
         obj.actif = True
         with contextlib.suppress(Exception):
-            obj.musicotherapeute_id = current_user.id  # type: ignore[attr-defined]
+            obj.user_id = current_user.id  # type: ignore[attr-defined]
         db.session.add(obj)
         db.session.commit()
         return obj

@@ -1,6 +1,6 @@
 """Utilitaires centralisés pour la gestion d'ownership multi-thérapeute.
 
-Objectif: unifier la logique d'accès par musicotherapeute_id afin de réduire
+Objectif: unifier la logique d'accès par user_id afin de réduire
 la duplication et préparer une future gestion fine des permissions.
 """
 from __future__ import annotations
@@ -26,16 +26,16 @@ def current_owner_id() -> int | None:
 
 
 def owned_query(query, model) -> Any:  # type: ignore
-    """Applique un filtre ownership si le modèle possède musicotherapeute_id.
+    """Applique un filtre ownership si le modèle possède user_id.
 
     Si aucun utilisateur courant ou modèle sans champ => renvoie la query intacte.
     """
     uid = current_owner_id()
     if not uid:
         return query
-    if hasattr(model, 'musicotherapeute_id'):
+    if hasattr(model, 'user_id'):
         try:
-            return query.filter_by(musicotherapeute_id=uid)
+            return query.filter_by(user_id=uid)
         except Exception:
             return query
     return query
@@ -48,6 +48,6 @@ def assert_owns(instance) -> bool:
     uid = current_owner_id()
     if not uid:
         return True  # contexte système
-    if hasattr(instance, 'musicotherapeute_id'):
-        return instance.musicotherapeute_id == uid
+    if hasattr(instance, 'user_id'):
+        return instance.user_id == uid
     return True

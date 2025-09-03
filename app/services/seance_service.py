@@ -29,7 +29,7 @@ class SeanceService:
             # Vérifier que le patient existe
             try:
                 uid = current_user.id  # type: ignore[attr-defined]
-                patient = Patient.query.filter_by(id=patient_id, musicotherapeute_id=uid).first()
+                patient = Patient.query.filter_by(id=patient_id, user_id=uid).first()
             except Exception:
                 patient = Patient.query.get(patient_id)
             if not patient:
@@ -82,7 +82,7 @@ class SeanceService:
             try:
                 uid = current_user.id  # type: ignore[attr-defined]
                 return (Seance.query.join(Patient)
-                        .filter(Seance.id == seance_id, Patient.musicotherapeute_id == uid)
+                        .filter(Seance.id == seance_id, Patient.user_id == uid)
                         .first())  # type: ignore
             except Exception:
                 return Seance.query.join(Patient).filter(Seance.id == seance_id).first()  # type: ignore
@@ -96,7 +96,7 @@ class SeanceService:
             try:
                 uid = current_user.id  # type: ignore[attr-defined]
                 return (Seance.query.join(Patient)
-                        .filter(Seance.patient_id == patient_id, Patient.musicotherapeute_id == uid)
+                        .filter(Seance.patient_id == patient_id, Patient.user_id == uid)
                         .order_by(Seance.date_seance.desc()).all())  # type: ignore
             except Exception:
                 return Seance.query.filter_by(patient_id=patient_id).order_by(Seance.date_seance.desc()).all()  # type: ignore
@@ -119,7 +119,7 @@ class SeanceService:
             try:
                 uid = current_user.id  # type: ignore[attr-defined]
                 seance = (Seance.query.join(Patient)
-                          .filter(Seance.id == seance_id, Patient.musicotherapeute_id == uid)
+                          .filter(Seance.id == seance_id, Patient.user_id == uid)
                           .first())
             except Exception:
                 seance = Seance.query.get(seance_id)
@@ -186,7 +186,7 @@ class SeanceService:
             try:
                 uid = current_user.id  # type: ignore[attr-defined]
                 seance = (Seance.query.join(Patient)
-                          .filter(Seance.id == seance_id, Patient.musicotherapeute_id == uid)
+                          .filter(Seance.id == seance_id, Patient.user_id == uid)
                           .first())
             except Exception:
                 seance = Seance.query.get(seance_id)
@@ -212,7 +212,7 @@ class SeanceService:
             try:
                 uid = current_user.id  # type: ignore[attr-defined]
                 return (Seance.query.join(Patient)
-                        .filter(Patient.musicotherapeute_id == uid)
+                        .filter(Patient.user_id == uid)
                         .order_by(Seance.date_seance.desc()).all())  # type: ignore
             except Exception:
                 return Seance.query.order_by(Seance.date_seance.desc()).all()  # type: ignore

@@ -27,7 +27,7 @@ class PatientService:
         query = Patient.query
         with contextlib.suppress(Exception):
             user_id = current_user.id  # type: ignore[attr-defined]
-            query = query.filter_by(musicotherapeute_id=user_id)
+            query = query.filter_by(user_id=user_id)
         if actifs_seulement:
             query = query.filter_by(actif=True)
         
@@ -46,7 +46,7 @@ class PatientService:
         """
         try:
             user_id = current_user.id  # type: ignore[attr-defined]
-            return Patient.query.filter_by(id=patient_id, musicotherapeute_id=user_id).first()
+            return Patient.query.filter_by(id=patient_id, user_id=user_id).first()
         except Exception:
             return Patient.query.get(patient_id)
     
@@ -99,7 +99,7 @@ class PatientService:
                 objectifs_therapeutiques=data.get('objectifs_therapeutiques', '').strip() or None,  # type: ignore[arg-type]
                 commentaires=data.get('commentaires', '').strip() or None,  # type: ignore[arg-type]
                 actif=True,  # type: ignore[arg-type]
-                musicotherapeute_id=owner_id  # type: ignore[arg-type]
+                    user_id=owner_id  # type: ignore[arg-type]
             )
             
             print("DEBUG: Tentative d'ajout en base...")
@@ -144,7 +144,7 @@ class PatientService:
         try:
             try:
                 user_id = current_user.id  # type: ignore[attr-defined]
-                patient = Patient.query.filter_by(id=patient_id, musicotherapeute_id=user_id).first()
+                patient = Patient.query.filter_by(id=patient_id, user_id=user_id).first()
             except Exception:
                 patient = Patient.query.get(patient_id)
             if not patient:
@@ -193,7 +193,7 @@ class PatientService:
         try:
             try:
                 user_id = current_user.id  # type: ignore[attr-defined]
-                patient = Patient.query.filter_by(id=patient_id, musicotherapeute_id=user_id).first()
+                patient = Patient.query.filter_by(id=patient_id, user_id=user_id).first()
             except Exception:
                 patient = Patient.query.get(patient_id)
             if not patient:
@@ -322,7 +322,7 @@ class PatientService:
             # Vérifier que le patient existe et appartient à l'utilisateur
             try:
                 user_id = current_user.id  # type: ignore[attr-defined]
-                patient = Patient.query.filter_by(id=patient_id, musicotherapeute_id=user_id).first()
+                patient = Patient.query.filter_by(id=patient_id, user_id=user_id).first()
             except Exception:
                 patient = Patient.query.get(patient_id)
             
