@@ -1,3 +1,6 @@
+<form method="POST" action="{{ url_for('patients.delete_patient', patient_id=patient.id) }}" onsubmit="return confirm('Confirmer la suppression de ce patient ?');" style="display:inline;">
+    <button type="submit" class="btn btn-danger">Supprimer le patient</button>
+</form>
 {% extends "base.html" %}
 
 {% block title %}{{ patient.prenom }} {{ patient.nom }} - Synchronie{% endblock %}

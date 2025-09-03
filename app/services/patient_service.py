@@ -11,6 +11,29 @@ from app.models import Patient, db
 
 
 class PatientService:
+    @staticmethod
+    def delete_patient(patient_id: int) -> tuple[bool, str]:
+        """
+        Supprime définitivement un patient et ses données associées
+        Args:
+            patient_id: ID du patient à supprimer
+        Returns:
+            Tuple (succès, message)
+        """
+        try:
+            try:
+                user_id = current_user.id  # type: ignore[attr-defined]
+                patient = Patient.query.filter_by(id=patient_id, user_id=user_id).first()
+            except Exception:
+                patient = Patient.query.get(patient_id)
+            if not patient:
+                return False, "Patient non trouvé"
+            db.session.delete(patient)
+            db.session.commit()
+            return True, "Patient supprimé avec succès"
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            return False, f"Erreur lors de la suppression: {str(e)}"
     """Service pour la gestion des patients"""
     
     @staticmethod

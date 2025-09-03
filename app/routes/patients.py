@@ -1,3 +1,13 @@
+@patients.route('/<int:patient_id>/supprimer', methods=['POST'])
+@login_required  # type: ignore
+def delete_patient(patient_id):
+    """Suppression d'un patient"""
+    success, message = PatientService.delete_patient(patient_id)
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'error')
+    return redirect(url_for('patients.list_patients'))
 """
 Routes pour la gestion des patients (interface web)
 """
