@@ -272,7 +272,7 @@ class PatientService:
             for priority, grille_id in enumerate(grilles_ids, 1):
                 try:
                     grille_id = int(grille_id)
-                    assignment = PatientGrille(
+                    assignment = PatientGrille(  # type: ignore[call-arg]
                         patient_id=patient_id,
                         grille_id=grille_id,
                         priorite=priority,
