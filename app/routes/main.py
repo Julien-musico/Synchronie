@@ -22,7 +22,7 @@ def health_db():  # type: ignore[no-untyped-def]
     issues: list[str] = []
     details: dict[str, dict] = {}
     tables = {
-        'grille_evaluation': {'required': {'id','nom','type_grille','domaines_config','active','publique','date_creation','date_modification'}},
+    'grille_evaluation': {'required': {'id','nom','type_grille','domaines_config','active','date_creation','date_modification'}},
         'patients': {'required': {'id','nom','prenom','actif','date_creation','date_modification'}},
         'seances': {'required': {'id','patient_id','date_seance','date_creation','date_modification'}}
     }

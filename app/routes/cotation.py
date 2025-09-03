@@ -38,8 +38,8 @@ def user_owns_patient(patient):
     return patient.user_id == current_user.id
 
 def user_owns_grille(grille):
-    """Vérifie que la grille appartient à l'utilisateur courant ou est publique."""
-    return grille.publique or grille.user_id == current_user.id
+    """Vérifie que la grille appartient à l'utilisateur courant."""
+    return grille.user_id == current_user.id
 # Route GET pour afficher le formulaire de création de grille personnalisée
 @cotation_bp.route('/grilles/creer-personnalisee', methods=['GET'])
 @login_required
@@ -73,7 +73,7 @@ def charger_grilles_standards():
                     'reference_scientifique': data.get('reference_scientifique', nom_fichier.replace('.json','').upper()),
                     'versions': [data],
                     'id': f"std-{nom_fichier}",
-                    'publique': True
+                    # 'publique': True
                 })
             except Exception as e:
                 import traceback
@@ -201,7 +201,7 @@ def interface_cotation(seance_id):
                 GrilleEvaluation.active.is_(True)
             ).all()
         except Exception:
-            # Fallback si les colonnes publique/active n'existent pas encore
+            # Fallback si la colonne active n'existe pas encore
             grilles = GrilleEvaluation.query.filter(
                 GrilleEvaluation.active.is_(True)
             ).all()
@@ -268,7 +268,7 @@ def grille_standard_detail(grille_id):
         grille = json.load(f)
         # Pour compatibilité avec le template
         grille['id'] = f'std-{grille_id}'
-        grille['publique'] = True
+    # grille['publique'] = True
         grille['versions'] = [grille]
     return render_template('cotation/grille_detail.html', grille=grille)
 
@@ -419,7 +419,7 @@ def cotations_seance(seance_id):
                 GrilleEvaluation.active.is_(True)
             ).all()
         except Exception:
-            # Fallback si les colonnes publique/active n'existent pas encore
+            # Fallback si la colonne active n'existe pas encore
             grilles = GrilleEvaluation.query.filter(
                 GrilleEvaluation.active.is_(True)
             ).all()

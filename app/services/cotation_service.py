@@ -356,7 +356,6 @@ class CotationService:
         g.reference_scientifique = cfg["reference_scientifique"]
         g.domaines_config = json.dumps(cfg["domaines"])
         g.active = True
-        g.publique = True
         db.session.add(g)
         db.session.commit()
         CotationService._ensure_initial_version(g)
@@ -396,7 +395,7 @@ class CotationService:
         g.reference_scientifique = None
         g.domaines_config = json.dumps(domaines_valides)
         g.active = True
-        g.publique = False
+    # g.publique = False
         g.user_id = current_user.id  # type: ignore[attr-defined]
         db.session.add(g)
         db.session.commit()
@@ -408,7 +407,7 @@ class CotationService:
         src = GrilleEvaluation.query.get(grille_id)
         if not src:
             return None
-        if not src.publique and src.user_id != current_user.id:  # type: ignore[attr-defined]
+        if src.user_id != current_user.id:  # type: ignore[attr-defined]
             return None
         g = GrilleEvaluation()
         g.nom = f"{src.nom} (copie)"
@@ -417,12 +416,11 @@ class CotationService:
         g.reference_scientifique = src.reference_scientifique
         g.domaines_config = src.domaines_config
         g.active = True
-        g.publique = False
         g.user_id = current_user.id  # type: ignore[attr-defined]
         db.session.add(g)
         db.session.commit()
         CotationService._ensure_initial_version(g)
-        # Suppression du code orphelin hors fonction
+        return g
 
     # ------------------- Edition / suppression ------------------- #
     @staticmethod
@@ -530,8 +528,11 @@ class CotationService:
     # ------------------- Gestion des grilles ------------------- #
     @staticmethod
     def get_grilles_standards() -> List[GrilleEvaluation]:
-        """Récupère toutes les grilles standards (publiques)."""
-        return GrilleEvaluation.query.filter_by(type_grille='standard', active=True, publique=True).all()
+        """Récupère toutes les grilles standards."""
+        try:
+            return GrilleEvaluation.query.filter_by(type_grille='standard', active=True).all()
+        except Exception:
+            return []
 
     @staticmethod
     def get_grilles_utilisateur() -> List[GrilleEvaluation]:
@@ -553,8 +554,8 @@ class CotationService:
         if not grille or not grille.active:
             return None
         
-        # Vérification d'accès : grille publique ou appartenant à l'utilisateur
-        if grille.publique:
+    # Vérification d'accès : grille appartenant à l'utilisateur
+    # if grille.publique:
             return grille
         
         try:

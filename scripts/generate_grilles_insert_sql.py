@@ -26,9 +26,9 @@ def main():
             user_id = 'NULL'  # Standard grille, pas d'utilisateur
             domaines_config = escape_sql(json.dumps(data.get('domaines_config', {}), ensure_ascii=False))
             active = 'true'
-            publique = 'true'
+            # publique = 'true'
             now = escape_sql(datetime.now().isoformat())
-            sql = f"INSERT INTO public.grille_evaluation (nom, description, type_grille, reference_scientifique, user_id, domaines_config, active, publique, date_creation, date_modification) VALUES ({nom}, {description}, {type_grille}, {reference}, {user_id}, {domaines_config}, {active}, {publique}, {now}, {now});"
+            sql = f"INSERT INTO public.grille_evaluation (nom, description, type_grille, reference_scientifique, user_id, domaines_config, active, date_creation, date_modification) VALUES ({nom}, {description}, {type_grille}, {reference}, {user_id}, {domaines_config}, {active}, {now}, {now});"
             inserts.append(sql)
     with open(SQL_FILE, 'w', encoding='utf-8') as f:
         f.write('\n'.join(inserts))

@@ -27,7 +27,7 @@ with app.app_context():
             grille.reference_scientifique = data.get('reference_scientifique', filename.replace('.json','').upper())
             grille.domaines_config = json.dumps(data.get('domaines', []))
             grille.active = True
-            grille.publique = True
+            # grille.publique = True
             db.session.add(grille)
             print(f"Importée : {grille.nom}")
     db.session.commit()
