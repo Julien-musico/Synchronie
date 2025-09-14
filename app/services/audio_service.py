@@ -10,6 +10,11 @@ from typing import Any, Dict, Optional, Tuple
 from openai import OpenAI
 from werkzeug.datastructures import FileStorage
 
+try:  # Third-party optional
+    from mistralai import Mistral  # type: ignore
+except ImportError:  # pragma: no cover
+    Mistral = None  # type: ignore
+
 from app.models import Seance, db
 
 logger = logging.getLogger(__name__)
@@ -22,79 +27,39 @@ class AudioTranscriptionService:
     MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB (limite OpenAI Whisper)
     
     def __init__(self):
-        """Initialise le service avec la clé API OpenAI"""
-        api_key = os.environ.get('OPENAI_API_KEY')
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY n'est pas configurée")
-        
-        # Initialisation robuste du client OpenAI avec gestion complète des problèmes de proxy
-        self.client = None
-        last_error = None
-        
-        # Stratégie 1: Initialisation standard
-        try:
-            import openai
-            logger.info(f"Version OpenAI: {getattr(openai, '__version__', 'unknown')}")
-            self.client = OpenAI(api_key=api_key)
-            logger.info("✅ Client OpenAI initialisé avec succès (méthode standard)")
-            return
-        except TypeError as e:
-            last_error = e
-            logger.warning(f"⚠️ Erreur de type lors de l'initialisation standard: {e}")
-        except Exception as e:
-            last_error = e
-            logger.warning(f"⚠️ Erreur inattendue lors de l'initialisation standard: {e}")
-        
-        # Stratégie 2: Client HTTP personnalisé sans proxy
-        if 'proxies' in str(last_error) or 'unexpected keyword argument' in str(last_error):
+        """Initialise le service (OpenAI pour transcription Whisper, Mistral pour synthèse si disponible)"""
+        self.openai_client: Optional[OpenAI] = None
+        self.mistral_client = None  # type: ignore
+        self.use_mistral = False
+
+        openai_key = os.environ.get('OPENAI_API_KEY')
+        mistral_key = os.environ.get('MISTRAL_API_KEY')
+        mistral_model = os.environ.get('MISTRAL_MODEL', 'mistral-large-latest')
+
+        # Initialisation Mistral (prioritaire pour la synthèse)
+        if mistral_key and Mistral is not None:
             try:
-                import httpx
-                logger.info("🔄 Tentative avec client HTTP personnalisé (sans proxy)")
-                
-                # Créer un client HTTP explicitement sans configuration de proxy
-                http_client = httpx.Client(
-                    timeout=30.0,
-                    follow_redirects=True
-                )
-                self.client = OpenAI(api_key=api_key, http_client=http_client)
-                logger.info("✅ Client OpenAI initialisé avec client HTTP personnalisé")
-                return
-            except Exception as e2:
-                last_error = e2
-                logger.warning(f"⚠️ Échec avec client HTTP personnalisé: {e2}")
-        
-        # Stratégie 3: Variable d'environnement uniquement
-        try:
-            logger.info("🔄 Tentative avec variable d'environnement uniquement")
-            os.environ['OPENAI_API_KEY'] = api_key
-            self.client = OpenAI()
-            logger.info("✅ Client OpenAI initialisé via variable d'environnement")
-            return
-        except Exception as e3:
-            last_error = e3
-            logger.warning(f"⚠️ Échec avec variable d'environnement: {e3}")
-        
-        # Stratégie 4: Client HTTP minimal
-        try:
-            import httpx
-            logger.info("🔄 Tentative avec client HTTP minimal")
-            
-            # Client HTTP le plus basique possible
-            http_client = httpx.Client(
-                timeout=httpx.Timeout(30.0),
-                limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
-            )
-            self.client = OpenAI(api_key=api_key, http_client=http_client)
-            logger.info("✅ Client OpenAI initialisé avec client HTTP minimal")
-            return
-        except Exception as e4:
-            last_error = e4
-            logger.warning(f"⚠️ Échec avec client HTTP minimal: {e4}")
-        
-        # Si toutes les stratégies échouent
-        logger.error("❌ Toutes les stratégies d'initialisation ont échoué")
-        logger.error(f"❌ Dernière erreur: {last_error}")
-        raise ValueError(f"Impossible d'initialiser le client OpenAI après toutes les tentatives. Dernière erreur: {last_error}")
+                self.mistral_client = Mistral(api_key=mistral_key)
+                self.mistral_model = mistral_model
+                self.use_mistral = True
+                logger.info(f"✅ Client Mistral initialisé (modèle: {mistral_model})")
+            except Exception as e:
+                logger.warning(f"⚠️ Impossible d'initialiser Mistral: {e}")
+                self.use_mistral = False
+        elif mistral_key and Mistral is None:
+            logger.warning("⚠️ Paquet 'mistralai' non installé: pip install mistralai pour activer Mistral")
+
+        # Initialisation OpenAI (nécessaire pour Whisper). On garde logique minimale.
+        if openai_key:
+            try:
+                self.openai_client = OpenAI(api_key=openai_key)
+            except Exception as e:
+                logger.error(f"❌ Échec initialisation OpenAI: {e}")
+        else:
+            logger.warning("OPENAI_API_KEY non configurée: transcription Whisper désactivée")
+
+        if not self.openai_client and not self.mistral_client:
+            raise ValueError("Aucun client IA initialisé (ni OpenAI pour Whisper ni Mistral pour synthèse)")
     
     @staticmethod
     def is_allowed_file(filename: str) -> bool:
@@ -136,10 +101,10 @@ class AudioTranscriptionService:
         Returns:
             Tuple[bool, str, Optional[str]]: (success, message, transcription)
         """
-        # Vérifier que le client OpenAI est initialisé
-        if self.client is None:
-            logger.error("Client OpenAI non initialisé")
-            return False, "Service de transcription non disponible", None
+        # Vérifier que le client OpenAI (Whisper) est initialisé
+        if self.openai_client is None:
+            logger.error("Client OpenAI non initialisé pour la transcription")
+            return False, "Service de transcription non disponible (Whisper indisponible)", None
             
         try:
             # Validation du fichier
@@ -163,7 +128,7 @@ class AudioTranscriptionService:
             try:
                 # Transcription avec Whisper - version simplifiée
                 with open(temp_file_path, 'rb') as audio_data:
-                    transcript = self.client.audio.transcriptions.create(
+                    transcript = self.openai_client.audio.transcriptions.create(
                         model="whisper-1",
                         file=audio_data,
                         language="fr",  # Français
@@ -197,9 +162,9 @@ class AudioTranscriptionService:
         Returns:
             Tuple[bool, str, Optional[str]]: (success, message, analysis)
         """
-        # Vérifier que le client OpenAI est initialisé
-        if self.client is None:
-            logger.error("Client OpenAI non initialisé")
+        # Vérifier qu'au moins un client de génération est dispo
+        if not (self.use_mistral or self.openai_client):
+            logger.error("Aucun client IA pour la génération d'analyse")
             return False, "Service d'analyse non disponible", None
             
         try:
@@ -243,17 +208,53 @@ Contenu à analyser (transcription ou notes) :
 
 Génère une synthèse thérapeutique détaillée de cette séance de musicothérapie."""
             
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ],
-                max_tokens=1000,
-                temperature=0.3
-            )
-            
-            analysis = response.choices[0].message.content or ""
+            analysis = ""
+            if self.use_mistral and self.mistral_client is not None:
+                try:
+                    # API Mistral: responses.create(messages=[{"role":..., "content":...}], model="...")
+                    m_response = self.mistral_client.responses.create(
+                        model=self.mistral_model,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        temperature=0.3,
+                        max_tokens=1000,
+                    )
+                    # Structure: m_response.output[0].content[0].text (selon SDK mistralai)
+                    try:
+                        output_blocks = getattr(m_response, 'output', []) or []  # type: ignore
+                        if output_blocks:
+                            first_block = output_blocks[0]
+                            block_content = getattr(first_block, 'content', [])  # type: ignore
+                            if block_content:
+                                analysis = getattr(block_content[0], 'text', '')  # type: ignore
+                    except Exception as parse_err:  # pragma: no cover
+                        logger.warning(f"⚠️ Parsing réponse Mistral: {parse_err}")
+                        analysis = ''
+
+                    if not analysis:
+                        # Fallback texte brut si accessible
+                        analysis = str(m_response)
+                except Exception as e:
+                    logger.error(f"Erreur génération Mistral, fallback OpenAI si possible: {e}")
+                    self.use_mistral = False  # Eviter boucle d'erreurs
+
+            if not analysis and self.openai_client is not None:
+                try:
+                    oai_response = self.openai_client.chat.completions.create(
+                        model=os.environ.get('OPENAI_SUMMARY_MODEL', 'gpt-4o-mini'),
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        max_tokens=1000,
+                        temperature=0.3
+                    )
+                    analysis = oai_response.choices[0].message.content or ""
+                except Exception as e2:
+                    logger.error(f"Erreur fallback OpenAI: {e2}")
+                    return False, f"Erreur d'analyse IA: {str(e2)}", None
             logger.info(f"Analyse IA générée: {len(analysis)} caractères")
             
             return True, "Analyse générée avec succès", analysis
