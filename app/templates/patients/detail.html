@@ -230,7 +230,7 @@
                         <i class="bi bi-upload me-2"></i>
                         Traiter enregistrement
                     </button>
-                    <button class="btn btn-outline-info">
+                    <button class="btn btn-outline-info" id="btn-generate-report" data-patient-id="{{ patient.id }}" data-bs-toggle="modal" data-bs-target="#modalRapport">
                         <i class="bi bi-file-text me-2"></i>
                         Générer rapport
                     </button>
@@ -335,6 +335,54 @@
                         </a>
                     </div>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_modals %}
+<!-- Modal génération rapport -->
+<div class="modal fade" id="modalRapport" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-text me-2"></i>Générer un rapport d'évolution</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-rapport" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Date début</label>
+                        <input type="date" name="date_debut" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Date fin</label>
+                        <input type="date" name="date_fin" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Périodicité</label>
+                        <select name="periodicite" class="form-select">
+                            <option value="">Personnalisée</option>
+                            <option value="mensuel">Mensuel</option>
+                            <option value="annuel">Annuel</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary" id="btn-launch-rapport">
+                            <span class="label">Générer</span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </form>
+                <hr>
+                <div id="rapport-result" class="d-none">
+                    <h6 class="text-muted">Rapport généré</h6>
+                    <div class="border rounded p-3 bg-light" style="white-space: pre-wrap;" id="rapport-contenu"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
             </div>
         </div>
     </div>

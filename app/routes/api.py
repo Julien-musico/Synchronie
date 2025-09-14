@@ -2,8 +2,10 @@
 API REST pour l'application Synchronie
 """
 from flask import Blueprint, jsonify, request
+from dateutil import parser as date_parser  # type: ignore
 
 from app.services.patient_service import PatientService
+from app.services.report_service import ReportService
 
 api = Blueprint('api', __name__)
 
@@ -135,3 +137,31 @@ def search_patients():
             'success': False,
             'message': f'Erreur lors de la recherche: {str(e)}'
         }), 500
+
+@api.route('/patients/<int:patient_id>/rapport', methods=['POST'])
+def generate_patient_report(patient_id: int):
+    """Génère un rapport d'évolution de patient sur une période.
+
+    JSON attendu: {"date_debut": "2025-01-01", "date_fin": "2025-02-01", "periodicite": "mensuel|annuel|personnalise"}
+    """
+    try:
+        payload = request.get_json() or {}
+        date_debut_raw = payload.get('date_debut')
+        date_fin_raw = payload.get('date_fin')
+        periodicite = payload.get('periodicite') or None
+
+        if not (date_debut_raw and date_fin_raw):
+            return jsonify({'success': False, 'message': 'date_debut et date_fin requis'}), 400
+
+        try:
+            # Utiliser dateutil pour souplesse (date seule ou datetime)
+            date_debut = date_parser.parse(date_debut_raw)
+            date_fin = date_parser.parse(date_fin_raw)
+        except Exception:
+            return jsonify({'success': False, 'message': 'Format de date invalide'}), 400
+
+        success, message, rapport = ReportService.generate_report(patient_id, date_debut, date_fin, periodicite)
+        status = 200 if success else (404 if 'non trouvé' in message.lower() else 400)
+        return jsonify({'success': success, 'message': message, 'rapport': rapport}), status
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Erreur serveur: {e}'}), 500

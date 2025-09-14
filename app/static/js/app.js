@@ -262,6 +262,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Re-initialiser les tooltips
     window.synchronieApp.initTooltips();
+
+    // Génération de rapport patient
+    const formRapport = document.getElementById('form-rapport');
+    if (formRapport) {
+        formRapport.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-launch-rapport');
+            const spinner = btn.querySelector('.spinner-border');
+            const label = btn.querySelector('.label');
+            spinner.classList.remove('d-none');
+            label.textContent = 'Génération...';
+            btn.disabled = true;
+            const patientId = document.getElementById('btn-generate-report').dataset.patientId;
+            const fd = new FormData(formRapport);
+            const payload = {
+                date_debut: fd.get('date_debut'),
+                date_fin: fd.get('date_fin'),
+                periodicite: fd.get('periodicite') || null
+            };
+            try {
+                const res = await fetch(`/api/patients/${patientId}/rapport`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!data.success) {
+                    window.synchronieApp.showAlert(data.message || 'Erreur génération', 'danger');
+                } else {
+                    const rapportZone = document.getElementById('rapport-result');
+                    const contenu = document.getElementById('rapport-contenu');
+                    contenu.textContent = data.rapport || '(Vide)';
+                    rapportZone.classList.remove('d-none');
+                    window.synchronieApp.showAlert('Rapport généré', 'success');
+                }
+            } catch (err) {
+                window.synchronieApp.showAlert('Erreur réseau lors de la génération', 'danger');
+            } finally {
+                spinner.classList.add('d-none');
+                label.textContent = 'Générer';
+                btn.disabled = false;
+            }
+        });
+    }
 });
 
 // Export des fonctions utilitaires pour utilisation globale
