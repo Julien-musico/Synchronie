@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from app.models import Patient, Seance
+from app.models import Patient, Seance, RapportPatient, db
 from app.services.audio_service import AudioTranscriptionService
 
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class ReportService:
         }
 
     @staticmethod
-    def generate_report(patient_id: int, date_debut: datetime, date_fin: datetime, periodicite: str | None = None) -> tuple[bool, str, str | None]:
+    def generate_report(patient_id: int, date_debut: datetime, date_fin: datetime, periodicite: str | None = None) -> tuple[bool, str, dict | None]:
         patient = Patient.query.get(patient_id)
         if not patient:
             return False, 'Patient non trouvé', None
@@ -132,4 +132,30 @@ class ReportService:
             logger.error(f'Echec génération rapport Mistral: {e}')
             return False, f'Erreur génération IA: {e}', None
 
-        return True, 'Rapport généré', rapport
+        # Sauvegarde du rapport
+        try:
+            rapport_obj = RapportPatient()  # type: ignore
+            rapport_obj.patient_id = patient_id  # type: ignore
+            rapport_obj.date_debut = date_debut.date()  # type: ignore
+            rapport_obj.date_fin = date_fin.date()  # type: ignore
+            rapport_obj.periodicite = periodicite  # type: ignore
+            rapport_obj.contenu = rapport or ''  # type: ignore
+            rapport_obj.modele = getattr(audio_service, 'mistral_model', None)  # type: ignore
+            rapport_obj.fournisseur = 'mistral'  # type: ignore
+            db.session.add(rapport_obj)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Échec sauvegarde rapport: {e}")
+            return False, f'Rapport généré mais non sauvegardé: {e}', {'rapport': rapport}
+
+        return True, 'Rapport généré', {
+            'rapport': rapport,
+            'id': rapport_obj.id,
+            'date_generation': rapport_obj.date_creation.isoformat(),
+            'date_debut': rapport_obj.date_debut.isoformat(),
+            'date_fin': rapport_obj.date_fin.isoformat(),
+            'periodicite': rapport_obj.periodicite,
+            'modele': rapport_obj.modele,
+            'fournisseur': rapport_obj.fournisseur
+        }

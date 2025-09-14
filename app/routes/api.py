@@ -7,6 +7,7 @@ from dateutil import parser as date_parser  # type: ignore
 
 from app.services.patient_service import PatientService
 from app.services.report_service import ReportService
+from app.models import RapportPatient, Patient, db  # type: ignore
 
 api = Blueprint('api', __name__)
 
@@ -141,9 +142,9 @@ def search_patients():
 
 @api.route('/patients/<int:patient_id>/rapport', methods=['POST'])
 def generate_patient_report(patient_id: int):
-    """Génère un rapport d'évolution de patient sur une période.
+    """Génère et persiste un rapport d'évolution de patient.
 
-    JSON attendu: {"date_debut": "2025-01-01", "date_fin": "2025-02-01", "periodicite": "mensuel|annuel|personnalise"}
+    JSON attendu: {"date_debut": "YYYY-MM-DD", "date_fin": "YYYY-MM-DD", "periodicite": "mensuel|annuel|personnalise"}
     """
     try:
         payload = request.get_json() or {}
@@ -155,23 +156,42 @@ def generate_patient_report(patient_id: int):
             return jsonify({'success': False, 'message': 'date_debut et date_fin requis'}), 400
 
         try:
-            # Utiliser dateutil pour souplesse (date seule ou datetime)
             date_debut = date_parser.parse(date_debut_raw)
             date_fin = date_parser.parse(date_fin_raw)
         except Exception:
             return jsonify({'success': False, 'message': 'Format de date invalide'}), 400
 
-        success, message, rapport = ReportService.generate_report(patient_id, date_debut, date_fin, periodicite)
+        success, message, rapport_dict = ReportService.generate_report(patient_id, date_debut, date_fin, periodicite)
         status = 200 if success else (404 if 'non trouvé' in message.lower() else 400)
-        payload_resp = {
-            'success': success,
-            'message': message,
-            'rapport': rapport,
-            'date_generation': datetime.now(timezone.utc).isoformat(),
-            'date_debut': date_debut.date().isoformat(),
-            'date_fin': date_fin.date().isoformat(),
-            'periodicite': periodicite
-        }
-        return jsonify(payload_resp), status
+        return jsonify({'success': success, 'message': message, 'data': rapport_dict}), status
     except Exception as e:
         return jsonify({'success': False, 'message': f'Erreur serveur: {e}'}), 500
+
+@api.route('/patients/<int:patient_id>/rapports', methods=['GET'])
+def list_patient_reports(patient_id: int):
+    """Liste les rapports d'un patient (plus récents d'abord)."""
+    try:
+        patient = Patient.query.get(patient_id)
+        if not patient:
+            return jsonify({'success': False, 'message': 'Patient non trouvé'}), 404
+        rapports = (RapportPatient.query
+                    .filter_by(patient_id=patient_id)
+                    .order_by(RapportPatient.date_creation.desc())  # type: ignore
+                    .all())
+        return jsonify({'success': True, 'data': [r.to_dict() for r in rapports]})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Erreur lors de la récupération: {e}'}), 500
+
+@api.route('/rapports/<int:rapport_id>', methods=['DELETE'])
+def delete_report(rapport_id: int):
+    """Supprime un rapport."""
+    try:
+        rapport = RapportPatient.query.get(rapport_id)
+        if not rapport:
+            return jsonify({'success': False, 'message': 'Rapport non trouvé'}), 404
+        db.session.delete(rapport)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Rapport supprimé'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Erreur suppression: {e}'}), 500

@@ -288,29 +288,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-                if (!data.success) {
+                if (!data.success || !data.data) {
                     window.synchronieApp.showAlert(data.message || 'Erreur génération', 'danger');
                 } else {
+                    const rapportDict = data.data;
                     const rapportZone = document.getElementById('rapport-result');
                     const contenu = document.getElementById('rapport-contenu');
-                    contenu.textContent = data.rapport || '(Vide)';
+                    contenu.textContent = rapportDict.contenu || '(Vide)';
                     rapportZone.classList.remove('d-none');
                     window.synchronieApp.showAlert('Rapport généré', 'success');
-                    // Insertion dans la liste des rapports (mémoire volatile côté client)
-                    const container = document.getElementById('rapports-patient');
-                    const list = document.getElementById('rapports-list');
-                    if (container && list) {
-                        container.classList.remove('d-none');
-                        const item = document.createElement('div');
-                        item.className = 'list-group-item';
-                        item.innerHTML = `
-                          <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">Rapport du ${new Date(data.date_generation).toLocaleDateString('fr-FR')}</h6>
-                            <small class="text-muted">Période: ${data.date_debut} → ${data.date_fin}</small>
-                          </div>
-                          <div class="mt-2" style="white-space: pre-wrap;">${(data.rapport || '').replace(/</g,'&lt;')}</div>`;
-                        list.prepend(item);
-                    }
+                    ajouterRapportAListe(rapportDict, true);
                 }
             } catch (err) {
                 window.synchronieApp.showAlert('Erreur réseau lors de la génération', 'danger');
@@ -320,6 +307,123 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.disabled = false;
             }
         });
+    }
+
+    // Chargement initial des rapports si la section existe
+    const rapportsList = document.getElementById('rapports-list');
+    const patientGenerateBtn = document.getElementById('btn-generate-report');
+    if (rapportsList && patientGenerateBtn) {
+        const patientId = patientGenerateBtn.dataset.patientId;
+        chargerRapports(patientId);
+    }
+
+    // Délégation pour actions sur les rapports (toggle & delete)
+    document.addEventListener('click', async (e) => {
+        const toggleBtn = e.target.closest('[data-action="toggle-rapport"]');
+        if (toggleBtn) {
+            const targetId = toggleBtn.getAttribute('data-target');
+            const body = document.getElementById(targetId);
+            if (body) {
+                body.classList.toggle('d-none');
+                const icon = toggleBtn.querySelector('i');
+                if (icon) {
+                    icon.classList.toggle('bi-chevron-down');
+                    icon.classList.toggle('bi-chevron-up');
+                }
+            }
+        }
+
+        const deleteBtn = e.target.closest('[data-action="delete-rapport"]');
+        if (deleteBtn) {
+            const rapportId = deleteBtn.getAttribute('data-id');
+            if (!rapportId) return;
+            if (!confirm('Supprimer définitivement ce rapport ?')) return;
+            try {
+                const resp = await fetch(`/api/rapports/${rapportId}`, { method: 'DELETE' });
+                const json = await resp.json();
+                if (json.success) {
+                    const wrapper = document.getElementById(`rapport-wrapper-${rapportId}`);
+                    if (wrapper) wrapper.remove();
+                    verifierEtatListe();
+                    window.synchronieApp.showAlert('Rapport supprimé', 'success');
+                } else {
+                    window.synchronieApp.showAlert(json.message || 'Erreur suppression', 'danger');
+                }
+            } catch (err) {
+                window.synchronieApp.showAlert('Erreur réseau suppression', 'danger');
+            }
+        }
+    });
+
+    function creerItemRapport(r) {
+        const id = r.id;
+        const rapportDate = new Date(r.date_generation).toLocaleDateString('fr-FR');
+        const periode = `${r.date_debut} → ${r.date_fin}`;
+        const periodicite = r.periodicite ? `<span class="badge bg-info ms-2">${r.periodicite}</span>` : '';
+        const wrapper = document.createElement('div');
+        wrapper.id = `rapport-wrapper-${id}`;
+        wrapper.className = 'list-group-item p-0 border-0';
+        wrapper.innerHTML = `
+            <div class="border rounded mb-2">
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 bg-light">
+                    <div>
+                        <button class="btn btn-sm btn-link text-decoration-none" data-action="toggle-rapport" data-target="rapport-body-${id}">
+                            <i class="bi bi-chevron-down me-1"></i>
+                            Rapport du ${rapportDate}
+                        </button>
+                        <small class="text-muted ms-2">Période: ${periode}</small>
+                        ${periodicite}
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-danger" title="Supprimer" data-action="delete-rapport" data-id="${id}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="rapport-body-${id}" class="px-3 py-3 d-none" style="white-space: pre-wrap;">
+                    ${ (r.contenu || '').replace(/</g,'&lt;') }
+                </div>
+            </div>`;
+        return wrapper;
+    }
+
+    function ajouterRapportAListe(r, prepend=false) {
+        const container = document.getElementById('rapports-patient');
+        const emptyState = document.getElementById('rapports-empty');
+        if (container) container.classList.remove('d-none');
+        if (emptyState) emptyState.classList.add('d-none');
+        const list = document.getElementById('rapports-list');
+        if (!list) return;
+        const item = creerItemRapport(r);
+        if (prepend) {
+            list.prepend(item);
+        } else {
+            list.appendChild(item);
+        }
+    }
+
+    async function chargerRapports(patientId) {
+        try {
+            const resp = await fetch(`/api/patients/${patientId}/rapports`);
+            const json = await resp.json();
+            if (json.success && Array.isArray(json.data) && json.data.length) {
+                json.data.forEach(r => ajouterRapportAListe(r));
+            } else {
+                verifierEtatListe();
+            }
+        } catch (err) {
+            verifierEtatListe();
+        }
+    }
+
+    function verifierEtatListe() {
+        const list = document.getElementById('rapports-list');
+        const emptyState = document.getElementById('rapports-empty');
+        const container = document.getElementById('rapports-patient');
+        if (list && list.children.length === 0) {
+            if (emptyState) emptyState.classList.remove('d-none');
+            if (container) container.classList.add('d-none');
+        }
     }
 });
 

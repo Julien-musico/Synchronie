@@ -163,3 +163,31 @@ class Seance(TimestampMixin, db.Model):
             'score_interaction': self.score_interaction,
             'synthese_ia': self.synthese_ia
         }
+
+class RapportPatient(TimestampMixin, db.Model):
+    """Rapports d'évolution générés pour un patient."""
+    __tablename__ = 'rapports_patient'
+
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False, index=True)
+    date_debut = db.Column(db.Date, nullable=False)
+    date_fin = db.Column(db.Date, nullable=False)
+    periodicite = db.Column(db.String(20))  # mensuel / annuel / None
+    contenu = db.Column(db.Text, nullable=False)
+    modele = db.Column(db.String(80))  # modèle IA utilisé
+    fournisseur = db.Column(db.String(40), default='mistral')
+
+    patient = db.relationship('Patient', backref='rapports', lazy=True)
+
+    def to_dict(self) -> dict[str, object]:  # type: ignore
+        return {
+            'id': self.id,
+            'patient_id': self.patient_id,
+            'date_debut': self.date_debut.isoformat(),
+            'date_fin': self.date_fin.isoformat(),
+            'periodicite': self.periodicite,
+            'date_generation': self.date_creation.isoformat(),
+            'contenu': self.contenu,
+            'modele': self.modele,
+            'fournisseur': self.fournisseur
+        }
