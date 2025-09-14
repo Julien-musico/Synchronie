@@ -205,14 +205,20 @@ class AudioTranscriptionService:
         try:
             logger.info("Génération de l'analyse IA de la séance")
             
-            # Prompt spécialisé pour l'analyse de musicothérapie
-            system_prompt = """Tu es musicothérapeute spécialisé en psychologie. Reformule fidèlement le contenu ci-dessous.
-Contraintes:
-- Style professionnel, sobre, factuel
-- Écrire à la première personne ("je")
-- Aucune invention: s'appuyer exclusivement sur le texte fourni
-- Pas de généralités ni d'interprétations non sourcées
-- Français clair"""
+            # Prompt spécialisé pour l'analyse de musicothérapie avec format imposé
+            system_prompt = (
+                "Tu es musicothérapeute spécialisé en psychologie. Tu produis une synthèse clinique concise et rigoureuse."\
+                "\nContraintes strictes:"\
+                "\n- Style professionnel, sobre, factuel, en français clair"\
+                "\n- Première personne (\"je\")"\
+                "\n- Aucune invention: uniquement les éléments fournis"\
+                "\n- Pas de listes, pas de puces, pas de sous-titres"\
+                "\n- Un seul paragraphe continu"\
+                "\n- Pas de double espaces, pas de verbosité"\
+                "\nFormat de sortie OBLIGATOIRE:"\
+                "\nSéance de Musicothérapie : [paragraphe unique de 5 à 8 phrases couvrant: contexte pertinent, comportements ou réponses musicales observés, réactions émotionnelles/motrices notables, qualité de l'interaction, progression par rapport aux objectifs mentionnés, points de vigilance et éventuelle orientation/recommandation succincte]"\
+                "\nN'inclus pas la structure entre crochets dans la réponse finale, remplace-la directement par le texte rédigé."\
+            )
             
             contexte = ""
             if session_context:
