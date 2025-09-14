@@ -2,6 +2,7 @@
 API REST pour l'application Synchronie
 """
 from flask import Blueprint, jsonify, request
+from datetime import datetime, timezone
 from dateutil import parser as date_parser  # type: ignore
 
 from app.services.patient_service import PatientService
@@ -162,6 +163,15 @@ def generate_patient_report(patient_id: int):
 
         success, message, rapport = ReportService.generate_report(patient_id, date_debut, date_fin, periodicite)
         status = 200 if success else (404 if 'non trouvé' in message.lower() else 400)
-        return jsonify({'success': success, 'message': message, 'rapport': rapport}), status
+        payload_resp = {
+            'success': success,
+            'message': message,
+            'rapport': rapport,
+            'date_generation': datetime.now(timezone.utc).isoformat(),
+            'date_debut': date_debut.date().isoformat(),
+            'date_fin': date_fin.date().isoformat(),
+            'periodicite': periodicite
+        }
+        return jsonify(payload_resp), status
     except Exception as e:
         return jsonify({'success': False, 'message': f'Erreur serveur: {e}'}), 500

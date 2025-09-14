@@ -296,6 +296,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     contenu.textContent = data.rapport || '(Vide)';
                     rapportZone.classList.remove('d-none');
                     window.synchronieApp.showAlert('Rapport généré', 'success');
+                    // Insertion dans la liste des rapports (mémoire volatile côté client)
+                    const container = document.getElementById('rapports-patient');
+                    const list = document.getElementById('rapports-list');
+                    if (container && list) {
+                        container.classList.remove('d-none');
+                        const item = document.createElement('div');
+                        item.className = 'list-group-item';
+                        item.innerHTML = `
+                          <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Rapport du ${new Date(data.date_generation).toLocaleDateString('fr-FR')}</h6>
+                            <small class="text-muted">Période: ${data.date_debut} → ${data.date_fin}</small>
+                          </div>
+                          <div class="mt-2" style="white-space: pre-wrap;">${(data.rapport || '').replace(/</g,'&lt;')}</div>`;
+                        list.prepend(item);
+                    }
                 }
             } catch (err) {
                 window.synchronieApp.showAlert('Erreur réseau lors de la génération', 'danger');

@@ -89,18 +89,19 @@ class ReportService:
         ])
 
         system_prompt = (
-            "Tu es un musicothérapeute expérimenté rédigeant un rapport d'évolution clinique synthétique et structuré."\
-            "\nContraintes:"\
-            "\n- Français professionnel, concis, factuel"\
-            "\n- Aucune invention: uniquement les synthèses et données fournies"\
-            "\n- Si une donnée manque, indiquer 'non documenté' sans extrapoler"\
-            "\n- Pas de listes à puces dans l'introduction mais sections courtes autorisées (2-4)"\
-            "\nStructure impérative:"\
-            "\n1. Contexte & Période"\
-            "\n2. Synthèse de l'évolution clinique (comportements, réponses musicales, aspects émotionnels / relationnels)"\
-            "\n3. Progression par rapport aux objectifs thérapeutiques"\
-            "\n4. Analyse des tendances d'engagement (si données)"\
-            "\n5. Points de vigilance & recommandations"\
+            "Tu es musicothérapeute clinicien. Produis un rapport d'évolution sobre et professionnel."\
+            "\nContraintes stylistiques strictes:"\
+            "\n- Ton clinique neutre, formulation directe, phrases complètes"\
+            "\n- Aucune puce, aucun astérisque, aucun tiret de liste, aucun guillemet décoratif"\
+            "\n- Pas de numérotation explicite (pas de 1., 2., etc.)"\
+            "\n- Pas de mise en forme artificielle, pas d'emoji"\
+            "\n- Regrouper en paragraphes courts distincts (3 à 6 lignes) : Contexte/Période ; Evolution clinique ; Progression objectifs ; Engagement ; Points de vigilance & recommandations"\
+            "\n- Un espace simple entre les phrases, pas de double saut de ligne sauf pour séparer les sections"\
+            "\nRègles de contenu:"\
+            "\n- Uniquement les informations dérivables des synthèses fournies"\
+            "\n- Si une dimension est absente: écrire 'non documenté' sans extrapoler"\
+            "\n- Synthétiser sans répéter textuellement toutes les synthèses, extraire les tendances"\
+            "\nSortie finale: suite de paragraphes sobres, sans balisage ni titre explicite, séparés par UNE ligne vide."\
         )
 
         user_prompt = f"""Données Patient:\n- Prénom: {patient.prenom}\n- Pathologie: {patient.pathologie or 'Non renseignée'}\n- Objectifs thérapeutiques: {patient.objectifs_therapeutiques or 'Non renseignés'}\n\nPériode analysée: {periode_label}\nNombre de séances: {nb_seances}\nEngagement moyen: {engagement_moyen}\nTendance engagement: {engagement_tendance or 'non déterminable'}\n\nSynthèses disponibles:\n{syntheses_concat or 'Aucune synthèse'}\n\nProduit un rapport d'évolution structuré conformément aux instructions."""
@@ -115,6 +116,18 @@ class ReportService:
 
         try:
             rapport = audio_service._mistral_call(system_prompt, user_prompt)  # type: ignore
+            if rapport:
+                # Normalisation légère: retirer puces éventuelles accidentelles
+                lines = []
+                for raw in rapport.splitlines():
+                    stripped = raw.strip()
+                    if stripped.startswith(('- ', '* ', '• ')):
+                        stripped = stripped[2:].lstrip()
+                    # retirer guillemets droits simples décoratifs entourant une ligne entière
+                    if (stripped.startswith(('"', "'")) and stripped.endswith(('"', "'")) and len(stripped) > 2):
+                        stripped = stripped[1:-1].strip()
+                    lines.append(stripped)
+                rapport = '\n'.join(lines).strip()
         except Exception as e:
             logger.error(f'Echec génération rapport Mistral: {e}')
             return False, f'Erreur génération IA: {e}', None
