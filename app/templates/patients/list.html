@@ -140,11 +140,11 @@
                                             <a href="{{ url_for('seances.new_seance', patient_id=patient.id) }}" class="btn btn-outline-success" title="Nouvelle séance">
                                                 <i class="bi bi-plus"></i>
                                             </a>
-                                            <form method="POST"
-                                                  action="{{ url_for('patients.delete_patient', patient_id=patient.id) }}"
-                                                  onsubmit="return confirm('Confirmer la suppression de ce patient ?');"
-                                                  class="d-inline">
-                                                <button type="submit" class="btn btn-outline-danger" title="Supprimer le patient">
+                                                                                        <form method="POST"
+                                                                                                    action="{{ url_for('patients.delete_patient', patient_id=patient.id) }}"
+                                                                                                    onsubmit="return confirm('Confirmer la suppression de ce patient ?');"
+                                                                                                    class="d-inline">
+                                                                                                <button type="submit" class="btn btn-outline-danger btn-left-square" title="Supprimer le patient">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
