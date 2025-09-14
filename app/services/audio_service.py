@@ -247,16 +247,35 @@ class AudioTranscriptionService:
         - Ancien SDK: resp.choices[0].message.content
         - Fallback: str(resp)
         """
+        # Tentative directe (nouveau SDK) via output_text si disponible
+        with contextlib.suppress(Exception):
+            direct = getattr(resp, 'output_text', None)
+            if direct:
+                return str(direct).strip()
         # Nouveau format (responses)
         with contextlib.suppress(Exception):
             output = getattr(resp, 'output', None)
             if output:
                 first_block = output[0]
                 content = getattr(first_block, 'content', None)
-                if content:
-                    text = getattr(content[0], 'text', None)
-                    if text:
-                        return text
+                if content and isinstance(content, list):
+                        # Essayer le premier bloc
+                        with contextlib.suppress(Exception):
+                            text = getattr(content[0], 'text', None)
+                            if not text and isinstance(content[0], dict):
+                                text = content[0].get('text')  # type: ignore
+                            if text:
+                                return str(text).strip()
+                        # Concaténer les segments si plusieurs
+                        parts = []
+                        for seg in content:  # type: ignore
+                            t = getattr(seg, 'text', None)
+                            if not t and isinstance(seg, dict):  # type: ignore
+                                t = seg.get('text')  # type: ignore
+                            if t:
+                                parts.append(str(t))
+                        if parts:
+                            return '\n'.join(parts).strip()
         # Ancien format (chat)
         with contextlib.suppress(Exception):
             choices = getattr(resp, 'choices', None)

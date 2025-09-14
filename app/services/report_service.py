@@ -128,6 +128,8 @@ class ReportService:
                         stripped = stripped[1:-1].strip()
                     lines.append(stripped)
                 rapport = '\n'.join(lines).strip()
+            if not rapport or not rapport.strip():
+                logger.warning("Rapport IA vide ou non généré - vérifier prompts ou réponse API")
         except Exception as e:
             logger.error(f'Echec génération rapport Mistral: {e}')
             return False, f'Erreur génération IA: {e}', None
