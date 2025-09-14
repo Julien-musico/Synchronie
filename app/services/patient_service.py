@@ -9,6 +9,20 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import Patient, db
 
+# NOTE: Les appels de construction Patient(...) et PatientGrille(...) génèrent des
+# faux positifs mypy/pyright (params non reconnus) car SQLAlchemy injecte dynamiquement
+# les attributs de colonnes. On garde les signatures explicites pour la clarté et on
+# ignore les avertissements avec type: ignore[call-arg].
+
+# Helper interne
+def _get_owned_patient(patient_id: int) -> Optional[Patient]:
+    """Retourne le patient appartenant à l'utilisateur courant (ou None)."""
+    try:
+        user_id = current_user.id  # type: ignore[attr-defined]
+        return Patient.query.filter_by(id=patient_id, user_id=user_id).first()
+    except Exception:
+        return Patient.query.get(patient_id)
+
 
 class PatientService:
     @staticmethod
@@ -21,11 +35,7 @@ class PatientService:
             Tuple (succès, message)
         """
         try:
-            try:
-                user_id = current_user.id  # type: ignore[attr-defined]
-                patient = Patient.query.filter_by(id=patient_id, user_id=user_id).first()
-            except Exception:
-                patient = Patient.query.get(patient_id)
+            patient = _get_owned_patient(patient_id)
             if not patient:
                 return False, "Patient non trouvé"
             db.session.delete(patient)
@@ -67,11 +77,7 @@ class PatientService:
         Returns:
             Patient ou None si non trouvé
         """
-        try:
-            user_id = current_user.id  # type: ignore[attr-defined]
-            return Patient.query.filter_by(id=patient_id, user_id=user_id).first()
-        except Exception:
-            return Patient.query.get(patient_id)
+        return _get_owned_patient(patient_id)
     
     @staticmethod
     def create_patient(data: dict) -> tuple[bool, str, Optional[Patient]]:
@@ -85,7 +91,7 @@ class PatientService:
             Tuple (succès, message, patient)
         """
         try:
-            print(f"DEBUG: Données reçues pour création patient: {data}")
+            # Validation & création patient
             
             # Validation des données requises
             nom = data.get('nom', '').strip()
@@ -94,7 +100,6 @@ class PatientService:
             if not nom or not prenom:
                 return False, "Le nom et le prénom sont obligatoires", None
             
-            print(f"DEBUG: Création patient {prenom} {nom}")
             
             # Gestion de la date de naissance
             date_naissance = None
@@ -103,7 +108,7 @@ class PatientService:
                     from datetime import datetime
                     date_naissance = datetime.strptime(data['date_naissance'], '%Y-%m-%d').date()
                 except ValueError:
-                    print(f"DEBUG: Erreur format date: {data.get('date_naissance')}")
+                    # format date invalide ignoré
                     # Continuer sans date plutôt que d'échouer
                     pass
             
@@ -112,31 +117,28 @@ class PatientService:
             with contextlib.suppress(Exception):
                 owner_id = current_user.id  # type: ignore[attr-defined]
             patient = Patient(  # type: ignore[call-arg]
-                nom=nom,  # type: ignore[arg-type]
-                prenom=prenom,  # type: ignore[arg-type]
-                date_naissance=date_naissance,  # type: ignore[arg-type]
-                telephone=data.get('telephone', '').strip() or None,  # type: ignore[arg-type]
-                email=data.get('email', '').strip() or None,  # type: ignore[arg-type]
-                adresse=data.get('adresse', '').strip() or None,  # type: ignore[arg-type]
-                pathologie=data.get('pathologie', '').strip() or None,  # type: ignore[arg-type]
-                objectifs_therapeutiques=data.get('objectifs_therapeutiques', '').strip() or None,  # type: ignore[arg-type]
-                commentaires=data.get('commentaires', '').strip() or None,  # type: ignore[arg-type]
-                actif=True,  # type: ignore[arg-type]
-                    user_id=owner_id  # type: ignore[arg-type]
+                nom=nom,
+                prenom=prenom,
+                date_naissance=date_naissance,
+                telephone=data.get('telephone', '').strip() or None,
+                email=data.get('email', '').strip() or None,
+                adresse=data.get('adresse', '').strip() or None,
+                pathologie=data.get('pathologie', '').strip() or None,
+                objectifs_therapeutiques=data.get('objectifs_therapeutiques', '').strip() or None,
+                commentaires=data.get('commentaires', '').strip() or None,
+                actif=True,
+                user_id=owner_id
             )
             
-            print("DEBUG: Tentative d'ajout en base...")
             db.session.add(patient)
             db.session.flush()  # Pour obtenir l'ID du patient
-            print(f"DEBUG: Patient créé avec ID: {patient.id}")
             
             # Assigner les grilles si spécifiées
             grilles_ids = data.get('grilles_ids', [])
             if grilles_ids:
-                print(f"DEBUG: Assignation des grilles: {grilles_ids}")
                 success, msg = PatientService._assigner_grilles(patient.id, grilles_ids)
                 if not success:
-                    print(f"DEBUG: Erreur assignation grilles: {msg}")
+                    pass
                     # Continuer même si l'assignation échoue
             
             db.session.commit()
@@ -144,11 +146,9 @@ class PatientService:
             return True, f"Patient {prenom} {nom} créé avec succès", patient
             
         except SQLAlchemyError as e:
-            print(f"DEBUG: Erreur SQLAlchemy: {str(e)}")
             db.session.rollback()
             return False, f"Erreur lors de la création du patient: {str(e)}", None
         except Exception as e:
-            print(f"DEBUG: Erreur générale: {str(e)}")
             db.session.rollback()
             return False, f"Erreur inattendue: {str(e)}", None
     
@@ -165,11 +165,7 @@ class PatientService:
             Tuple (succès, message, patient)
         """
         try:
-            try:
-                user_id = current_user.id  # type: ignore[attr-defined]
-                patient = Patient.query.filter_by(id=patient_id, user_id=user_id).first()
-            except Exception:
-                patient = Patient.query.get(patient_id)
+            patient = _get_owned_patient(patient_id)
             if not patient:
                 return False, "Patient non trouvé", None
             
@@ -214,11 +210,7 @@ class PatientService:
             Tuple (succès, message)
         """
         try:
-            try:
-                user_id = current_user.id  # type: ignore[attr-defined]
-                patient = Patient.query.filter_by(id=patient_id, user_id=user_id).first()
-            except Exception:
-                patient = Patient.query.get(patient_id)
+            patient = _get_owned_patient(patient_id)
             if not patient:
                 return False, "Patient non trouvé"
             
@@ -243,12 +235,14 @@ class PatientService:
             Liste des patients correspondants
         """
         search = f"%{query.lower()}%"
-        return Patient.query.filter(
-            db.or_(
-                Patient.nom.ilike(search),
-                Patient.prenom.ilike(search)
-            )
-        ).filter_by(actif=True).order_by(Patient.nom, Patient.prenom).all()
+        base = Patient.query
+        with contextlib.suppress(Exception):
+            user_id = current_user.id  # type: ignore[attr-defined]
+            base = base.filter_by(user_id=user_id)
+        base = base.filter(db.or_(Patient.nom.ilike(search), Patient.prenom.ilike(search)))
+        base = base.filter_by(actif=True)
+        base = base.order_by(Patient.nom, Patient.prenom)
+        return base.all()
 
     @staticmethod
     def _assigner_grilles(patient_id: int, grilles_ids: List[int]) -> tuple[bool, str]:
@@ -273,10 +267,10 @@ class PatientService:
                 try:
                     grille_id = int(grille_id)
                     assignment = PatientGrille(  # type: ignore[call-arg]
-                        patient_id=patient_id,
-                        grille_id=grille_id,
-                        priorite=priority,
-                        active=True
+                        patient_id=patient_id,  # type: ignore[arg-type]
+                        grille_id=grille_id,    # type: ignore[arg-type]
+                        priorite=priority,      # type: ignore[arg-type]
+                        active=True             # type: ignore[arg-type]
                     )
                     db.session.add(assignment)
                 except (ValueError, TypeError):
