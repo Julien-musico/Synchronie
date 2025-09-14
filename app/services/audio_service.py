@@ -2,6 +2,7 @@
 Service de transcription audio et analyse IA pour Synchronie
 Utilise OpenAI Whisper pour la transcription et GPT pour l'analyse
 """
+import contextlib
 import logging
 import os
 import tempfile
@@ -10,10 +11,13 @@ from typing import Any, Dict, Optional, Tuple
 from openai import OpenAI
 from werkzeug.datastructures import FileStorage
 
-try:  # Third-party optional
+Mistral = None  # type: ignore
+MistralClient = None  # type: ignore
+try:  # Tentatives d'import flexibles
     from mistralai import Mistral  # type: ignore
-except ImportError:  # pragma: no cover
-    Mistral = None  # type: ignore
+except Exception:  # pragma: no cover
+    with contextlib.suppress(Exception):
+        from mistralai.client import MistralClient  # type: ignore
 
 from app.models import Seance, db
 
@@ -31,6 +35,7 @@ class AudioTranscriptionService:
         self.openai_client: Optional[OpenAI] = None
         self.mistral_client = None  # type: ignore
         self.mistral_init_error: Optional[str] = None
+        self.mistral_mode: Optional[str] = None  # 'responses' | 'chat' | 'unknown'
 
         openai_key = os.environ.get('OPENAI_API_KEY')
         mistral_key = os.environ.get('MISTRAL_API_KEY')
@@ -40,11 +45,22 @@ class AudioTranscriptionService:
         logger.info(f"Initialisation AudioTranscriptionService: key_mistral_present={bool(mistral_key)} key_openai_present={bool(openai_key)}")
 
         if mistral_key:
-            if Mistral is not None:
+            if Mistral is not None or MistralClient is not None:
                 try:
-                    self.mistral_client = Mistral(api_key=mistral_key)
+                    client_cls = Mistral if Mistral is not None else MistralClient
+                    self.mistral_client = client_cls(api_key=mistral_key)  # type: ignore
                     self.mistral_model = mistral_model
-                    logger.info(f"✅ Client Mistral initialisé (modèle: {mistral_model})")
+                    cls_name = getattr(client_cls, '__name__', 'UnknownClient')
+                    # Déterminer le mode disponible (nouvelle API responses vs ancienne API chat)
+                    if hasattr(self.mistral_client, 'responses'):
+                        self.mistral_mode = 'responses'
+                    elif hasattr(self.mistral_client, 'chat'):
+                        self.mistral_mode = 'chat'
+                    else:
+                        self.mistral_mode = 'unknown'
+                    logger.info(
+                        f"✅ Client Mistral initialisé (classe={cls_name}, modèle={mistral_model}, mode={self.mistral_mode})"
+                    )
                 except Exception as e:
                     self.mistral_init_error = str(e)
                     logger.error(f"❌ Impossible d'initialiser Mistral: {e}")
@@ -153,6 +169,95 @@ class AudioTranscriptionService:
         except Exception as e:
             logger.error(f"Erreur lors de la transcription: {e}")
             return False, f"Erreur de transcription: {str(e)}", None
+
+    # -- Mistral helper methods -------------------------------------------------
+    def _mistral_call(self, system_prompt: str, user_prompt: str) -> str:
+        """Appelle l'API Mistral selon le mode disponible et renvoie le texte.
+
+        Gère automatiquement les différentes signatures des SDK.
+        """
+        if not self.mistral_client:
+            raise RuntimeError("Client Mistral indisponible")
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        # Nouveau SDK (responses)
+        if hasattr(self.mistral_client, 'responses'):
+            try:  # type: ignore[attr-defined]
+                m_response = self.mistral_client.responses.create(  # type: ignore
+                    model=self.mistral_model,
+                    messages=messages,
+                    temperature=0.3,
+                    max_tokens=1000,
+                )
+                return self._extract_text_from_response(m_response)
+            except Exception as e:  # pragma: no cover
+                raise RuntimeError(f"Échec appel Mistral (responses): {e}") from e
+
+        # Ancien SDK (chat.complete)
+        if hasattr(self.mistral_client, 'chat'):
+            # Import paresseux de ChatMessage
+            chat_messages = []
+            try:
+                from mistralai.models.chat_completion import ChatMessage  # type: ignore
+                for m in messages:
+                    chat_messages.append(ChatMessage(role=m["role"], content=m["content"]))
+            except Exception:  # pragma: no cover - fallback dicts si non dispo
+                chat_messages = messages  # type: ignore
+            try:  # type: ignore[attr-defined]
+                completion = self.mistral_client.chat.complete(  # type: ignore
+                    model=self.mistral_model,
+                    messages=chat_messages,
+                    temperature=0.3,
+                    max_tokens=1000,
+                )
+                return self._extract_text_from_response(completion)
+            except Exception as e:  # pragma: no cover
+                raise RuntimeError(f"Échec appel Mistral (chat): {e}") from e
+
+        raise RuntimeError("Interface Mistral non supportée (ni responses ni chat)")
+
+    @staticmethod
+    def _extract_text_from_response(resp: Any) -> str:
+        """Tente d'extraire le texte utile depuis différents formats de réponse.
+
+        Supporte:
+        - Nouveau SDK: resp.output[0].content[0].text
+        - Ancien SDK: resp.choices[0].message.content
+        - Fallback: str(resp)
+        """
+        # Nouveau format (responses)
+        with contextlib.suppress(Exception):
+            output = getattr(resp, 'output', None)
+            if output:
+                first_block = output[0]
+                content = getattr(first_block, 'content', None)
+                if content:
+                    text = getattr(content[0], 'text', None)
+                    if text:
+                        return text
+        # Ancien format (chat)
+        with contextlib.suppress(Exception):
+            choices = getattr(resp, 'choices', None)
+            if choices:
+                first_choice = choices[0]
+                # message peut être un objet ou un dict
+                message = getattr(first_choice, 'message', None) or getattr(first_choice, 'delta', None)
+                if message:
+                    content = getattr(message, 'content', None)
+                    if not content and isinstance(message, dict):  # pragma: no cover
+                        content = message.get('content')
+                    if content:
+                        return content
+                # Certains SDK exposent directement .content
+                content_direct = getattr(first_choice, 'content', None)
+                if content_direct:
+                    return content_direct
+        # Fallback générique
+        return str(resp)
     
     def generate_session_analysis(self, transcription: str, patient_info: Dict[str, Any], session_context: Optional[Dict[str, Any]] = None) -> Tuple[bool, str, Optional[str]]:
         """
@@ -213,27 +318,7 @@ Contenu à analyser (transcription ou notes) :
 Génère une synthèse thérapeutique détaillée de cette séance de musicothérapie."""
             
             try:
-                m_response = self.mistral_client.responses.create(
-                    model=self.mistral_model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=0.3,
-                    max_tokens=1000,
-                )
-                analysis = ""
-                try:
-                    output_blocks = getattr(m_response, 'output', []) or []  # type: ignore
-                    if output_blocks:
-                        first_block = output_blocks[0]
-                        block_content = getattr(first_block, 'content', [])  # type: ignore
-                        if block_content:
-                            analysis = getattr(block_content[0], 'text', '')  # type: ignore
-                except Exception as parse_err:  # pragma: no cover
-                    logger.warning(f"⚠️ Parsing réponse Mistral: {parse_err}")
-                if not analysis:
-                    analysis = str(m_response)
+                analysis = self._mistral_call(system_prompt, user_prompt)
             except Exception as e:
                 logger.error(f"Erreur génération Mistral: {e}")
                 return False, f"Erreur d'analyse IA: {str(e)}", None
