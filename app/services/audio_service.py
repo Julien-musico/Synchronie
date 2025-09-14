@@ -30,12 +30,15 @@ class AudioTranscriptionService:
         """Initialise le service (OpenAI pour transcription Whisper, Mistral pour synthèse si disponible)"""
         self.openai_client: Optional[OpenAI] = None
         self.mistral_client = None  # type: ignore
+        self.mistral_init_error: Optional[str] = None
 
         openai_key = os.environ.get('OPENAI_API_KEY')
         mistral_key = os.environ.get('MISTRAL_API_KEY')
         mistral_model = os.environ.get('MISTRAL_MODEL', 'mistral-large-latest')
 
         # Initialisation Mistral (synthèse)
+        logger.info(f"Initialisation AudioTranscriptionService: key_mistral_present={bool(mistral_key)} key_openai_present={bool(openai_key)}")
+
         if mistral_key:
             if Mistral is not None:
                 try:
@@ -43,8 +46,10 @@ class AudioTranscriptionService:
                     self.mistral_model = mistral_model
                     logger.info(f"✅ Client Mistral initialisé (modèle: {mistral_model})")
                 except Exception as e:
+                    self.mistral_init_error = str(e)
                     logger.error(f"❌ Impossible d'initialiser Mistral: {e}")
             else:
+                self.mistral_init_error = "Paquet mistralai non installé"
                 logger.warning("⚠️ Paquet 'mistralai' non installé: pip install mistralai pour activer Mistral")
 
         # Initialisation OpenAI (nécessaire pour Whisper). On garde logique minimale.
@@ -57,7 +62,7 @@ class AudioTranscriptionService:
             logger.warning("OPENAI_API_KEY non configurée: transcription Whisper désactivée")
 
         if not self.openai_client and not self.mistral_client:
-            raise ValueError("Aucun client IA initialisé (ni OpenAI pour Whisper ni Mistral pour synthèse)")
+            raise ValueError("Aucun client IA initialisé (ni OpenAI pour Whisper ni Mistral pour synthèse)" + (f" - Init Mistral: {self.mistral_init_error}" if self.mistral_init_error else ""))
     
     @staticmethod
     def is_allowed_file(filename: str) -> bool:
@@ -162,8 +167,9 @@ class AudioTranscriptionService:
         """
         # Vérifier que le client Mistral est disponible
         if not self.mistral_client:
-            logger.error("Client Mistral non initialisé pour la synthèse")
-            return False, "Synthèse indisponible (Mistral non configuré)", None
+            detail = f" (raison: {self.mistral_init_error})" if self.mistral_init_error else ""
+            logger.error("Client Mistral non initialisé pour la synthèse" + detail)
+            return False, f"Synthèse indisponible (Mistral non configuré){detail}", None
             
         try:
             logger.info("Génération de l'analyse IA de la séance")
