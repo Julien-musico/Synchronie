@@ -61,6 +61,34 @@ class Patient(TimestampMixin, db.Model):
     
     # Relations
     seances = db.relationship('Seance', backref='patient', lazy=True, cascade='all, delete-orphan')
+
+    def __init__(
+        self,
+        nom: str,
+        prenom: str,
+        date_naissance: 'datetime.date | None' = None,  # type: ignore[name-defined]
+        telephone: 'str | None' = None,
+        email: 'str | None' = None,
+        adresse: 'str | None' = None,
+        user_id: 'int | None' = None,
+        pathologie: 'str | None' = None,
+        objectifs_therapeutiques: 'str | None' = None,
+        commentaires: 'str | None' = None,
+        actif: bool = True,
+        **kwargs
+    ) -> None:  # type: ignore[override]
+        super().__init__(**kwargs)
+        self.nom = nom
+        self.prenom = prenom
+        self.date_naissance = date_naissance
+        self.telephone = telephone
+        self.email = email
+        self.adresse = adresse
+        self.user_id = user_id
+        self.pathologie = pathologie
+        self.objectifs_therapeutiques = objectifs_therapeutiques
+        self.commentaires = commentaires
+        self.actif = actif
     
     def __repr__(self):
         return f'<Patient {self.prenom} {self.nom}>'

@@ -3,7 +3,7 @@ Routes pour les analyses et statistiques liées à la cotation thérapeutique.
 """
 
 from flask import Blueprint, jsonify
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 
 from app.services.analytics_service import AnalyticsService
 

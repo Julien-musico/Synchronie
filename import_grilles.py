@@ -1,9 +1,8 @@
-import os
 import json
-import psycopg2
-
-import sys
+import os
 from pathlib import Path
+
+import psycopg2
 
 # Utilisation des variables d'environnement pour la sécurité
 DB_NAME = os.getenv('POSTGRES_DB', 'synchronie')

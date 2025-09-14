@@ -19,11 +19,11 @@ for domaine in grille['domaines']:
     print(f"-- Domaine : {domaine['nom']}")
     print(f"INSERT INTO domaine (nom, description)\nSELECT '{domaine['nom']}', ''\nWHERE NOT EXISTS (SELECT 1 FROM domaine WHERE nom = '{domaine['nom']}');")
     print(f"SELECT id FROM domaine WHERE nom = '{domaine['nom']}';")
-    print(f"-- INSERT INTO grille_domaine (grille_id, domaine_id) ...")
+    print("-- INSERT INTO grille_domaine (grille_id, domaine_id) ...")
     for indicateur in domaine['indicateurs']:
         print(f"-- Indicateur : {indicateur['nom']}")
         print(f"INSERT INTO indicateur (nom, description)\nSELECT '{indicateur['nom']}', ''\nWHERE NOT EXISTS (SELECT 1 FROM indicateur WHERE nom = '{indicateur['nom']}');")
         print(f"SELECT id FROM indicateur WHERE nom = '{indicateur['nom']}';")
-        print(f"-- INSERT INTO domaine_indicateur (domaine_id, indicateur_id) ...")
+    print("-- INSERT INTO domaine_indicateur (domaine_id, indicateur_id) ...")
     print()
 print("-- Répète les liaisons grille_domaine et domaine_indicateur avec les IDs obtenus.")

@@ -5,6 +5,8 @@ from flask import Flask, jsonify, render_template
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
+from app.routes.cotation import cotation_bp
+
 # Charger les variables d'environnement
 load_dotenv()
 
@@ -63,7 +65,6 @@ def get_patients():
         'date_creation': p.date_creation.isoformat()
     } for p in patients])
 
-from app.routes.cotation import cotation_bp
 app.register_blueprint(cotation_bp)
 
 if __name__ == '__main__':

@@ -1,18 +1,16 @@
-"""
-Services pour la gestion des patients
-"""
+"""Services pour la gestion des patients."""
+
 import contextlib
-from typing import List, Optional
+from typing import Any, List, Optional, cast
 
 from flask_login import current_user  # type: ignore
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import Patient, db
 
-# NOTE: Les appels de construction Patient(...) et PatientGrille(...) génèrent des
-# faux positifs mypy/pyright (params non reconnus) car SQLAlchemy injecte dynamiquement
-# les attributs de colonnes. On garde les signatures explicites pour la clarté et on
-# ignore les avertissements avec type: ignore[call-arg].
+# NOTE: Les appels de construction Patient(...) et PatientGrille(...) peuvent générer
+# des faux positifs (params non reconnus) car SQLAlchemy injecte dynamiquement les
+# attributs de colonnes. On conserve des signatures explicites pour clarté.
 
 # Helper interne
 def _get_owned_patient(patient_id: int) -> Optional[Patient]:
@@ -104,19 +102,15 @@ class PatientService:
             # Gestion de la date de naissance
             date_naissance = None
             if data.get('date_naissance'):
-                try:
-                    from datetime import datetime
+                from datetime import datetime
+                with contextlib.suppress(ValueError):
                     date_naissance = datetime.strptime(data['date_naissance'], '%Y-%m-%d').date()
-                except ValueError:
-                    # format date invalide ignoré
-                    # Continuer sans date plutôt que d'échouer
-                    pass
             
             # Associer au thérapeute courant
             owner_id = None
             with contextlib.suppress(Exception):
                 owner_id = current_user.id  # type: ignore[attr-defined]
-            patient = Patient(  # type: ignore[call-arg]
+            patient = Patient(
                 nom=nom,
                 prenom=prenom,
                 date_naissance=date_naissance,
@@ -136,7 +130,7 @@ class PatientService:
             # Assigner les grilles si spécifiées
             grilles_ids = data.get('grilles_ids', [])
             if grilles_ids:
-                success, msg = PatientService._assigner_grilles(patient.id, grilles_ids)
+                success, msg = PatientService._assigner_grilles(patient.id, grilles_ids)  # type: ignore[attr-defined]
                 if not success:
                     pass
                     # Continuer même si l'assignation échoue
@@ -225,24 +219,19 @@ class PatientService:
     
     @staticmethod
     def search_patients(query: str) -> List[Patient]:
-        """
-        Recherche des patients par nom ou prénom
-        
-        Args:
-            query: Terme de recherche
-            
-        Returns:
-            Liste des patients correspondants
-        """
+        """Recherche des patients (nom ou prénom, filtrés par user si disponible)."""
         search = f"%{query.lower()}%"
-        base = Patient.query
+        q = Patient.query
         with contextlib.suppress(Exception):
             user_id = current_user.id  # type: ignore[attr-defined]
-            base = base.filter_by(user_id=user_id)
-        base = base.filter(db.or_(Patient.nom.ilike(search), Patient.prenom.ilike(search)))
-        base = base.filter_by(actif=True)
-        base = base.order_by(Patient.nom, Patient.prenom)
-        return base.all()
+            q = q.filter_by(user_id=user_id)
+        # Colonnes annotées en Any pour éviter faux positifs (SQLAlchemy instrumentation)
+        nom_col: Any = Patient.nom
+        prenom_col: Any = Patient.prenom
+        q = q.filter(db.or_(nom_col.ilike(search), prenom_col.ilike(search)))
+        q = q.filter_by(actif=True)
+        q = q.order_by(Patient.nom, Patient.prenom)
+        return q.all()
 
     @staticmethod
     def _assigner_grilles(patient_id: int, grilles_ids: List[int]) -> tuple[bool, str]:
@@ -266,11 +255,11 @@ class PatientService:
             for priority, grille_id in enumerate(grilles_ids, 1):
                 try:
                     grille_id = int(grille_id)
-                    assignment = PatientGrille(  # type: ignore[call-arg]
-                        patient_id=patient_id,  # type: ignore[arg-type]
-                        grille_id=grille_id,    # type: ignore[arg-type]
-                        priorite=priority,      # type: ignore[arg-type]
-                        active=True             # type: ignore[arg-type]
+                    assignment = PatientGrille(
+                        patient_id=patient_id,
+                        grille_id=grille_id,
+                        priorite=priority,
+                        active=True
                     )
                     db.session.add(assignment)
                 except (ValueError, TypeError):
@@ -297,13 +286,19 @@ class PatientService:
         try:
             from app.models.cotation import GrilleEvaluation, PatientGrille
             
-            assignments = db.session.query(PatientGrille, GrilleEvaluation).join(
-                GrilleEvaluation, PatientGrille.grille_id == GrilleEvaluation.id
-            ).filter(
-                PatientGrille.patient_id == patient_id,
-                PatientGrille.active.is_(True),
-                GrilleEvaluation.active.is_(True)
-            ).order_by(PatientGrille.priorite).all()
+            pg_patient_id = cast(Any, PatientGrille.patient_id)
+            pg_active = cast(Any, PatientGrille.active)
+            pg_priorite = cast(Any, PatientGrille.priorite)
+            ge_active = cast(Any, GrilleEvaluation.active)
+            assignments = (
+                db.session.query(PatientGrille, GrilleEvaluation)
+                .join(GrilleEvaluation, PatientGrille.grille_id == GrilleEvaluation.id)
+                .filter(pg_patient_id == patient_id)
+                .filter(pg_active.is_(True))
+                .filter(ge_active.is_(True))
+                .order_by(pg_priorite)
+                .all()
+            )
             
             return [
                 {

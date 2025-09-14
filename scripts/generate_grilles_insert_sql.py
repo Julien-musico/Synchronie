@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from datetime import datetime
 
 DATA_DIR = 'data/grilles_standard'
@@ -17,7 +17,7 @@ def main():
     for filename in os.listdir(DATA_DIR):
         if filename.endswith('.json'):
             path = os.path.join(DATA_DIR, filename)
-            with open(path, 'r', encoding='utf-8') as f:
+            with open(path, encoding='utf-8') as f:
                 data = json.load(f)
             nom = escape_sql(data.get('nom', filename.replace('.json','').upper()))
             description = escape_sql(data.get('description', ''))

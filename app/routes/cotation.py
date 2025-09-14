@@ -1,11 +1,9 @@
 """
 Utilitaires d'accès utilisateur pour factoriser la vérification d'ownership.
 """
-
-# -------------------- IMPORTS -------------------- #
-
 import json
 import os
+
 from flask import (
     Blueprint,
     Response,
@@ -17,8 +15,14 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+
 from app.models import Patient, Seance, db
-from app.models.cotation import GrilleEvaluation, GrilleDomaine, DomaineIndicateur, CotationSeance
+from app.models.cotation import (
+    CotationSeance,
+    DomaineIndicateur,
+    GrilleDomaine,
+    GrilleEvaluation,
+)
 from app.services.analytics_service import AnalyticsService
 from app.services.cotation_service import CotationService
 

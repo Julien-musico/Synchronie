@@ -1,4 +1,4 @@
--- Vérification structure des tables patient et patient_grille
+psql $DATABASE_URL -f sql_check_patient_tables.sql-- Vérification structure des tables patient et patient_grille
 -- Exécuter dans psql ou pgAdmin
 
 \echo '--- Table patients ---'

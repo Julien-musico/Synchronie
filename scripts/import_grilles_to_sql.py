@@ -1,6 +1,8 @@
-import os
 import json
+import os
+
 import psycopg2
+
 
 def get_connection():
     db_url = os.environ.get('DATABASE_URL')

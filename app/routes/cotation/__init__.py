@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from app.models.cotation import GrilleEvaluation, Domaine, Indicateur
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
-from .seances import seances_bp
+from app.models.cotation import Domaine, GrilleEvaluation, Indicateur
+
 from .analytics import analytics_bp
+from .seances import seances_bp
 
 cotation_bp = Blueprint('cotation', __name__, url_prefix='/cotation')
 
@@ -66,7 +67,7 @@ def admin_grilles():
             grille.type_grille = type_grille or grille.type_grille
             grille.reference_scientifique = reference_scientifique or grille.reference_scientifique
             # Supprime les anciens liens
-            from app.models.cotation import GrilleDomaine, DomaineIndicateur, db
+            from app.models.cotation import DomaineIndicateur, GrilleDomaine, db
             GrilleDomaine.query.filter_by(grille_id=grille.id).delete()
             db.session.commit()
             # Ajoute les nouveaux liens grille-domaine

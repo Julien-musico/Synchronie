@@ -1,9 +1,11 @@
 """Modèles pour le système de cotation thérapeutique."""
+
 import json
 from datetime import datetime, timezone
 from typing import Any, Dict
 
 from . import TimestampMixin, db
+
 
 # Nouveau modèle pour la table 'grille'
 class Grille(db.Model):
@@ -266,3 +268,27 @@ class PatientGrille(TimestampMixin, db.Model):
     
     def __repr__(self):  # type: ignore
         return f'<PatientGrille patient_id={self.patient_id} grille_id={self.grille_id}>'
+
+    def __init__(
+        self,
+        patient_id: int,
+        grille_id: int,
+        priorite: int | None = None,
+        active: bool = True,
+        assignee_par: int | None = None,
+        date_assignation: 'datetime | None' = None,  # type: ignore[name-defined]
+        date_fin: 'datetime | None' = None,  # type: ignore[name-defined]
+        commentaires: 'str | None' = None,
+        **kwargs
+    ) -> None:  # type: ignore[override]
+        super().__init__(**kwargs)
+        self.patient_id = patient_id
+        self.grille_id = grille_id
+        if priorite is not None:
+            self.priorite = priorite
+        self.active = active
+        self.assignee_par = assignee_par
+        if date_assignation is not None:
+            self.date_assignation = date_assignation
+        self.date_fin = date_fin
+        self.commentaires = commentaires

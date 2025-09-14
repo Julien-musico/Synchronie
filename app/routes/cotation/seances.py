@@ -3,10 +3,9 @@ Routes pour la cotation des séances et l'interface utilisateur associée.
 """
 
 from flask import Blueprint, render_template
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 
-from app.models import Seance, Patient, db
-
+from app.models import Patient, Seance, db
 
 seances_bp = Blueprint('seances', __name__, url_prefix='/seances')
 
