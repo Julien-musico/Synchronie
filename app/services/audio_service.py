@@ -30,24 +30,22 @@ class AudioTranscriptionService:
         """Initialise le service (OpenAI pour transcription Whisper, Mistral pour synthèse si disponible)"""
         self.openai_client: Optional[OpenAI] = None
         self.mistral_client = None  # type: ignore
-        self.use_mistral = False
 
         openai_key = os.environ.get('OPENAI_API_KEY')
         mistral_key = os.environ.get('MISTRAL_API_KEY')
         mistral_model = os.environ.get('MISTRAL_MODEL', 'mistral-large-latest')
 
-        # Initialisation Mistral (prioritaire pour la synthèse)
-        if mistral_key and Mistral is not None:
-            try:
-                self.mistral_client = Mistral(api_key=mistral_key)
-                self.mistral_model = mistral_model
-                self.use_mistral = True
-                logger.info(f"✅ Client Mistral initialisé (modèle: {mistral_model})")
-            except Exception as e:
-                logger.warning(f"⚠️ Impossible d'initialiser Mistral: {e}")
-                self.use_mistral = False
-        elif mistral_key and Mistral is None:
-            logger.warning("⚠️ Paquet 'mistralai' non installé: pip install mistralai pour activer Mistral")
+        # Initialisation Mistral (synthèse)
+        if mistral_key:
+            if Mistral is not None:
+                try:
+                    self.mistral_client = Mistral(api_key=mistral_key)
+                    self.mistral_model = mistral_model
+                    logger.info(f"✅ Client Mistral initialisé (modèle: {mistral_model})")
+                except Exception as e:
+                    logger.error(f"❌ Impossible d'initialiser Mistral: {e}")
+            else:
+                logger.warning("⚠️ Paquet 'mistralai' non installé: pip install mistralai pour activer Mistral")
 
         # Initialisation OpenAI (nécessaire pour Whisper). On garde logique minimale.
         if openai_key:
@@ -162,10 +160,10 @@ class AudioTranscriptionService:
         Returns:
             Tuple[bool, str, Optional[str]]: (success, message, analysis)
         """
-        # Vérifier qu'au moins un client de génération est dispo
-        if not (self.use_mistral or self.openai_client):
-            logger.error("Aucun client IA pour la génération d'analyse")
-            return False, "Service d'analyse non disponible", None
+        # Vérifier que le client Mistral est disponible
+        if not self.mistral_client:
+            logger.error("Client Mistral non initialisé pour la synthèse")
+            return False, "Synthèse indisponible (Mistral non configuré)", None
             
         try:
             logger.info("Génération de l'analyse IA de la séance")
@@ -208,53 +206,31 @@ Contenu à analyser (transcription ou notes) :
 
 Génère une synthèse thérapeutique détaillée de cette séance de musicothérapie."""
             
-            analysis = ""
-            if self.use_mistral and self.mistral_client is not None:
+            try:
+                m_response = self.mistral_client.responses.create(
+                    model=self.mistral_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.3,
+                    max_tokens=1000,
+                )
+                analysis = ""
                 try:
-                    # API Mistral: responses.create(messages=[{"role":..., "content":...}], model="...")
-                    m_response = self.mistral_client.responses.create(
-                        model=self.mistral_model,
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        temperature=0.3,
-                        max_tokens=1000,
-                    )
-                    # Structure: m_response.output[0].content[0].text (selon SDK mistralai)
-                    try:
-                        output_blocks = getattr(m_response, 'output', []) or []  # type: ignore
-                        if output_blocks:
-                            first_block = output_blocks[0]
-                            block_content = getattr(first_block, 'content', [])  # type: ignore
-                            if block_content:
-                                analysis = getattr(block_content[0], 'text', '')  # type: ignore
-                    except Exception as parse_err:  # pragma: no cover
-                        logger.warning(f"⚠️ Parsing réponse Mistral: {parse_err}")
-                        analysis = ''
-
-                    if not analysis:
-                        # Fallback texte brut si accessible
-                        analysis = str(m_response)
-                except Exception as e:
-                    logger.error(f"Erreur génération Mistral, fallback OpenAI si possible: {e}")
-                    self.use_mistral = False  # Eviter boucle d'erreurs
-
-            if not analysis and self.openai_client is not None:
-                try:
-                    oai_response = self.openai_client.chat.completions.create(
-                        model=os.environ.get('OPENAI_SUMMARY_MODEL', 'gpt-4o-mini'),
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt}
-                        ],
-                        max_tokens=1000,
-                        temperature=0.3
-                    )
-                    analysis = oai_response.choices[0].message.content or ""
-                except Exception as e2:
-                    logger.error(f"Erreur fallback OpenAI: {e2}")
-                    return False, f"Erreur d'analyse IA: {str(e2)}", None
+                    output_blocks = getattr(m_response, 'output', []) or []  # type: ignore
+                    if output_blocks:
+                        first_block = output_blocks[0]
+                        block_content = getattr(first_block, 'content', [])  # type: ignore
+                        if block_content:
+                            analysis = getattr(block_content[0], 'text', '')  # type: ignore
+                except Exception as parse_err:  # pragma: no cover
+                    logger.warning(f"⚠️ Parsing réponse Mistral: {parse_err}")
+                if not analysis:
+                    analysis = str(m_response)
+            except Exception as e:
+                logger.error(f"Erreur génération Mistral: {e}")
+                return False, f"Erreur d'analyse IA: {str(e)}", None
             logger.info(f"Analyse IA générée: {len(analysis)} caractères")
             
             return True, "Analyse générée avec succès", analysis
