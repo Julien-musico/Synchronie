@@ -207,15 +207,33 @@ class AudioTranscriptionService:
                     chat_messages.append(ChatMessage(role=m["role"], content=m["content"]))
             except Exception:  # pragma: no cover - fallback dicts si non dispo
                 chat_messages = messages  # type: ignore
+            chat_obj = self.mistral_client.chat  # type: ignore[attr-defined]
+            # Deux variantes possibles: méthode .complete ou appel direct chat(model=..., messages=...)
             try:  # type: ignore[attr-defined]
-                completion = self.mistral_client.chat.complete(  # type: ignore
-                    model=self.mistral_model,
-                    messages=chat_messages,
-                    temperature=0.3,
-                    max_tokens=1000,
-                )
+                if hasattr(chat_obj, 'complete'):
+                    completion = chat_obj.complete(  # type: ignore
+                        model=self.mistral_model,
+                        messages=chat_messages,
+                        temperature=0.3,
+                        max_tokens=1000,
+                    )
+                else:
+                    # Appel direct si chat est une fonction
+                    completion = chat_obj(
+                        model=self.mistral_model,
+                        messages=chat_messages,
+                        temperature=0.3,
+                        max_tokens=1000,
+                    )
                 return self._extract_text_from_response(completion)
             except Exception as e:  # pragma: no cover
+                logger.error(
+                    "Échec interface chat Mistral",
+                    extra={
+                        'has_complete': hasattr(chat_obj, 'complete'),
+                        'chat_type': type(chat_obj).__name__,
+                    }
+                )
                 raise RuntimeError(f"Échec appel Mistral (chat): {e}") from e
 
         raise RuntimeError("Interface Mistral non supportée (ni responses ni chat)")
