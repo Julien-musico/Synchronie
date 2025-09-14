@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const rapportDict = data.data;
                     const rapportZone = document.getElementById('rapport-result');
                     const contenu = document.getElementById('rapport-contenu');
-                    contenu.textContent = rapportDict.contenu || '(Vide)';
+                    contenu.textContent = (rapportDict.contenu || rapportDict.rapport || '').trim() || '(Vide)';
                     rapportZone.classList.remove('d-none');
                     window.synchronieApp.showAlert('Rapport généré', 'success');
                     ajouterRapportAListe(rapportDict, true);

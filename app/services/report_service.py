@@ -153,6 +153,7 @@ class ReportService:
 
         return True, 'Rapport généré', {
             'rapport': rapport,
+            'contenu': rapport,  # duplication pour cohérence front (liste utilise 'contenu')
             'id': rapport_obj.id,
             'date_generation': rapport_obj.date_creation.isoformat(),
             'date_debut': rapport_obj.date_debut.isoformat(),
